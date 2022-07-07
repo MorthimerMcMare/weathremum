@@ -237,10 +237,13 @@ class W2SoundOrigin: Actor {
 	SeqNode seq;
 	bool justCreated;
 
-	vector2 intersectionOffset;
-	double intersectionAngle;
+	vector2 intersectionOffset;	// Direction to the first intersection.
+	double intersectionAngle;	// Angle of the first intersection "atan2( intersectionOffset ) - player.angle".
+
 	vector2 prevInterpPos;
 	int interpolationTics;
+	double interpSaveDistance;	// Interpolation same saved distance to the player.
+	double interpStepRange;
 
 	//double interpolationAngle;
 
@@ -257,18 +260,31 @@ class W2SoundOrigin: Actor {
 		vector2 deltapos = nextpos - pos.xy;
 		double deltaposlen = deltapos.Length();
 
-		if ( !justCreated && deltaposlen > target.radius * 4.0 ) {
-			//double arcangle = acos( ( pos.xy dot nextpos ) / ( pos.xy.Length() * nextpos.Length() ) );
-			//interpolationAngle = ( arcangle + AngleTo( master, false ) ) % 360.0;
+		if ( !justCreated && deltaposlen > target.radius * 2.0 ) {
+			if ( interpolationTics == 0 ) {
+				//double arcangle = acos( ( pos.xy dot nextpos ) / ( pos.xy.Length() * nextpos.Length() ) );
+				//interpolationAngle = ( arcangle + AngleTo( master, false ) ) % 360.0;
 
-			//console.printf( self .. ". ( nextpos - pos.xy ).Length() is " .. ( nextpos - pos.xy ).Length() );
+				//console.printf( self .. ". ( nextpos - pos.xy ).Length() is " .. ( nextpos - pos.xy ).Length() );
 
-			prevInterpPos = pos.xy;
-			interpolationTics = int( ceil( ( nextpos - pos.xy ).Length() / 128.0 ) );
+				prevInterpPos = pos.xy;
+				interpSaveDistance = ( pos.xy - master.pos.xy ).Length();
+				interpolationTics = int( ceil( ( nextpos - pos.xy ).Length() / 128.0 ) );
+				interpStepRange = deltaposlen / 16.0;
+			}
+		} else {
+			interpolationTics = 0;
 		}
 
-		if ( interpolationTics && deltaposlen > 0.0 ) {
-			newsetpos = pos.xy + deltapos / abs( deltaposlen ) * min( 64.0, deltaposlen );
+		if ( interpolationTics > 0 && deltaposlen > 0.0 ) {
+			//newsetpos = pos.xy + deltapos / abs( deltaposlen ) * min( 64.0, deltaposlen );
+
+			vector2 nextArclinePos = pos.xy + deltapos / abs( deltaposlen ) * min( interpStepRange, deltaposlen );
+			vector2 deltaArclinePos = ( nextArclinePos - master.pos.xy );
+
+			newsetpos = master.pos.xy + ( deltaArclinePos / deltaArclinePos.Length() ) * min( interpSaveDistance, deltaposlen );
+			
+			interpolationTics--;
 		}
 
 		/*if ( interpolationAngle > 0.0 ) {
