@@ -38,8 +38,9 @@ class W2SectorData {
 }
 
 class W2PlayerHandler: Actor {
-	Array<W2SectorData> sectorsdata; // All of the level sectors saved for the quick access.
-	Array<int> loopdataindices, newdataindices; // Temporary array with data updates.
+	Array<W2SectorData> sectorsdata;// All of the level sectors saved for the quick access.
+	Array<int> loopdataindices;		// Array storing currently playing sectors.
+	Array<int> newdataindices;		// Temporary array with data updates.
 
 	Default {
 		+NOBLOCKMAP;
@@ -67,6 +68,7 @@ class W2PlayerHandler: Actor {
 
 		return secdata;
 	}
+
 
 	override void Tick() {
 		PlayerInfo pl = players[ FriendPlayer ];
@@ -213,6 +215,8 @@ class W2PlayerHandler: Actor {
 	}
 } // of class W2PlayerHandler: Actor {}
 
+
+// A base weather sound actor.
 class W2SoundOrigin: Actor {
 	//SeqNode seq;
 
@@ -223,13 +227,6 @@ class W2SoundOrigin: Actor {
 		+NOINTERACTION;
 	}
 
-	/*override void Tick() {
-		if ( !master || bDORMANT )
-			return;
-
-		Super.Tick();
-	}*/
-
 	override void OnDestroy() {
 		StopSoundSequence();
 		Super.OnDestroy();
@@ -239,8 +236,9 @@ class W2SoundOrigin: Actor {
 
 class mcm_Weather2Handler: EventHandler {
 	bool mustCreateGeneralSectorsData;
-	Array<W2SectorData> generalSectorsData; // Just copyable structure.
-	W2PlayerHandler firstplayerhandler;
+
+	Array<W2SectorData> generalSectorsData; // Just a copyable structure.
+	W2PlayerHandler firstplayerhandler; // Temporary debug thing...
 
 	override void OnRegister() {
 		SetOrder( Weather2HandlerOrder );
@@ -381,4 +379,4 @@ class Weather2_RainDrop: Actor {
 		}
 		Wait;
 	}
-}
+} // of class Weather2_RainDrop: Actor {}
