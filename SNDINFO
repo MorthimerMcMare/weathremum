@@ -1,0 +1,13 @@
+weather/rain		rain
+
+$random weather/thunder { weather/thunder1 weather/thunder2 weather/thunder3 weather/thunder4 weather/thunder5 }
+weather/thunder1	thunder1
+weather/thunder2	thunder2
+weather/thunder3	thunder3
+weather/thunder4	thunder4
+weather/thunder5	thunder5
+
+$random weather/wind { weather/wind1 weather/wind2 weather/wind3 }
+weather/wind1		wind1
+weather/wind2		wind2
+weather/wind3		wind3

@@ -1,0 +1,384 @@
+version "2.4.0"
+
+const mcm_Weather2Version = "0.1";
+
+// AA: 0x7FAA0004.
+// ZC: 0x7FAA0005 + 0x7FAA0006.
+const Weather2HandlerOrder = 0x7FAA0007;
+
+
+enum EWeather2HandleStatus {
+	W2HS_Off = 0,		// Stopped, inactive sector sound.
+	W2HS_Loop,			// Active sector sound.
+	W2HS_StopSuggestion	// Pre-stop (must be changed to something else every "WorldTick()").
+}
+
+enum EWeather2SectorType {
+	W2ST_None = 0,
+	W2ST_Outdoor,
+	W2ST_NextToOutdoor
+}
+
+
+class W2SectorData {
+	EWeather2HandleStatus status;
+	Sector s;
+	Array<Line> lines;
+	Array<int> lineindices; // Temporary, for the UI-scoped "RenderOverlay()".
+
+	EWeather2SectorType sectype;
+	W2SoundOrigin soundorigin;
+
+	static W2SectorData Create( Sector initSector ) {
+		W2SectorData newdata = new( 'W2SectorData' );
+		newdata.s = initSector;
+
+		return newdata;
+	}
+}
+
+class W2PlayerHandler: Actor {
+	Array<W2SectorData> sectorsdata; // All of the level sectors saved for the quick access.
+	Array<int> loopdataindices, newdataindices; // Temporary array with data updates.
+
+	Default {
+		+NOBLOCKMAP;
+		+DONTSPLASH;
+		+NOGRAVITY;
+		+NOINTERACTION;
+	}
+
+
+	private W2SectorData TryAddSector( Sector s ) {
+		if ( !s )
+			return NULL;
+
+		W2SectorData secdata = sectorsdata[ s.Index() ];
+
+		// Starts sector sound or continues it (by stop preventing) if it is still needed.
+		if ( secdata.status == W2HS_Off )
+			newdataindices.Push( s.Index() );
+
+		if ( secdata.status != W2HS_Loop ) {
+			secdata.status = W2HS_Loop;
+			secdata.lines.Clear();
+			secdata.lineindices.Clear();
+		}
+
+		return secdata;
+	}
+
+	override void Tick() {
+		PlayerInfo pl = players[ FriendPlayer ];
+
+		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo || globalfreeze || level.frozen )
+			return;
+
+
+		// Move the handler actor to the player position:
+		SetOrigin( ( pl.Camera? pl.Camera.pos : pl.mo.pos ), true );
+
+
+		// Suggest potential excess sounds to stop:
+		for ( int i = 0; i < loopdataindices.Size(); i++ )
+			sectorsdata[ loopdataindices[ i ] ].status = W2HS_StopSuggestion;
+
+		newdataindices.Clear();
+
+
+		// Second argument is an environment test radius.
+		BlockLinesIterator it = BlockLinesIterator.Create( self, 768 );
+
+		// Saving all of the surrounding sectors:
+		while ( it.Next() ) {
+			Line l = it.curline;
+			W2SectorData secdata = NULL;
+
+			if ( secdata = TryAddSector( l.frontsector ) ) {
+				secdata.lines.Push( l );
+				secdata.lineindices.Push( l.Index() );
+			}
+
+			if ( secdata = TryAddSector( l.backsector ) ) {
+				secdata.lines.Push( l );
+				secdata.lineindices.Push( l.Index() );
+			}
+		}
+
+		TryAddSector( ceilingsector );
+		// I think there's no matter to use the floorsector field.
+
+
+		// Creating new sound actors:
+		for ( int i = 0; i < newdataindices.Size(); i++ ) {
+			//console.printf( TEXTCOLOR_GREEN .. "+Started\c- sound for sector " .. newdataindices[ i ] .. "." );
+			W2SectorData secdata = sectorsdata[ newdataindices[ i ] ];
+
+			if ( secdata.sectype != W2ST_None ) {
+
+				secdata.soundorigin = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( secdata.s.centerspot, secdata.s.floorplane.d ) ) );
+
+				switch ( secdata.sectype ) {
+					case W2ST_Outdoor: secdata.soundorigin.StartSoundSequence( 'weather/rain', 0 ); break;
+					case W2ST_NextToOutdoor: secdata.soundorigin.StartSoundSequence( 'weather/wind', 0 ); break;
+					default: break;
+				}
+			}
+		}
+
+
+		// Moving all the sound origins and wiping sounds from too far sectors:
+		for ( int i = 0; i < loopdataindices.Size(); i++ ) {
+			W2SectorData secdata = sectorsdata[ loopdataindices[ i ] ];
+
+
+			if ( secdata.status == W2HS_StopSuggestion ) {
+				//console.printf( TEXTCOLOR_DARKRED .. "-Stopped\c- sound for sector " .. loopdataindices[ i ] .. "." );
+				if ( secdata.soundorigin )
+					secdata.soundorigin.Destroy();
+
+				secdata.status = W2HS_Off;
+
+				loopdataindices.Delete( i );
+				i--;
+			}
+
+			if ( !secdata.soundorigin )
+				continue;
+
+			if ( secdata.s == floorsector ) {
+				secdata.soundorigin.SetOrigin( pos, false );
+			} else {
+				vector2 minposxy;
+				double minlength = 1e300; // Really must be greater than an environment test radius.
+
+				vector2 plp = pos.xy;
+
+				for ( int j = 0; j < secdata.lines.Size(); j++ ) {
+					Line curline = secdata.lines[ j ];
+					double curminlength = 1e304;
+					vector2 curposxy;
+
+					vector2 v1p = curline.v1.p;
+					vector2 v2p = curline.v2.p;
+
+					if ( ( (v1p - plp) dot (v1p - v2p) <= 0.0 ) || ( (v2p - plp) dot (v2p - v1p) <= 0.0 ) ) {
+						double length1 = ( plp - v1p ).Length();
+						double length2 = ( plp - v2p ).Length();
+
+						if ( length1 < length2 ) {
+							curminlength = length1;
+							curposxy = v1p;
+						} else {
+							curminlength = length2;
+							curposxy = v2p;
+						}
+
+					} else {
+						double dlx = curline.delta.x;
+						double dly = curline.delta.y;
+
+						if ( dlx == 0 ) {
+							curposxy = (v1p.x, pos.y);
+
+						} else if ( dly == 0 ) {
+							curposxy = (pos.x, v1p.y);
+
+						} else {
+							curposxy.y = (dlx * (v1p.y * (dlx/dly) - v1p.x + pos.x) + dly*pos.y)/((dlx * dlx/dly) + dly);
+							curposxy.x = (curposxy.y - v1p.y) * (dlx / dly) + v1p.x;
+						}
+
+						curminlength = ( curposxy - plp ).Length();
+					}
+
+					if ( curminlength < minlength ) {
+						minlength = curminlength;
+						minposxy = curposxy;
+					}
+
+				} // of for ( int j = 0; j < secdata.lines.Size(); j++ ) {}
+
+				secdata.soundorigin.SetOrigin( ( minposxy, pos.z ), false );
+			}
+
+		} // of for ( int i = 0; i < loopdataindices.Size(); i++ ) {}
+
+
+		// Copying new loud sectors indices to the time-through array:
+		for ( int i = 0; i < newdataindices.Size(); i++ )
+			loopdataindices.Push( newdataindices[ i ] );
+
+		Super.Tick();
+	}
+} // of class W2PlayerHandler: Actor {}
+
+class W2SoundOrigin: Actor {
+	//SeqNode seq;
+
+	Default {
+		+NOBLOCKMAP;
+		+DONTSPLASH;
+		+NOGRAVITY;
+		+NOINTERACTION;
+	}
+
+	/*override void Tick() {
+		if ( !master || bDORMANT )
+			return;
+
+		Super.Tick();
+	}*/
+
+	override void OnDestroy() {
+		StopSoundSequence();
+		Super.OnDestroy();
+	}
+}
+
+
+class mcm_Weather2Handler: EventHandler {
+	bool mustCreateGeneralSectorsData;
+	Array<W2SectorData> generalSectorsData; // Just copyable structure.
+	W2PlayerHandler firstplayerhandler;
+
+	override void OnRegister() {
+		SetOrder( Weather2HandlerOrder );
+		mustCreateGeneralSectorsData = true;
+		Super.OnRegister();
+	}
+
+	void CreateGeneralSectorsData( void ) {
+		// Save all of the level sectors, mostly for the quick index-based access:
+		for ( int i = 0; i < level.sectors.Size(); i++ )
+			generalSectorsData.Push( W2SectorData.Create( level.sectors[ i ] ) );
+
+		for ( int i = 0; i < level.Sectors.Size(); i++ ) {
+			//console.printf( "Sector " .. i .. ": " .. level.Sectors[ i ].GetTexture( Sector.ceiling ) .. "." );
+			Sector s = level.Sectors[ i ];
+
+			if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {
+				generalSectorsData[ i ].sectype = W2ST_Outdoor;
+
+				for ( int j = 0; j < s.Lines.Size(); j++ ) {
+					Sector ls = s.Lines[ j ].frontsector;
+
+					if ( ls && ls != s && ls.GetTexture( Sector.ceiling ) != skyflatnum )
+						generalSectorsData[ ls.Index() ].sectype = W2ST_NextToOutdoor;
+
+					ls = s.Lines[ j ].backsector;
+
+					if ( ls && ls != s && ls.GetTexture( Sector.ceiling ) != skyflatnum )
+						generalSectorsData[ ls.Index() ].sectype = W2ST_NextToOutdoor;
+				}
+			} // of if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {}
+
+		} // of for ( int i = 0; i < level.Sectors.Size(); i++ ) {}
+
+		mustCreateGeneralSectorsData = false;
+	} // of override void WorldLoaded( WorldEvent e ) {}
+
+	override void PlayerEntered( PlayerEvent e ) {
+		if ( mustCreateGeneralSectorsData )
+			CreateGeneralSectorsData();
+
+		if ( players[ e.PlayerNumber ].mo ) {
+			W2PlayerHandler playerhandler = W2PlayerHandler( Actor.Spawn( "W2PlayerHandler", players[ e.PlayerNumber ].mo.pos ) );
+			playerhandler.FriendPlayer = e.PlayerNumber;
+			playerhandler.sectorsdata.Copy( generalSectorsData );
+
+			if ( e.PlayerNumber == 0 )
+				firstplayerhandler = playerhandler;
+
+			console.printf( "Added a " .. playerhandler.GetClassName() .. " for player " .. e.PlayerNumber .. "." );
+		}
+		
+		Super.PlayerEntered( e );
+	}
+
+	/*override void RenderOverlay( RenderEvent e ) {
+		if ( !firstplayerhandler ) {
+			Super.RenderOverlay( e );
+			return;
+		}
+
+		String outStr = "Total active sectors: " .. firstplayerhandler.loopdataindices.Size() .. ".\n";
+
+		for ( int i = 0; i < firstplayerhandler.sectorsdata.Size(); i++ ) {
+			W2SectorData cursecdata = firstplayerhandler.sectorsdata[ i ];
+
+			outStr = outStr .. TEXTCOLOR_GRAY .. "#" .. i .. " (type " .. cursecdata.sectype .. "): ";
+
+			switch ( cursecdata.status ) {
+				case W2HS_Off:
+					outStr = outStr .. TEXTCOLOR_DARKGRAY .. "off\n";
+					break;
+				case W2HS_Loop:
+					outStr = outStr .. TEXTCOLOR_GREEN .. "on. " .. TEXTCOLOR_DARKGREEN .. "Lines ";
+
+					for ( int j = 0; j < cursecdata.lines.Size(); j++ )
+						outStr = outStr .. cursecdata.lineindices[ j ] .. " ";
+
+					outStr = outStr .. "\n";
+					break;
+				case W2HS_StopSuggestion:
+					outStr = outStr .. TEXTCOLOR_RED .. "stopping\n";
+					break;
+				default:
+					outStr = outStr .. TEXTCOLOR_FIRE .. "<UNKNOWN>\n";
+					console.printf( GetClassName() .. "::RenderOverlay(). " .. TEXTCOLOR_FIRE .. "Unknown data for sector " .. i .. "." );
+					break;
+			}
+		}
+
+		Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 30, 60, outStr,
+						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
+
+		Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 1100, 60, "Current sector: " .. ( firstplayerhandler.floorsector? firstplayerhandler.floorsector.sectornum .. "" : "NULL" ),
+						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
+
+		Super.RenderOverlay( e );
+	}*/
+
+} // of class mcm_Weather2Handler: EventHandler {}
+
+
+
+class Weather2_RainDrop: Actor {
+	Default {
+		+NOBLOCKMAP;
+		-SOLID; // ?
+		+THRUACTORS;
+		+MISSILE;
+		+NOGRAVITY;
+		Height 4;
+		Radius 2;
+		RenderStyle "Translucent";
+	}
+
+	override void PostBeginPlay() {
+		if ( !cursector || ( ceilingpic != skyflatnum ) ) {
+			Destroy();
+		}
+
+		SetOrigin( ( pos.x, pos.y, ceilingz - height ), true );
+		vel.z = -35.0;
+		Scale = ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
+		Alpha = FRandom( 0.2, 0.7 );
+		Super.PostBeginPlay();
+	}
+
+	States {
+	Spawn:
+		RAIN A 1;
+		Loop;
+	Death:
+		RAIN AAB 1 A_FadeOut( 0.05 );
+		RAIN D 1 {
+			Scale.X *= 1.3;
+			Scale.Y *= 0.75;
+			A_FadeOut( 0.2 );
+		}
+		Wait;
+	}
+}

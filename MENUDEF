@@ -1,0 +1,29 @@
+//
+
+OptionMenu "mcm_Weather2Control" {
+    Title "Weather control"
+    /*
+	StaticText " "
+    StaticText "Weather changing control:"
+    StaticText "Storm strength will be \"clamped\" in range [-1.0; 2.0].", 1
+    Slider "Initial storm strength", "weather_init_storm_strength", -1.0, 2.0, 0.1, 1
+    Slider "Initial storm randomization (+/-)", "weather_init_storm_strength_randomize", 0.0, 2.0, 0.1, 1
+    Slider "Storm change chance", "weather_change_chance", 0.0, 0.25, 0.01, 2
+    StaticText " "
+    StaticText "Lightning control:"
+    Option "Enabled", "weather_lightning_enabled", "OnOff"
+    Slider "Minimal delay (ticks)", "weather_lightning_mindelay", 50, 1000, 50, 0
+    Slider "Maximal delay (ticks)", "weather_lightning_maxdelay", 500, 10000, 500, 0
+    StaticText " "
+    StaticText "Rain control:"
+	Option "Enabled", "weather_rain_enabled", "OnOff"
+    Slider "Spawn range (in mappixels)", "weather_rain_spawnrange", 256, 2048, 128, 0
+    Slider "Intensity", "weather_rain_intensity", 1, 99, 5, 0
+    Slider "Fall speed", "weather_rain_fallspeed", 20, 50, 5, 0
+	*/
+}
+
+AddOptionMenu "OptionsMenu" {
+	StaticText  " "
+	Submenu     "Weather II control", "mcm_Weather2Control"
+}
