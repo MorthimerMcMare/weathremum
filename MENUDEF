@@ -1,7 +1,7 @@
 //
 
 OptionMenu "mcm_Weather2Control" {
-    Title "Weather control"
+    Title "Weather II control"
     /*
 	StaticText " "
     StaticText "Weather changing control:"
