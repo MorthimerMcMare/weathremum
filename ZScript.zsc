@@ -161,7 +161,7 @@ class W2PlayerHandler: Actor {
 			// Moving sound origins:
 			if ( secdata.s == floorsector ) {
 				sndactor.SetOrigin( Vec3Angle( sndactor.intersectionOffset.Length(), sndactor.intersectionAngle + angle ), true );
-				sndactor.interpolationTics = 15;
+				//sndactor.interpolationTics = 15;
 			} else {
 				vector2 minposxy;
 				double minlength = 1e300; // Really must be greater than an environment test radius.
@@ -214,6 +214,7 @@ class W2PlayerHandler: Actor {
 				} // of for ( int j = 0; j < secdata.lines.Size(); j++ ) {}
 
 				sndactor.LinedefMove( minposxy );
+
 				sndactor.intersectionOffset = ( sndactor.pos.xy - pos.xy );
 				sndactor.intersectionAngle = atan2( sndactor.intersectionOffset.y, sndactor.intersectionOffset.x ) - angle;
 			}
@@ -240,12 +241,11 @@ class W2SoundOrigin: Actor {
 	vector2 intersectionOffset;	// Direction to the first intersection.
 	double intersectionAngle;	// Angle of the first intersection "atan2( intersectionOffset ) - player.angle".
 
-	vector2 prevInterpPos;
-	int interpolationTics;
-	double interpSaveDistance;	// Interpolation same saved distance to the player.
+	vector2 startInterpPos, endInterpPos;
+	//int interpolationTics;
+	double interpSaveDistance;	// Saved distance to the player in the first interpolation tick.
+	double interpLength;		// Length from start to end points (for "progress" percentage).
 	double interpStepRange;
-
-	//double interpolationAngle;
 
 	Default {
 		+NOINTERACTION; // Implies +NOGRAVITY and +NOBLOCKMAP.
@@ -257,49 +257,48 @@ class W2SoundOrigin: Actor {
 	void LinedefMove( vector2 nextpos ) {
 		vector2 newsetpos = nextpos;
 
-		vector2 deltapos = nextpos - pos.xy;
-		double deltaposlen = deltapos.Length();
+		double enddeltaposlen = ( nextpos - endInterpPos ).Length();
+		endInterpPos = nextpos;
 
-		if ( !justCreated && deltaposlen > target.radius * 2.0 ) {
-			if ( interpolationTics == 0 ) {
-				//double arcangle = acos( ( pos.xy dot nextpos ) / ( pos.xy.Length() * nextpos.Length() ) );
-				//interpolationAngle = ( arcangle + AngleTo( master, false ) ) % 360.0;
-
-				//console.printf( self .. ". ( nextpos - pos.xy ).Length() is " .. ( nextpos - pos.xy ).Length() );
-
-				prevInterpPos = pos.xy;
+		if ( !justCreated ) {
+			if ( enddeltaposlen > target.radius * 2.0 ) {
+				startInterpPos = pos.xy;
+				interpLength = ( endInterpPos - startInterpPos ).Length();
+				interpStepRange = max( 8.0, interpLength / 10.0 );
 				interpSaveDistance = ( pos.xy - master.pos.xy ).Length();
-				interpolationTics = int( ceil( ( nextpos - pos.xy ).Length() / 128.0 ) );
-				interpStepRange = deltaposlen / 16.0;
 			}
 		} else {
-			interpolationTics = 0;
+			//interpolationTics = 0;
 		}
 
-		if ( interpolationTics > 0 && deltaposlen > 0.0 ) {
-			//newsetpos = pos.xy + deltapos / abs( deltaposlen ) * min( 64.0, deltaposlen );
+		vector2 deltapos = endInterpPos - pos.xy;
+		double deltaposlen = deltapos.Length();
 
-			vector2 nextArclinePos = pos.xy + deltapos / abs( deltaposlen ) * min( interpStepRange, deltaposlen );
-			vector2 deltaArclinePos = ( nextArclinePos - master.pos.xy );
+		if ( deltaposlen > 32.0 && interpLength > 32.0 ) {
+			vector2 nextArclineStepPos = pos.xy + deltapos / abs( deltaposlen ) * min( interpStepRange, deltaposlen );
+			vector2 deltaArclinePos = ( nextArclineStepPos - master.pos.xy );
 
-			newsetpos = master.pos.xy + ( deltaArclinePos / deltaArclinePos.Length() ) * min( interpSaveDistance, deltaposlen );
-			
-			interpolationTics--;
+			// Preventing interpolation from jamming:
+			/*if ( abs( deltaArclinePos.x ) <= 2.0 )
+				deltaArclinePos.x += ( deltaArclinePos.x == 0.0? 5.0 : deltaArclinePos.x / abs( deltaArclinePos.x ) * 5.0 );
+			if ( abs( deltaArclinePos.y ) <= 2.0 )
+				deltaArclinePos.y += ( deltaArclinePos.y == 0.0? 5.0 : deltaArclinePos.y / abs( deltaArclinePos.y ) * 5.0 );
+			*/
+
+			double savedDistWeightPercent = clamp( deltaposlen / interpLength, 0.0, 1.0 );
+
+			//interpStepRange *= ( 1 - savedDistWeightPercent / 24.0 );
+			//double savedDistWeightPercent = 1 - sqrt( clamp( deltaposlen / interpLength, 0.0, 1.0 ) );
+
+			double masterDistToEnd = ( master.pos.xy - endInterpPos ).Length();
+			newsetpos = master.pos.xy + ( deltaArclinePos / deltaArclinePos.Length() ) * ( savedDistWeightPercent * interpSaveDistance + ( 1.0 - savedDistWeightPercent ) * masterDistToEnd );
+
+			//console.printf( self .. ". newsetpos: " .. newsetpos .. ", selectee dist Saved %f * %.2f, selected %f, deltaposlen %f, endInterpPos==nextpos " .. nextpos, interpSaveDistance, savedDistWeightPercent, ( savedDistWeightPercent * interpSaveDistance + ( 1.0 - savedDistWeightPercent ) * masterDistToEnd ), deltaposlen );
+
+			//newsetpos = master.pos.xy + ( deltaArclinePos / deltaArclinePos.Length() ) * ( savedDistWeightPercent * interpSaveDistance ) + ( 1.0 - savedDistWeightPercent ) * ( endInterpPos - pos.xy );
+			//console.printf( self .. ". newsetpos: " .. newsetpos .. ". deltaArclinePos.Length() %f, savedDistWeightPercent %f, masterDistToEnd %f.", deltaArclinePos.Length(), savedDistWeightPercent, masterDistToEnd );
+			console.printf( self .. ". newsetpos " .. newsetpos .. ", deltaArclinePos: " .. deltaArclinePos .. ". nextArclineStepPos " .. nextArclineStepPos .. ", deltapos %f", deltapos );
 		}
-
-		/*if ( interpolationAngle > 0.0 ) {
-			vector2 centerpos = master.pos.xy;
-
-//(x-cx)^(2)+(y-cy)^(2)=4
-
-			newsetpos = centerpos + ( cos( interpolationAngle ), sin( interpolationAngle ) ) * ( centerpos - nextpos ).Length();
-
-			interpolationAngle -= 5.0;
-		}
-
-		if ( interpolationAngle < 0.1 ) {
-			prevpos = pos;
-		}*/
 
 		SetOrigin( ( newsetpos, pos.z ), false );
 	}
