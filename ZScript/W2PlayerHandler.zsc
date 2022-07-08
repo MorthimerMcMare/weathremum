@@ -1,7 +1,7 @@
 // Weathremum handler for each player.
 
 class W2PlayerHandler: Actor {
-	mcm_Weather2Handler w2handler;
+	mcm_WeathremumHandler w2handler;
 
 	Array<W2SectorData> sectorsdata;// All of the level sectors saved for the quick access.
 	Array<int> loopdataindices;		// Array storing currently playing sectors.
@@ -70,7 +70,7 @@ class W2PlayerHandler: Actor {
 					minspawnheight = l.backsector.ceilingplane.d;
 
 				if ( !Random( 0, 1 ) )
-					Actor raindrop = Actor.Spawn( "Weather2_CanopyRaindrop", ( l.v1.p + l.delta / linelength * FRandom( 0.0, linelength ), minspawnheight ) );
+					Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + l.delta / linelength * FRandom( 0.0, linelength ), minspawnheight ) );
 			}
 		} // of while ( it.Next() ) {}
 
@@ -209,7 +209,7 @@ class W2PlayerHandler: Actor {
 
 			vector2 raindropPos = target.pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom( 0.0, 1.0 ) ) * 764.0 );
 
-			Actor raindrop = Actor.Spawn( "Weather2_Raindrop", ( raindropPos, pos.z ) );
+			Actor raindrop = Actor.Spawn( "Weathremum_Raindrop", ( raindropPos, pos.z ) );
 			raindrop.master = target;
 			//raindrop.vel.xy = ( 10.0, 10.0 ) * ( sin( rainwaveOffset ) + 1.0 );
 		}

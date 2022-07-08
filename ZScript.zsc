@@ -4,10 +4,10 @@ version "2.4.0"
 #include "ZScript/W2PlayerHandler.zsc"
 #include "ZScript/W2AmbientActors.zsc"
 
-const mcm_Weather2Version = "0.1";
+const mcm_WeathremumVersion = "0.1";
 
 
-class mcm_Weather2Handler: EventHandler {
+class mcm_WeathremumHandler: EventHandler {
 	bool mustCreateGeneralSectorsData;
 
 	Array<W2SectorData> generalSectorsData;	// Just a copyable structure.
@@ -15,7 +15,7 @@ class mcm_Weather2Handler: EventHandler {
 	W2PlayerHandler firstplayerhandler;		// Temporary debug thing...
 
 	override void OnRegister() {
-		SetOrder( Weather2HandlerOrder );
+		SetOrder( WeathremumHandlerOrder );
 		mustCreateGeneralSectorsData = true;
 		Super.OnRegister();
 	}
@@ -128,5 +128,5 @@ class mcm_Weather2Handler: EventHandler {
 		Super.RenderOverlay( e );
 	}*/
 
-} // of class mcm_Weather2Handler: EventHandler {}
+} // of class mcm_WeathremumHandler: EventHandler {}
 

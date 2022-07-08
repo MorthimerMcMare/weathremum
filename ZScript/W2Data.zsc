@@ -1,17 +1,17 @@
-// Weathremum data.
+// Weathremum general data classes & constants.
 
 // AA: 0x7FAA0004.
 // ZC: 0x7FAA0005 + 0x7FAA0006.
-const Weather2HandlerOrder = 0x7FAA0007;
+const WeathremumHandlerOrder = 0x7FAA0007;
 
 
-enum EWeather2HandleStatus {
+enum EWeathremumHandleStatus {
 	W2HS_Off = 0,		// Stopped, inactive sector sound.
 	W2HS_Loop,			// Active sector sound.
 	W2HS_StopSuggestion	// Pre-stop (must be changed to something else every "WorldTick()").
 }
 
-enum EWeather2SectorType {
+enum EWeathremumSectorType {
 	W2ST_None = 0,
 	W2ST_Outdoor,
 	W2ST_NextToOutdoor
@@ -19,13 +19,13 @@ enum EWeather2SectorType {
 
 
 class W2SectorData {
-	EWeather2HandleStatus status;
+	EWeathremumHandleStatus status;
 	Sector s;
 	Array<Line> lines;
 
 	Array<int> lineindices; // Temporary, for the UI-scoped "RenderOverlay()".
 
-	EWeather2SectorType sectype;
+	EWeathremumSectorType sectype;
 	W2SoundOrigin soundorigin;
 
 	static W2SectorData Create( Sector initSector ) {

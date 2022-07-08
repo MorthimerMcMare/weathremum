@@ -85,7 +85,8 @@ class W2SoundOrigin: Actor {
 	}
 }
 
-class Weather2_Raindrop: Actor {
+
+class Weathremum_Raindrop: Actor {
 	Default {
 		+NOBLOCKMAP;
 		-SOLID; // ?
@@ -159,7 +160,7 @@ class Weather2_Raindrop: Actor {
 		RAIN A 1;
 		Loop;
 	Death:
-		//RWIN A 0; { Actor.Spawn( "Weather2_RainSplash", pos ); }
+		//RWIN A 0; { Actor.Spawn( "Weathremum_RainSplash", pos ); }
 		/*RAIN AAB 1 A_FadeOut( 0.05 );
 		RAIN D 1 {
 			Scale.X *= 1.3;
@@ -170,9 +171,9 @@ class Weather2_Raindrop: Actor {
 		RWIN "#" 1 A_FadeOut( 0.005 );
 		Wait;
 	}
-} // of class Weather2_Raindrop: Actor {}
+} // of class Weathremum_Raindrop: Actor {}
 
-class Weather2_CanopyRaindrop: Weather2_Raindrop {
+class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 	override void PostBeginPlay() {
 		vel.z = 0.0;
 		scale = ( FRandom( 0.1, 0.5 ), FRandom( 0.2, 0.5 ) );
