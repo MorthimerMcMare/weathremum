@@ -1,0 +1,195 @@
+// Weathremum visual & audial ambience actor classes.
+
+// A base weather sound actor.
+class W2SoundOrigin: Actor {
+	SeqNode seq;
+	bool justCreated;
+
+	vector2 intersectionOffset;	// Direction to the first intersection.
+	double intersectionAngle;	// Angle of the first intersection "atan2( intersectionOffset ) - player.angle".
+
+	vector2 startInterpPos, endInterpPos;
+	double interpSaveDistance;	// Saved distance to the player in the first interpolation tick.
+	double interpLength;		// Length from start to end points (for "progress" percentage).
+	double interpStepRange;
+	int interpMaxTics, interpTic;
+
+	Default {
+		+NOINTERACTION; // Implies +NOGRAVITY and +NOBLOCKMAP.
+		+DONTSPLASH;
+		+NOTONAUTOMAP;
+	}
+
+	// It's implied that "master" is a W2PlayerHandler and a "target" is a handling player actor.
+	void LinedefMove( vector2 nextpos ) {
+		vector2 newsetpos = nextpos;
+
+		double enddeltaposlen = ( nextpos - endInterpPos ).Length();
+		endInterpPos = nextpos;
+
+		if ( !justCreated ) {
+			if ( enddeltaposlen > target.radius * 2.0 ) {
+				startInterpPos = pos.xy;
+				interpLength = ( endInterpPos - startInterpPos ).Length();
+				interpStepRange = max( 8.0, interpLength / 10.0 );
+				interpSaveDistance = ( pos.xy - master.pos.xy ).Length();
+				interpMaxTics = interpTic = int( ceil( interpSaveDistance / interpStepRange ) );
+			}
+		} else {
+			//interpMaxTics = 0;
+		}
+
+		vector2 deltapos = endInterpPos - pos.xy;
+		double deltaposlen = deltapos.Length();
+
+		if ( deltaposlen > 32.0 && interpLength > 32.0 && interpMaxTics > 0 ) {
+			vector2 nextArclineStepPos = pos.xy + deltapos / abs( deltaposlen ) * min( interpStepRange, deltaposlen );
+			vector2 deltaArclinePos = ( nextArclineStepPos - master.pos.xy );
+
+			// Preventing interpolation from jamming:
+			/*if ( abs( deltaArclinePos.x ) <= 2.0 )
+				deltaArclinePos.x += ( deltaArclinePos.x == 0.0? 5.0 : deltaArclinePos.x / abs( deltaArclinePos.x ) * 5.0 );
+			if ( abs( deltaArclinePos.y ) <= 2.0 )
+				deltaArclinePos.y += ( deltaArclinePos.y == 0.0? 5.0 : deltaArclinePos.y / abs( deltaArclinePos.y ) * 5.0 );
+			*/
+
+			//double savedDistWeightPercent = clamp( deltaposlen / interpLength, 0.0, 1.0 );
+			double savedDistWeightPercent = clamp( interpTic / double( interpMaxTics ), 0.0, 1.0 );
+
+			//interpStepRange *= ( 1 - savedDistWeightPercent / 24.0 );
+			//double savedDistWeightPercent = 1 - sqrt( clamp( deltaposlen / interpLength, 0.0, 1.0 ) );
+
+			interpTic--;
+
+			double masterDistToEnd = ( master.pos.xy - endInterpPos ).Length();
+			newsetpos = master.pos.xy + ( deltaArclinePos / deltaArclinePos.Length() ) * ( savedDistWeightPercent * interpSaveDistance + ( 1.0 - savedDistWeightPercent ) * masterDistToEnd );
+
+			//console.printf( self .. ". newsetpos: " .. newsetpos .. ", selectee dist Saved %f * %.2f, selected %f, deltaposlen %f, endInterpPos==nextpos " .. nextpos, interpSaveDistance, savedDistWeightPercent, ( savedDistWeightPercent * interpSaveDistance + ( 1.0 - savedDistWeightPercent ) * masterDistToEnd ), deltaposlen );
+
+			//newsetpos = master.pos.xy + ( deltaArclinePos / deltaArclinePos.Length() ) * ( savedDistWeightPercent * interpSaveDistance ) + ( 1.0 - savedDistWeightPercent ) * ( endInterpPos - pos.xy );
+			//console.printf( self .. ". newsetpos: " .. newsetpos .. ". deltaArclinePos.Length() %f, savedDistWeightPercent %f, masterDistToEnd %f.", deltaArclinePos.Length(), savedDistWeightPercent, masterDistToEnd );
+			//console.printf( self .. ". newsetpos " .. newsetpos .. ", deltaArclinePos: " .. deltaArclinePos .. ", deltapos %f", deltapos );
+		}
+
+		SetOrigin( ( newsetpos, pos.z ), false );
+	}
+
+	override void Tick() {
+		//prevpos = pos;
+		// No "Super.Tick()" is necessary.
+	}
+
+	override void OnDestroy() {
+		StopSoundSequence();
+		Super.OnDestroy();
+	}
+}
+
+class Weather2_Raindrop: Actor {
+	Default {
+		+NOBLOCKMAP;
+		-SOLID; // ?
+		+THRUACTORS;
+		+MISSILE;
+		+NOGRAVITY;
+		Height 0;
+		Radius 1;
+		RenderStyle "Translucent";
+	}
+
+	override void BeginPlay() {
+		ChangeStatNum( STAT_USER + 5 );
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay() {
+		if ( !cursector || ( ceilingpic != skyflatnum ) )
+			Destroy();
+
+		double minspawnheight = ( master? min( ceilingz, master.pos.z + master.height + 256.0 ) : ceilingz );
+
+		SetZ( minspawnheight - FRandom( height, height * 1.5 ) );
+
+		vel.z = -35.0;
+		scale = ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
+		alpha = FRandom( 0.2, 0.7 );
+	}
+
+	override void Tick() {
+		if ( master && pos.z - master.pos.z < -128.0 ) {
+			Destroy();
+			return;
+		}
+
+		Super.Tick();
+	}
+
+	void RaindropSplash( void ) {
+		if ( level.maptime & 1 ) {
+			Destroy();
+			return;
+		}
+
+		bFLATSPRITE = bROLLSPRITE = bFLOORCLIP = bCORPSE = true;
+
+		// General visual tweaks:
+		ClearInterpolation();
+		A_SetRenderStyle( 0.1, STYLE_Add );
+		scale = ( 1, 1 ) * FRandom( 0.1, 0.25 );
+		frame = Random( 0, 4 );
+
+		// Setting the position on a slopes:
+		vector3 norm = cursector.floorplane.normal;
+		vector2 norm_p1 = ( norm.x != 0 || norm.y != 0 )? (norm.x, norm.y).Unit() : (0, 0);
+		vector2 norm_p2 = ((norm.x, norm.y).Length(), norm.z );
+
+		angle = atan2( norm_p1.y, norm_p1.x );
+		pitch = atan2( norm_p2.x, norm_p2.y );
+		roll = FRandom( 0.0, 360.0 );
+
+		// Optimizing out raindrop splashes on the static surfaces:
+		if ( !( cursector.floordata is 'Mover' ) )
+			bNOINTERACTION = true;
+		else
+			bMOVEWITHSECTOR = true;
+	}
+
+	States {
+	Spawn:
+		RAIN A 1;
+		Loop;
+	Death:
+		//RWIN A 0; { Actor.Spawn( "Weather2_RainSplash", pos ); }
+		/*RAIN AAB 1 A_FadeOut( 0.05 );
+		RAIN D 1 {
+			Scale.X *= 1.3;
+			Scale.Y *= 0.6;
+			A_FadeOut( 0.2 );
+		}*/
+		RWIN "#" 0 RaindropSplash;
+		RWIN "#" 1 A_FadeOut( 0.005 );
+		Wait;
+	}
+} // of class Weather2_Raindrop: Actor {}
+
+class Weather2_CanopyRaindrop: Weather2_Raindrop {
+	override void PostBeginPlay() {
+		vel.z = 0.0;
+		scale = ( FRandom( 0.1, 0.5 ), FRandom( 0.2, 0.5 ) );
+		alpha = FRandom( 0.3, 0.7 );
+	}
+
+	override void Tick() {
+		if ( !bCORPSE && !globalfreeze && !level.frozen ) {
+			if ( vel.z > -35.0 )
+				vel.z -= 2.0;
+
+			scale.y *= 1.1;
+
+			if ( scale.x > 0.2 )
+				scale.x *= 0.95;
+		}
+
+		Super.Tick();
+	}
+}

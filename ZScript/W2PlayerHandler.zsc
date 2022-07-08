@@ -1,0 +1,246 @@
+// Weathremum handler for each player.
+
+class W2PlayerHandler: Actor {
+	mcm_Weather2Handler w2handler;
+
+	Array<W2SectorData> sectorsdata;// All of the level sectors saved for the quick access.
+	Array<int> loopdataindices;		// Array storing currently playing sectors.
+	Array<int> newdataindices;		// Temporary array with data updates.
+
+	// "target" is an actor to follow (updates every "Tick()").
+
+	Default {
+		+NOINTERACTION; // Implies +NOGRAVITY and +NOBLOCKMAP.
+		+DONTSPLASH;
+		+NOTONAUTOMAP;
+	}
+
+
+	private W2SectorData TryAddSector( Sector s ) {
+		if ( !s )
+			return NULL;
+
+		W2SectorData secdata = sectorsdata[ s.Index() ];
+
+		// Starts sector sound or continues it (by stop preventing) if it is still needed.
+		if ( secdata.status == W2HS_Off )
+			newdataindices.Push( s.Index() );
+
+		if ( secdata.status != W2HS_Loop ) {
+			secdata.status = W2HS_Loop;
+			secdata.lines.Clear();
+			secdata.lineindices.Clear();
+		}
+
+		return secdata;
+	}
+
+	void DoSectorEffects( void ) {
+		// Suggest potential excess sounds to stop:
+		for ( int i = 0; i < loopdataindices.Size(); i++ )
+			sectorsdata[ loopdataindices[ i ] ].status = W2HS_StopSuggestion;
+
+		newdataindices.Clear();
+
+
+		// Second argument is an environment test radius.
+		BlockLinesIterator it = BlockLinesIterator.Create( self, 768 );
+
+		// Saving all of the surrounding sectors and creating canopy raindrops:
+		while ( it.Next() ) {
+			Line l = it.curline;
+			W2SectorData secdata = NULL;
+
+			if ( secdata = TryAddSector( l.frontsector ) ) {
+				secdata.lines.Push( l );
+				secdata.lineindices.Push( l.Index() );
+			}
+
+			if ( secdata = TryAddSector( l.backsector ) ) {
+				secdata.lines.Push( l );
+				secdata.lineindices.Push( l.Index() );
+			}
+
+			if ( w2handler.corniceLinesFlags[ l.Index() ] == 1 ) {
+				double linelength = l.delta.Length();
+
+				double minspawnheight = ( l.frontsector? l.frontsector.ceilingplane.d : 1e300 );
+
+				if ( l.backsector && ( l.backsector.ceilingplane.d < minspawnheight ) )
+					minspawnheight = l.backsector.ceilingplane.d;
+
+				if ( !Random( 0, 1 ) )
+					Actor raindrop = Actor.Spawn( "Weather2_CanopyRaindrop", ( l.v1.p + l.delta / linelength * FRandom( 0.0, linelength ), minspawnheight ) );
+			}
+		} // of while ( it.Next() ) {}
+
+		TryAddSector( ceilingsector );
+		// I think there's no matter to use the floorsector field.
+
+
+		// Wiping sounds from too far sectors:
+		for ( int i = 0; i < loopdataindices.Size(); i++ ) {
+			W2SectorData secdata = sectorsdata[ loopdataindices[ i ] ];
+
+			// Clearing excess sound origins:
+			if ( secdata.status == W2HS_StopSuggestion ) {
+				//console.printf( TEXTCOLOR_DARKRED .. "-Stopped\c- sound for sector " .. loopdataindices[ i ] .. "." );
+				if ( secdata.soundorigin )
+					secdata.soundorigin.Destroy();
+
+				secdata.status = W2HS_Off;
+
+				loopdataindices.Delete( i );
+				i--;
+			}
+		}
+
+		// Creating new sound actors and pushing their sector indices to the time-through array:
+		for ( int i = 0; i < newdataindices.Size(); i++ ) {
+			W2SectorData secdata = sectorsdata[ newdataindices[ i ] ];
+
+			if ( secdata.sectype != W2ST_None ) {
+				W2SoundOrigin sndactor = secdata.soundorigin = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( secdata.s.centerspot, secdata.s.floorplane.d ) ) );
+				sndactor.master = self;
+				sndactor.target = target; // Player or his camera.
+				sndactor.justCreated = true;
+
+				//console.printf( TEXTCOLOR_GREEN .. "+Started\c- sound for sector " .. newdataindices[ i ] .. "." );
+
+				switch ( secdata.sectype ) {
+					case W2ST_Outdoor:
+						sndactor.seq = sndactor.StartSoundSequence( "weather/rain", SeqNode.ENVIRONMENT );
+						break;
+					case W2ST_NextToOutdoor:
+						sndactor.seq = sndactor.StartSoundSequence( "weather/wind", SeqNode.ENVIRONMENT );
+						break;
+					default:
+						break;
+				}
+
+				// Saving new loud sectors.
+				loopdataindices.Push( newdataindices[ i ] );
+			}
+		}
+
+		// Moving all the sound origins to their new positions:
+		for ( int i = 0; i < loopdataindices.Size(); i++ ) {
+			W2SectorData secdata = sectorsdata[ loopdataindices[ i ] ];
+
+			if ( !secdata.soundorigin )
+				continue;
+
+			W2SoundOrigin sndactor = secdata.soundorigin;
+
+			// Moving sound origins:
+			if ( secdata.s == floorsector ) {
+				sndactor.SetOrigin( Vec3Angle( sndactor.intersectionOffset.Length(), sndactor.intersectionAngle + angle ), true );
+				//sndactor.interpMaxTics = sndactor.interpTic = 15;
+			} else {
+				vector2 minposxy;
+				double minlength = 1e300; // Really must be greater than an environment test radius.
+
+				vector2 plp = pos.xy;
+
+				for ( int j = 0; j < secdata.lines.Size(); j++ ) {
+					Line curline = secdata.lines[ j ];
+					double curminlength = 1e304;
+					vector2 curposxy;
+
+					vector2 v1p = curline.v1.p;
+					vector2 v2p = curline.v2.p;
+
+					if ( ( (v1p - plp) dot (v1p - v2p) <= 0.0 ) || ( (v2p - plp) dot (v2p - v1p) <= 0.0 ) ) {
+						double length1 = ( plp - v1p ).Length();
+						double length2 = ( plp - v2p ).Length();
+
+						if ( length1 < length2 ) {
+							curminlength = length1;
+							curposxy = v1p;
+						} else {
+							curminlength = length2;
+							curposxy = v2p;
+						}
+
+					} else {
+						double dlx = curline.delta.x;
+						double dly = curline.delta.y;
+
+						if ( dlx == 0 ) {
+							curposxy = (v1p.x, pos.y);
+
+						} else if ( dly == 0 ) {
+							curposxy = (pos.x, v1p.y);
+
+						} else {
+							curposxy.y = (dlx * (v1p.y * (dlx/dly) - v1p.x + pos.x) + dly*pos.y)/((dlx * dlx/dly) + dly);
+							curposxy.x = (curposxy.y - v1p.y) * (dlx / dly) + v1p.x;
+						}
+
+						curminlength = ( curposxy - plp ).Length();
+					}
+
+					if ( curminlength < minlength ) {
+						minlength = curminlength;
+						minposxy = curposxy;
+					}
+
+				} // of for ( int j = 0; j < secdata.lines.Size(); j++ ) {}
+
+				sndactor.LinedefMove( minposxy );
+
+				sndactor.intersectionOffset = ( sndactor.pos.xy - pos.xy );
+				sndactor.intersectionAngle = atan2( sndactor.intersectionOffset.y, sndactor.intersectionOffset.x ) - angle;
+			}
+
+			sndactor.justCreated = false;
+
+		} // of for ( int i = 0; i < loopdataindices.Size(); i++ ) {}
+
+	} // of void DoSectorEffects( void ) {}
+
+
+	void DoRainEffects( void ) {
+		// For the cumulative distribution function "sqrt()" addition 
+		//thanks to https://habr.com/ru/post/583838/.
+
+		for ( int i = 0; i < 300; i++ ) {
+			double angletheta = FRandom( 0.0, 360.0 );
+
+			vector2 raindropPos = target.pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom( 0.0, 1.0 ) ) * 764.0 );
+
+			Actor raindrop = Actor.Spawn( "Weather2_Raindrop", ( raindropPos, pos.z ) );
+			raindrop.master = target;
+			//raindrop.vel.xy = ( 10.0, 10.0 ) * ( sin( rainwaveOffset ) + 1.0 );
+		}
+
+	} // of void DoRainEffects( void ) {}
+
+
+	override void Tick() {
+		PlayerInfo pl = players[ FriendPlayer ];
+
+		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo || globalfreeze || level.frozen )
+			return;
+
+		target = pl.Camera;
+
+		if ( !target )
+			target = pl.mo;
+
+		// Move the handler actor to the player position:
+		SetOrigin( target.pos, true );
+		angle = target.angle;
+
+
+		// Sector sounds (rain, winds) and raindrops from cornices:
+		DoSectorEffects();
+
+		// Rain itself:
+		DoRainEffects();
+
+		Super.Tick();
+	}
+
+} // of class W2PlayerHandler: Actor {}
+
