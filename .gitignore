@@ -1,3 +1,4 @@
 *.sh
 *.bat
 _lastrun*.*
+_temp*.txt

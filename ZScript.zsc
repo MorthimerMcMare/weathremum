@@ -161,7 +161,7 @@ class W2PlayerHandler: Actor {
 			// Moving sound origins:
 			if ( secdata.s == floorsector ) {
 				sndactor.SetOrigin( Vec3Angle( sndactor.intersectionOffset.Length(), sndactor.intersectionAngle + angle ), true );
-				//sndactor.interpolationTics = 15;
+				//sndactor.interpMaxTics = sndactor.interpTic = 15;
 			} else {
 				vector2 minposxy;
 				double minlength = 1e300; // Really must be greater than an environment test radius.
@@ -242,10 +242,10 @@ class W2SoundOrigin: Actor {
 	double intersectionAngle;	// Angle of the first intersection "atan2( intersectionOffset ) - player.angle".
 
 	vector2 startInterpPos, endInterpPos;
-	//int interpolationTics;
 	double interpSaveDistance;	// Saved distance to the player in the first interpolation tick.
 	double interpLength;		// Length from start to end points (for "progress" percentage).
 	double interpStepRange;
+	int interpMaxTics, interpTic;
 
 	Default {
 		+NOINTERACTION; // Implies +NOGRAVITY and +NOBLOCKMAP.
@@ -266,6 +266,7 @@ class W2SoundOrigin: Actor {
 				interpLength = ( endInterpPos - startInterpPos ).Length();
 				interpStepRange = max( 8.0, interpLength / 10.0 );
 				interpSaveDistance = ( pos.xy - master.pos.xy ).Length();
+				interpMaxTics = interpTic = int( ceil( interpSaveDistance / interpStepRange ) );
 			}
 		} else {
 			//interpolationTics = 0;
@@ -274,7 +275,7 @@ class W2SoundOrigin: Actor {
 		vector2 deltapos = endInterpPos - pos.xy;
 		double deltaposlen = deltapos.Length();
 
-		if ( deltaposlen > 32.0 && interpLength > 32.0 ) {
+		if ( deltaposlen > 32.0 && interpLength > 32.0 && interpMaxTics > 0 ) {
 			vector2 nextArclineStepPos = pos.xy + deltapos / abs( deltaposlen ) * min( interpStepRange, deltaposlen );
 			vector2 deltaArclinePos = ( nextArclineStepPos - master.pos.xy );
 
@@ -285,10 +286,13 @@ class W2SoundOrigin: Actor {
 				deltaArclinePos.y += ( deltaArclinePos.y == 0.0? 5.0 : deltaArclinePos.y / abs( deltaArclinePos.y ) * 5.0 );
 			*/
 
-			double savedDistWeightPercent = clamp( deltaposlen / interpLength, 0.0, 1.0 );
+			//double savedDistWeightPercent = clamp( deltaposlen / interpLength, 0.0, 1.0 );
+			double savedDistWeightPercent = clamp( interpTic / double( interpMaxTics ), 0.0, 1.0 );
 
 			//interpStepRange *= ( 1 - savedDistWeightPercent / 24.0 );
 			//double savedDistWeightPercent = 1 - sqrt( clamp( deltaposlen / interpLength, 0.0, 1.0 ) );
+
+			interpTic--;
 
 			double masterDistToEnd = ( master.pos.xy - endInterpPos ).Length();
 			newsetpos = master.pos.xy + ( deltaArclinePos / deltaArclinePos.Length() ) * ( savedDistWeightPercent * interpSaveDistance + ( 1.0 - savedDistWeightPercent ) * masterDistToEnd );
@@ -297,7 +301,7 @@ class W2SoundOrigin: Actor {
 
 			//newsetpos = master.pos.xy + ( deltaArclinePos / deltaArclinePos.Length() ) * ( savedDistWeightPercent * interpSaveDistance ) + ( 1.0 - savedDistWeightPercent ) * ( endInterpPos - pos.xy );
 			//console.printf( self .. ". newsetpos: " .. newsetpos .. ". deltaArclinePos.Length() %f, savedDistWeightPercent %f, masterDistToEnd %f.", deltaArclinePos.Length(), savedDistWeightPercent, masterDistToEnd );
-			console.printf( self .. ". newsetpos " .. newsetpos .. ", deltaArclinePos: " .. deltaArclinePos .. ". nextArclineStepPos " .. nextArclineStepPos .. ", deltapos %f", deltapos );
+			console.printf( self .. ". newsetpos " .. newsetpos .. ", deltaArclinePos: " .. deltaArclinePos .. ", deltapos %f", deltapos );
 		}
 
 		SetOrigin( ( newsetpos, pos.z ), false );
