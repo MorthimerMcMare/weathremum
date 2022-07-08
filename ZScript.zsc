@@ -242,14 +242,14 @@ class W2PlayerHandler: Actor {
 		// For the cumulative distribution function "sqrt()" addition 
 		//thanks to https://habr.com/ru/post/583838/.
 
-		for ( int i = 0; i < 100; i++ ) {
+		for ( int i = 0; i < 150; i++ ) {
 			double angletheta = FRandom( 0.0, 360.0 );
 
-			vector2 raindropPos = target.pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 4.0 + sqrt( FRandom( 0.0, 1.0 ) ) * 764.0 );
+			vector2 raindropPos = target.pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom( 0.0, 1.0 ) ) * 764.0 );
 
 			Actor raindrop = Actor.Spawn( "Weather2_Raindrop", ( raindropPos, pos.z ) );
 			raindrop.master = target;
-			//raindrop.vel.xy = ( FRandom( -20.0, 0.0 ), FRandom( -20.0, 0.0 ) );
+			//raindrop.vel.xy = ( 10.0, 10.0 ) * ( sin( rainwaveOffset ) + 1.0 );
 		}
 
 	} // of void DoRainEffects( void ) {}
@@ -439,6 +439,12 @@ class mcm_Weather2Handler: EventHandler {
 		}
 		
 		Super.PlayerEntered( e );
+
+		if ( e.PlayerNumber == consoleplayer && gl_texture_format == "5" ) {
+			console.printf( TEXTCOLOR_DARKGRAY .. GetClassName() .. "::PlayerEntered(). " .. TEXTCOLOR_YELLOW
+							.. "Your OpenGL texture format seems to be set to \"" .. TEXTCOLOR_CYAN .. "S3TC_DXT3" .. TEXTCOLOR_YELLOW .."\", so translucent raindrops might look weird. " .. TEXTCOLOR_GRAY
+							.. "Change it in the \"Display options\"->\"OpenGL Renderer\"->\"Texture options\" or alter the \"gl_texture_format\" variable." );
+		}
 	}
 
 	/*override void RenderOverlay( RenderEvent e ) {
@@ -501,6 +507,11 @@ class Weather2_Raindrop: Actor {
 		RenderStyle "Translucent";
 	}
 
+	override void BeginPlay() {
+		ChangeStatNum( STAT_USER + 5 );
+		Super.BeginPlay();
+	}
+
 	override void PostBeginPlay() {
 		if ( !cursector || ( ceilingpic != skyflatnum ) )
 			Destroy();
@@ -511,18 +522,47 @@ class Weather2_Raindrop: Actor {
 
 		vel.z = -35.0;
 		scale = ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
+		//scale = 0.1 * ( FRandom( 0.3, 0.6 ), FRandom( 0.75, 2 ) );
 		alpha = FRandom( 0.2, 0.7 );
 	}
 
 	override void Tick() {
-		if ( master ) {
-			if ( pos.z - master.pos.z < -128.0 ) {
-				Destroy();
-				return;
-			}
+		if ( master && pos.z - master.pos.z < -128.0 ) {
+			Destroy();
+			return;
 		}
 
 		Super.Tick();
+	}
+
+	void RaindropSplash( void ) {
+		if ( level.maptime & 1 ) {
+			Destroy();
+			return;
+		}
+
+		bFLATSPRITE = bROLLSPRITE = bFLOORCLIP = bCORPSE = true;
+
+		// General visual tweaks:
+		ClearInterpolation();
+		A_SetRenderStyle( 0.1, STYLE_Add );
+		scale = ( 1, 1 ) * FRandom( 0.1, 0.25 );
+		frame = Random( 0, 4 );
+
+		// Setting the position on a slopes:
+		vector3 norm = cursector.floorplane.normal;
+		vector2 norm_p1 = ( norm.x != 0 || norm.y != 0 )? (norm.x, norm.y).Unit() : (0, 0);
+		vector2 norm_p2 = ((norm.x, norm.y).Length(), norm.z );
+
+		angle = atan2( norm_p1.y, norm_p1.x );
+		pitch = atan2( norm_p2.x, norm_p2.y );
+		roll = FRandom( 0.0, 360.0 );
+
+		// Optimizing out raindrop splashes on the static surfaces:
+		if ( !( cursector.floordata is 'Mover' ) )
+			bNOINTERACTION = true;
+		else
+			bMOVEWITHSECTOR = true;
 	}
 
 	States {
@@ -530,13 +570,15 @@ class Weather2_Raindrop: Actor {
 		RAIN A 1;
 		Loop;
 	Death:
-		RAIN A 0 { Actor.Spawn( "Weather2_RainSplash", pos ); }
-		RAIN AAB 1 A_FadeOut( 0.05 );
+		//RWIN A 0; { Actor.Spawn( "Weather2_RainSplash", pos ); }
+		/*RAIN AAB 1 A_FadeOut( 0.05 );
 		RAIN D 1 {
 			Scale.X *= 1.3;
 			Scale.Y *= 0.6;
 			A_FadeOut( 0.2 );
-		}
+		}*/
+		RWIN "#" 0 RaindropSplash;
+		RWIN "#" 1 A_FadeOut( 0.005 );
 		Wait;
 	}
 } // of class Weather2_Raindrop: Actor {}
@@ -545,12 +587,15 @@ class Weather2_CanopyRaindrop: Weather2_Raindrop {
 	override void PostBeginPlay() {
 		vel.z = 0.0;
 		scale = ( FRandom( 0.1, 0.5 ), FRandom( 0.2, 0.5 ) );
+		//scale = 0.1 * ( FRandom( 0.1, 0.5 ), FRandom( 0.2, 0.5 ) );
 		alpha = FRandom( 0.3, 0.7 );
 	}
 
 	override void Tick() {
-		if ( !bCORPSE ) {
-			vel.z -= 2.0;
+		if ( !bCORPSE && !globalfreeze && !level.frozen ) {
+			if ( vel.z > -35.0 )
+				vel.z -= 2.0;
+
 			scale.y *= 1.1;
 
 			if ( scale.x > 0.2 )
@@ -561,8 +606,7 @@ class Weather2_CanopyRaindrop: Weather2_Raindrop {
 	}
 }
 
-// 
-class Weather2_RainSplash: Actor {
+/*class Weather2_RainSplash: Actor {
 	Default {
 		+FLATSPRITE;
 		+ROLLSPRITE;
@@ -570,25 +614,28 @@ class Weather2_RainSplash: Actor {
 		+FLOORCLIP;
 
 		Renderstyle "Add";
-		Alpha 0.25;
+		Alpha 0.1;
 	}
 
 	override void PostBeginPlay() {
-		vector3 norm = curSector.floorplane.normal;
-		vector2 norm_p1 = ( norm.X != 0 || norm.Y != 0 )? (norm.X, norm.Y).Unit() : (0, 0);
+		if ( !cursector )
+			return;
+
+		vector3 norm = cursector.floorplane.normal;
+		vector2 norm_p1 = ( norm.x != 0 || norm.y != 0 )? (norm.x, norm.y).Unit() : (0, 0);
 		vector2 norm_p2 = ((norm.x, norm.y).Length(), norm.z );
 
 		angle = atan2( norm_p1.y, norm_p1.x );
 		pitch = atan2( norm_p2.x, norm_p2.y );
 		roll = FRandom( 0.0, 360.0 );
-		scale *= FRandom( 0.1, 0.2 );
+		scale *= FRandom( 0.1, 0.25 );
 	}
 
 	States {
 	Spawn:
 		RWIN "#" 1 { frame = Random( 0, 4 ); }
-		RWIN "#" 1 A_FadeOut( 0.025 );
+		RWIN "#" 1 A_FadeOut( 0.005 );
 		Wait;
 	}
-}
+}*/
 
