@@ -3,6 +3,7 @@
 // AA: 0x7FAA0004.
 // ZC: 0x7FAA0005 + 0x7FAA0006.
 const WeathremumHandlerOrder = 0x7FAA0007;
+const STAT_WEATHREMUM = Thinker.STAT_USER + 5;
 
 
 enum EWeathremumHandleStatus {

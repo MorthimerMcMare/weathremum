@@ -88,18 +88,21 @@ class W2SoundOrigin: Actor {
 
 class Weathremum_Raindrop: Actor {
 	Default {
-		+NOBLOCKMAP;
-		-SOLID; // ?
-		+THRUACTORS;
-		+MISSILE;
-		+NOGRAVITY;
+		//+NOBLOCKMAP;
+		//-SOLID; // ?
+		//+THRUACTORS;
+		//+MISSILE;
+		//+NOGRAVITY;
+		+NOINTERACTION;
+		+DONTSPLASH;
+		+NOTONAUTOMAP;
 		Height 0;
 		Radius 1;
 		RenderStyle "Translucent";
 	}
 
 	override void BeginPlay() {
-		ChangeStatNum( STAT_USER + 5 );
+		ChangeStatNum( STAT_WEATHREMUM ); // 75.
 		Super.BeginPlay();
 	}
 
@@ -109,7 +112,7 @@ class Weathremum_Raindrop: Actor {
 
 		double minspawnheight = ( master? min( ceilingz, master.pos.z + master.height + 256.0 ) : ceilingz );
 
-		SetZ( minspawnheight - FRandom( height, height * 1.5 ) );
+		SetZ( minspawnheight - FRandom( 8.0, 19.0 ) );
 
 		vel.z = -35.0;
 		scale = ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
@@ -117,20 +120,30 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	override void Tick() {
-		if ( master && pos.z - master.pos.z < -128.0 ) {
+		if ( master && pos.z - master.pos.z < -256.0 ) {
 			Destroy();
 			return;
 		}
 
 		Super.Tick();
+
+		if ( !bCORPSE && cursector && pos.z < floorz - 19.0 ) {
+			SetStateLabel( "Death" );
+			bCORPSE = true;
+
+			vel = (0, 0, 0);
+			scale.y = 0.75;
+			alpha *= 0.4;
+
+			frame = Random( 2, 3 );
+			tics = 4 - frame;
+
+			SetZ( floorz );
+			ClearInterpolation();
+		}
 	}
 
 	void RaindropSplash( void ) {
-		if ( level.maptime & 1 ) {
-			Destroy();
-			return;
-		}
-
 		bFLATSPRITE = bROLLSPRITE = bFLOORCLIP = bCORPSE = true;
 
 		// General visual tweaks:
@@ -157,8 +170,8 @@ class Weathremum_Raindrop: Actor {
 
 	States {
 	Spawn:
-		RAIN A 1;
-		Loop;
+		RAIN A -1;
+		Stop;
 	Death:
 		//RWIN A 0; { Actor.Spawn( "Weathremum_RainSplash", pos ); }
 		/*RAIN AAB 1 A_FadeOut( 0.05 );
@@ -167,7 +180,14 @@ class Weathremum_Raindrop: Actor {
 			Scale.Y *= 0.6;
 			A_FadeOut( 0.2 );
 		}*/
-		RWIN "#" 0 RaindropSplash;
+		//RWIN "#" 0 RaindropSplash;
+		RAIN "##" 1 { frame++; }
+		RWIN "#" 0 {
+			if ( ( level.maptime & 1 ) || ( master && Distance2D( master ) > 512.0 ) )
+				Destroy();
+			else
+				RaindropSplash();
+		}
 		RWIN "#" 1 A_FadeOut( 0.005 );
 		Wait;
 	}
@@ -192,5 +212,18 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 		}
 
 		Super.Tick();
+	}
+
+	States {
+	Death:
+		RAIN "##" 1 { frame++; }
+		RWIN "#" 0 {
+			if ( master && Distance2D( master ) > 512.0 )
+				Destroy();
+			else
+				RaindropSplash();
+		}
+		RWIN "#" 1 A_FadeOut( 0.005 );
+		Wait;
 	}
 }
