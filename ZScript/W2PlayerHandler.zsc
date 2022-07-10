@@ -142,7 +142,7 @@ class W2PlayerHandler: Actor {
 
 			// Moving sound origins:
 			if ( secdata.s == floorsector ) {
-				sndactor.SetOrigin( Vec3Angle( sndactor.intersectionOffset.Length(), sndactor.intersectionAngle + angle ), true );
+				sndactor.SetOrigin( ( Vec2Angle( sndactor.intersectionOffset.Length(), sndactor.intersectionAngle + angle ), sndactor.floorz ), true );
 				//sndactor.interpMaxTics = sndactor.interpTic = 15;
 			} else {
 				vector2 minposxy;

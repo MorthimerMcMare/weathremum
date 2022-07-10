@@ -71,7 +71,7 @@ class W2SoundOrigin: Actor {
 			//console.printf( self .. ". newsetpos " .. newsetpos .. ", deltaArclinePos: " .. deltaArclinePos .. ", deltapos %f", deltapos );
 		}
 
-		SetOrigin( ( newsetpos, pos.z ), false );
+		SetOrigin( ( newsetpos, floorz ), false );
 	}
 
 	override void Tick() {
@@ -88,11 +88,6 @@ class W2SoundOrigin: Actor {
 
 class Weathremum_Raindrop: Actor {
 	Default {
-		//+NOBLOCKMAP;
-		//-SOLID; // ?
-		//+THRUACTORS;
-		//+MISSILE;
-		//+NOGRAVITY;
 		+NOINTERACTION;
 		+DONTSPLASH;
 		+NOTONAUTOMAP;
@@ -127,20 +122,32 @@ class Weathremum_Raindrop: Actor {
 
 		Super.Tick();
 
-		if ( !bCORPSE && cursector && pos.z < floorz - 19.0 ) {
-			SetStateLabel( "Death" );
-			bCORPSE = true;
-
-			vel = (0, 0, 0);
-			scale.y = 0.75;
-			alpha *= 0.4;
-
-			frame = Random( 2, 3 );
-			tics = 4 - frame;
-
-			SetZ( floorz );
+		if ( !bCORPSE ) {
+			if ( cursector && pos.z < floorz - 19.0 ) {
+				SetStateLabel( "Death" );
+				bCORPSE = true;
+			}
+		} else if ( bMOVEWITHSECTOR ) {
 			ClearInterpolation();
 		}
+	}
+
+	void RaindropPreSplash( void ) {
+		vel = (0, 0, 0);
+		scale.y = 0.75;
+		alpha *= 0.4;
+
+		frame = Random( 2, 3 );
+		tics = 4 - frame;
+
+		SetZ( floorz );
+		ClearInterpolation();
+
+		// Optimizing out raindrop splashes on the static surfaces:
+		if ( !( cursector.floordata is 'Mover' ) )
+			bNOINTERACTION = true;
+		else
+			bMOVEWITHSECTOR = true;
 	}
 
 	void RaindropSplash( void ) {
@@ -160,12 +167,6 @@ class Weathremum_Raindrop: Actor {
 		angle = atan2( norm_p1.y, norm_p1.x );
 		pitch = atan2( norm_p2.x, norm_p2.y );
 		roll = FRandom( 0.0, 360.0 );
-
-		// Optimizing out raindrop splashes on the static surfaces:
-		if ( !( cursector.floordata is 'Mover' ) )
-			bNOINTERACTION = true;
-		else
-			bMOVEWITHSECTOR = true;
 	}
 
 	States {
@@ -173,14 +174,7 @@ class Weathremum_Raindrop: Actor {
 		RAIN A -1;
 		Stop;
 	Death:
-		//RWIN A 0; { Actor.Spawn( "Weathremum_RainSplash", pos ); }
-		/*RAIN AAB 1 A_FadeOut( 0.05 );
-		RAIN D 1 {
-			Scale.X *= 1.3;
-			Scale.Y *= 0.6;
-			A_FadeOut( 0.2 );
-		}*/
-		//RWIN "#" 0 RaindropSplash;
+		RAIN "#" 0 RaindropPreSplash();
 		RAIN "##" 1 { frame++; }
 		RWIN "#" 0 {
 			if ( ( level.maptime & 1 ) || ( master && Distance2D( master ) > 512.0 ) )
@@ -216,6 +210,7 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 
 	States {
 	Death:
+		RAIN "#" 1 RaindropPreSplash();
 		RAIN "##" 1 { frame++; }
 		RWIN "#" 0 {
 			if ( master && Distance2D( master ) > 512.0 )
