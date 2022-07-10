@@ -26,8 +26,8 @@ class W2PlayerHandler: Actor {
 		if ( secdata.status == W2HS_Off )
 			newdataindices.Push( s.Index() );
 
-		if ( secdata.status != W2HS_Loop ) {
-			secdata.status = W2HS_Loop;
+		if ( secdata.status != W2HS_Active ) {
+			secdata.status = W2HS_Active;
 			secdata.lines.Clear();
 			secdata.lineindices.Clear();
 		}
@@ -45,6 +45,7 @@ class W2PlayerHandler: Actor {
 
 		// Second argument is an environment test radius.
 		BlockLinesIterator it = BlockLinesIterator.Create( self, 768 );
+		Array<Line> corniceLines;
 
 		// Saving all of the surrounding sectors and creating canopy raindrops:
 		while ( it.Next() ) {
@@ -61,20 +62,25 @@ class W2PlayerHandler: Actor {
 				secdata.lineindices.Push( l.Index() );
 			}
 
-			if ( w2handler.corniceLinesFlags[ l.Index() ] == 1 ) {
-				double linelength = l.delta.Length();
-
-				double minspawnheight = ( l.frontsector? l.frontsector.ceilingplane.d : 1e300 );
-
-				if ( l.backsector && ( l.backsector.ceilingplane.d < minspawnheight ) )
-					minspawnheight = l.backsector.ceilingplane.d;
-
-				if ( !Random( 0, 1 ) ) {
-					Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + l.delta / linelength * FRandom( 0.0, linelength ), minspawnheight ) );
-					raindrop.master = target;
-				}
-			}
+			// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to "validcount" variable.
+			if ( w2handler.corniceLinesFlags[ l.Index() ] == 1 )
+				corniceLines.Push( l );
 		} // of while ( it.Next() ) {}
+
+		for ( int i = 0; i < corniceLines.Size(); i++ ) {
+			Line l = corniceLines[ i ];
+			double linelength = l.delta.Length();
+
+			double minspawnheight = ( l.frontsector? l.frontsector.ceilingplane.d : 1e300 );
+
+			if ( l.backsector && ( l.backsector.ceilingplane.d < minspawnheight ) )
+				minspawnheight = l.backsector.ceilingplane.d;
+
+			if ( !Random( 0, 1 ) ) {
+				Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + l.delta / linelength * FRandom( 0.0, linelength ), minspawnheight ) );
+				raindrop.master = target;
+			}
+		}
 
 		TryAddSector( ceilingsector );
 		// I think there's no matter to use the floorsector field.
@@ -119,10 +125,10 @@ class W2PlayerHandler: Actor {
 					default:
 						break;
 				}
-
-				// Saving new loud sectors.
-				loopdataindices.Push( newdataindices[ i ] );
 			}
+
+			// Saving new active sectors.
+			loopdataindices.Push( newdataindices[ i ] );
 		}
 
 		// Moving all the sound origins to their new positions:
@@ -239,7 +245,7 @@ class W2PlayerHandler: Actor {
 		DoSectorEffects();
 
 		// Rain itself:
-		DoRainEffects();
+		//DoRainEffects();
 
 		Super.Tick();
 	}

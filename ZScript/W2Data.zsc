@@ -8,7 +8,7 @@ const STAT_WEATHREMUM = Thinker.STAT_USER + 5;
 
 enum EWeathremumHandleStatus {
 	W2HS_Off = 0,		// Stopped, inactive sector sound.
-	W2HS_Loop,			// Active sector sound.
+	W2HS_Active,		// Active sector sound.
 	W2HS_StopSuggestion	// Pre-stop (must be changed to something else every "WorldTick()").
 }
 

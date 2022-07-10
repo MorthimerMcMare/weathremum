@@ -84,7 +84,7 @@ class mcm_WeathremumHandler: EventHandler {
 		}
 	}
 
-	/*override void RenderOverlay( RenderEvent e ) {
+	override void RenderOverlay( RenderEvent e ) {
 		if ( !firstplayerhandler ) {
 			Super.RenderOverlay( e );
 			return;
@@ -101,8 +101,8 @@ class mcm_WeathremumHandler: EventHandler {
 				case W2HS_Off:
 					outStr = outStr .. TEXTCOLOR_DARKGRAY .. "off\n";
 					break;
-				case W2HS_Loop:
-					outStr = outStr .. TEXTCOLOR_GREEN .. "on. " .. TEXTCOLOR_DARKGREEN .. "Lines ";
+				case W2HS_Active:
+					outStr = outStr .. TEXTCOLOR_GREEN .. "on. " .. TEXTCOLOR_DARKGREEN .. cursecdata.lines.Size() .. " lines ";
 
 					for ( int j = 0; j < cursecdata.lines.Size(); j++ )
 						outStr = outStr .. cursecdata.lineindices[ j ] .. " ";
@@ -126,7 +126,7 @@ class mcm_WeathremumHandler: EventHandler {
 						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
 		Super.RenderOverlay( e );
-	}*/
+	}
 
 } // of class mcm_WeathremumHandler: EventHandler {}
 
