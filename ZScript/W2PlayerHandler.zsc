@@ -3,9 +3,10 @@
 class W2PlayerHandler: Actor {
 	mcm_WeathremumHandler w2handler;
 
-	Array<W2SectorData> sectorsdata;// All of the level sectors saved for the quick access.
+	Array<W2SectorData> sectorsdata;// All of the level sectors saved for the quick access. This is separated from global definition for the optimization in multiplayer.
 	Array<int> loopdataindices;		// Array storing currently playing sectors.
 	Array<int> newdataindices;		// Temporary array with data updates.
+	Array<Line> corniceLines;		// Lines between outdoor and indoor areas.
 
 	// "target" is an actor to follow (updates every "Tick()").
 
@@ -41,11 +42,10 @@ class W2PlayerHandler: Actor {
 			sectorsdata[ loopdataindices[ i ] ].status = W2HS_StopSuggestion;
 
 		newdataindices.Clear();
-
+		corniceLines.Clear();
 
 		// Second argument is an environment test radius.
 		BlockLinesIterator it = BlockLinesIterator.Create( self, 768 );
-		Array<Line> corniceLines;
 
 		// Saving all of the surrounding sectors and creating canopy raindrops:
 		while ( it.Next() ) {
@@ -69,21 +69,6 @@ class W2PlayerHandler: Actor {
 
 		TryAddSector( ceilingsector );
 		// I think there's no matter to use the floorsector field.
-
-		for ( int i = 0; i < corniceLines.Size(); i++ ) {
-			Line l = corniceLines[ i ];
-			double linelength = l.delta.Length();
-
-			double minspawnheight = ( l.frontsector? l.frontsector.ceilingplane.d : 1e300 );
-
-			if ( l.backsector && ( l.backsector.ceilingplane.d < minspawnheight ) )
-				minspawnheight = l.backsector.ceilingplane.d;
-
-			if ( !Random( 0, 1 ) ) {
-				Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + l.delta / linelength * FRandom( 0.0, linelength ), minspawnheight ) );
-				raindrop.master = target;
-			}
-		}
 
 
 		// Wiping sounds from too far sectors:
@@ -212,6 +197,7 @@ class W2PlayerHandler: Actor {
 		// For the cumulative distribution function "sqrt()" addition 
 		//thanks to https://habr.com/ru/post/583838/.
 
+		// Outdoor areas raindrop effect:
 		for ( int i = 0; i < 200; i++ ) {
 			double angletheta = FRandom( 0.0, 360.0 );
 
@@ -222,6 +208,21 @@ class W2PlayerHandler: Actor {
 			//raindrop.vel.xy = ( 10.0, 10.0 ) * ( sin( rainwaveOffset ) + 1.0 );
 		}
 
+		// Cornice raindrops effect:
+		for ( int i = 0; i < corniceLines.Size(); i++ ) {
+			Line l = corniceLines[ i ];
+			double linelength = l.delta.Length();
+
+			double minspawnheight = ( l.frontsector? l.frontsector.ceilingplane.d : 1e300 );
+
+			if ( l.backsector && ( l.backsector.ceilingplane.d < minspawnheight ) )
+				minspawnheight = l.backsector.ceilingplane.d;
+
+			if ( !Random( 0, 1 ) ) {
+				Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + l.delta / linelength * FRandom( 0.0, linelength ), minspawnheight ) );
+				raindrop.master = target;
+			}
+		}
 	} // of void DoRainEffects( void ) {}
 
 
