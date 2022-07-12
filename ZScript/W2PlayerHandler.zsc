@@ -67,6 +67,9 @@ class W2PlayerHandler: Actor {
 				corniceLines.Push( l );
 		} // of while ( it.Next() ) {}
 
+		TryAddSector( ceilingsector );
+		// I think there's no matter to use the floorsector field.
+
 		for ( int i = 0; i < corniceLines.Size(); i++ ) {
 			Line l = corniceLines[ i ];
 			double linelength = l.delta.Length();
@@ -81,9 +84,6 @@ class W2PlayerHandler: Actor {
 				raindrop.master = target;
 			}
 		}
-
-		TryAddSector( ceilingsector );
-		// I think there's no matter to use the floorsector field.
 
 
 		// Wiping sounds from too far sectors:

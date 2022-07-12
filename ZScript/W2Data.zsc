@@ -38,3 +38,18 @@ class W2SectorData {
 		return newdata;
 	}
 }
+
+// Megasectors/sectors union.
+class W2SectorGroup {
+	int num;
+
+	Array<Sector> sectors;
+	Array<Line> lines;		// A perimeter lines.
+
+	static W2SectorGroup Create( int initnum = -1 ) {
+		W2SectorGroup newdata = new( 'W2SectorGroup' );
+		newdata.num = initnum;
+
+		return newdata;
+	}
+}

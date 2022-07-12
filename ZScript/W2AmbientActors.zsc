@@ -17,7 +17,7 @@ class W2SoundOrigin: Actor {
 	Default {
 		+NOINTERACTION; // Implies +NOGRAVITY and +NOBLOCKMAP.
 		+DONTSPLASH;
-		+NOTONAUTOMAP;
+		//+NOTONAUTOMAP;
 	}
 
 	// It's implied that "master" is a W2PlayerHandler and a "target" is a handling player actor.

@@ -13,6 +13,7 @@ class mcm_WeathremumHandler: EventHandler {
 	Array<W2SectorData> generalSectorsData;	// Just a copyable structure.
 	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
 
+	Array<W2SectorGroup> sectorGroups;		// Megasectors.
 	Array<int> groupNumsSubstitution;		// For uniting all neighbour sectors with same "sectype" to same unique "secgroup".
 	int nextGroupNum;						// Also for uniting all neighbour sectors. Main work variable.
 
@@ -95,6 +96,7 @@ class mcm_WeathremumHandler: EventHandler {
 						setNextToOutdoorSectorData( l, lsector );
 				}
 
+				sectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
 				nextGroupNum++;
 			} // of if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {}
 
@@ -114,7 +116,6 @@ class mcm_WeathremumHandler: EventHandler {
 					Line l = s.Lines[ j ];
 					Sector lsector = l.frontsector;
 
-					// "s" isn't a NULL anyway.
 					if ( lsector && lsector != s )
 						setNextToSillSectorData( lsector );
 
@@ -124,6 +125,7 @@ class mcm_WeathremumHandler: EventHandler {
 						setNextToSillSectorData( lsector );
 				}
 
+				sectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
 				nextGroupNum++;
 			}
 		}
@@ -137,8 +139,48 @@ class mcm_WeathremumHandler: EventHandler {
 
 				if ( sdata.secgroup > groupNumsSubstitution[ groupNumsSubstitution[ sdata.secgroup ] ] )
 					sdata.secgroup = groupNumsSubstitution[ groupNumsSubstitution[ sdata.secgroup ] ];
+
+				W2SectorGroup curgroup = sectorGroups[ sdata.secgroup ];
+				curgroup.sectors.Push( sdata.s );
 			}
 		}
+
+		// Remove excess group numbers and locate a perimeter lines for every megasector:
+		for ( int i = 0; i < sectorGroups.Size(); i++ ) {
+			W2SectorGroup curgroup = sectorGroups[ i ];
+
+			if ( !curgroup.sectors.Size() ) {
+				sectorGroups.Delete( i );
+				i--;
+			} else {
+				for ( int j = 0; j < curgroup.sectors.Size(); j++ ) {
+					Sector cursector = curgroup.sectors[ j ];
+
+					for ( int k = 0; k < cursector.lines.Size(); k++ ) {
+						Line curline = cursector.lines[ k ];
+						Sector fsec = curline.frontsector;
+						Sector bsec = curline.backsector;
+
+						if ( !fsec || !bsec || ( generalSectorsData[ fsec.Index() ].secgroup != generalSectorsData[ bsec.Index() ].secgroup ) ) {
+							curgroup.lines.Push( curline );
+
+							//double zspawnpos = ( fsec? ( bsec? max( fsec.floorplane.d, bsec.floorplane.d ) : fsec.floorplane.d ) : bsec.floorplane.d );
+							//Actor.Spawn( "Unknown", ( curline.v1.p + curline.delta / 2, zspawnpos ) );
+						}
+					}
+				}
+			}
+		} // of for ( int i = 0; i < sectorGroups.Size(); i++ ) {}
+
+
+		console.printf( "sectorGroups.Size(): " .. sectorGroups.Size() .. "." );
+
+		String debugstr = "sectorGroups elements:";
+		for ( int i = 0; i < sectorGroups.Size(); i++ )
+			debugstr.AppendFormat( " " .. sectorGroups[ i ].num );
+
+		console.printf( debugstr .. "." );
+
 
 		mustCreateGeneralSectorsData = false;
 	} // of override void WorldLoaded( WorldEvent e ) {}
