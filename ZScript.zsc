@@ -4,7 +4,7 @@ version "2.4.0"
 #include "ZScript/W2PlayerHandler.zsc"
 #include "ZScript/W2AmbientActors.zsc"
 
-const mcm_WeathremumVersion = "0.1";
+const mcm_WeathremumVersion = "0.15";
 
 
 class mcm_WeathremumHandler: EventHandler {
@@ -13,8 +13,8 @@ class mcm_WeathremumHandler: EventHandler {
 	Array<W2SectorData> generalSectorsData;	// Just a copyable structure.
 	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
 
-	Array<W2SectorGroup> sectorGroups;		// Megasectors.
-	Array<int> groupNumsSubstitution;		// For uniting all neighbour sectors with same "sectype" to same unique "secgroup".
+	Array<W2SectorGroup> sectorGroups;		// Megasectors: uniting all neighbour sectors with same "sectype" to same unique "secgroup".
+	Array<int> groupNumsSubstitution;		// Quick access provided for the pre-handling process of megasectors.
 	int nextGroupNum;						// Also for uniting all neighbour sectors. Main work variable.
 
 	W2PlayerHandler firstplayerhandler;		// Temporary debug thing...
@@ -32,13 +32,12 @@ class mcm_WeathremumHandler: EventHandler {
 		if ( closeSectorData.secgroup == -1 ) {
 			closeSectorData.secgroup = nextGroupNum;
 
-		} else if ( closeSectorData.secgroup < groupNumsSubstitution[ nextGroupNum ] ) {
-			groupNumsSubstitution[ groupNumsSubstitution[ nextGroupNum ] ] = groupNumsSubstitution[ closeSectorData.secgroup ];
-			groupNumsSubstitution[ nextGroupNum ] = groupNumsSubstitution[ closeSectorData.secgroup ];
+		} else if ( closeSectorData.secgroup != groupNumsSubstitution[ nextGroupNum ] ) {
+			int groupNumToGet = groupNumsSubstitution[ min( closeSectorData.secgroup, groupNumsSubstitution[ nextGroupNum ] ) ];
+			int groupToSet = max( closeSectorData.secgroup, groupNumsSubstitution[ nextGroupNum ] );
 
-		} else if ( closeSectorData.secgroup > groupNumsSubstitution[ nextGroupNum ] ) {
-			groupNumsSubstitution[ groupNumsSubstitution[ closeSectorData.secgroup ] ] = groupNumsSubstitution[ nextGroupNum ];
-			groupNumsSubstitution[ closeSectorData.secgroup ] = groupNumsSubstitution[ nextGroupNum ];
+			groupNumsSubstitution[ groupNumsSubstitution[ groupToSet ] ] = groupNumToGet;
+			groupNumsSubstitution[ groupToSet ] = groupNumToGet;
 		}
 	}
 
@@ -130,6 +129,11 @@ class mcm_WeathremumHandler: EventHandler {
 			}
 		}
 
+		// Backtrace substitution. As far as I calculated, this helps in
+		//preventing the "group num degeneration" ("5->4->0", not "5->4->4"):
+		for ( int i = groupNumsSubstitution.Size() - 1; i >= 0; i-- )
+			groupNumsSubstitution[ i ] = groupNumsSubstitution[ groupNumsSubstitution[ i ] ];
+
 		// Substitute group numbers for sectors under sky & next to them:
 		for ( int i = 0; i < level.sectors.Size(); i++ ) {
 			W2SectorData sdata = generalSectorsData[ i ];
@@ -137,8 +141,8 @@ class mcm_WeathremumHandler: EventHandler {
 			if ( sdata.sectype != W2ST_None ) {
 				console.printf( "Grouping sector #" .. i .. ". Group " .. sdata.secgroup .. ", subst " .. groupNumsSubstitution[ groupNumsSubstitution[ sdata.secgroup ] ] .. "." );
 
-				if ( sdata.secgroup > groupNumsSubstitution[ groupNumsSubstitution[ sdata.secgroup ] ] )
-					sdata.secgroup = groupNumsSubstitution[ groupNumsSubstitution[ sdata.secgroup ] ];
+				if ( sdata.secgroup > groupNumsSubstitution[ sdata.secgroup ] )
+					sdata.secgroup = groupNumsSubstitution[ sdata.secgroup ];
 
 				W2SectorGroup curgroup = sectorGroups[ sdata.secgroup ];
 				curgroup.sectors.Push( sdata.s );
@@ -164,7 +168,7 @@ class mcm_WeathremumHandler: EventHandler {
 						if ( !fsec || !bsec || ( generalSectorsData[ fsec.Index() ].secgroup != generalSectorsData[ bsec.Index() ].secgroup ) ) {
 							curgroup.lines.Push( curline );
 
-							//double zspawnpos = ( fsec? ( bsec? max( fsec.floorplane.d, bsec.floorplane.d ) : fsec.floorplane.d ) : bsec.floorplane.d );
+							//double zspawnpos = ( fsec? ( bsec? max( fsec.floorplane.d, bsec.floorplane.d ) : fsec.floorplane.negiC * fsec.floorplane.d ) : bsec.floorplane.negiC * bsec.floorplane.d );
 							//Actor.Spawn( "Unknown", ( curline.v1.p + curline.delta / 2, zspawnpos ) );
 						}
 					}
@@ -210,6 +214,7 @@ class mcm_WeathremumHandler: EventHandler {
 							.. "Change it in the \"Display options\"->\"OpenGL renderer\"->\"Texture options\" or alter the \"gl_texture_format\" variable." );
 		}
 	}
+
 
 	/*override void RenderOverlay( RenderEvent e ) {
 		if ( !firstplayerhandler ) {
