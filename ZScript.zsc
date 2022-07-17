@@ -10,11 +10,8 @@ const mcm_WeathremumVersion = "0.16";
 class mcm_WeathremumHandler: EventHandler {
 	bool mustCreateGeneralSectorsData;		// "PlayerEntered()" is called before "WorldLoaded()".
 
-	Array<W2SectorData> allSectorsData;	// Just a copyable structure.
-	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
+	W2LevelGeneralData w2level;
 
-	Array<W2SectorGroup> allSectorGroups;	// Megasectors: uniting all neighbour sectors with same "w2type" to same unique "groupnum".
-	Array<W2SectorGroup> realSectorGroups;	// Megasectors: same as above, but only for existing groups.
 	Array<int> groupNumsSubstitution;		// Quick access provided for the pre-handling process of megasectors.
 	int nextGroupNum;						// Also for uniting all neighbour sectors. Main work variable.
 
@@ -22,7 +19,10 @@ class mcm_WeathremumHandler: EventHandler {
 
 	override void OnRegister() {
 		SetOrder( WeathremumHandlerOrder );
+
 		mustCreateGeneralSectorsData = true;
+		w2level = new( 'W2LevelGeneralData' );
+
 		Super.OnRegister();
 	}
 
@@ -43,18 +43,18 @@ class mcm_WeathremumHandler: EventHandler {
 	}
 
 	private void setNextToOutdoorSectorData( Line curline, Sector ls ) {
-		W2SectorData closeSectorData = allSectorsData[ ls.Index() ];
+		W2SectorData closeSectorData = w2level.allSectorsData[ ls.Index() ];
 
 		if ( ls.GetTexture( Sector.ceiling ) != skyflatnum ) {
 			closeSectorData.w2type = W2ST_NextToOutdoor;
-			corniceLinesFlags[ curline.Index() ] = 1;
+			w2level.corniceLinesFlags[ curline.Index() ] = 1;
 		} else {
 			adjustSectorGroupNum( closeSectorData );
 		}
 	}
 
 	private void setNextToSillSectorData( Sector lsector ) {
-		W2SectorData closeSectorData = allSectorsData[ lsector.Index() ];
+		W2SectorData closeSectorData = w2level.allSectorsData[ lsector.Index() ];
 
 		if ( closeSectorData.w2type == W2ST_NextToOutdoor )
 			adjustSectorGroupNum( closeSectorData );
@@ -62,20 +62,21 @@ class mcm_WeathremumHandler: EventHandler {
 
 	void CreateGeneralSectorsData( void ) {
 		nextGroupNum = 0;
-		allSectorsData.Clear();
 		groupNumsSubstitution.Clear();
-		allSectorGroups.Clear();
-		realSectorGroups.Clear();
-		corniceLinesFlags.Clear();
+
+		w2level.allSectorsData.Clear();
+		w2level.allSectorGroups.Clear();
+		w2level.realSectorGroups.Clear();
+		w2level.corniceLinesFlags.Clear();
 
 		// Save all of the level lines and sectors for the quick index-based
 		//access. Filled up before any other operations because the next ones
 		//may (and will) get any element, not only less than their "Index()".
 		for ( int i = 0; i < level.lines.Size(); i++ )
-			corniceLinesFlags.Push( 0 );
+			w2level.corniceLinesFlags.Push( 0 );
 
 		for ( int i = 0; i < level.sectors.Size(); i++ )
-			allSectorsData.Push( W2SectorData.Create( level.Sectors[ i ] ) );
+			w2level.allSectorsData.Push( W2SectorData.Create( level.Sectors[ i ] ) );
 
 		// Understand its data such as "w2type" and "groupnum" for sectors under sky:
 		for ( int i = 0; i < level.sectors.Size(); i++ ) {
@@ -83,7 +84,7 @@ class mcm_WeathremumHandler: EventHandler {
 			Sector s = level.Sectors[ i ];
 
 			if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {
-				W2SectorData curOutdoorSectorData = allSectorsData[ i ];
+				W2SectorData curOutdoorSectorData = w2level.allSectorsData[ i ];
 
 				curOutdoorSectorData.w2type = W2ST_Outdoor;
 				curOutdoorSectorData.groupnum = nextGroupNum;
@@ -102,7 +103,7 @@ class mcm_WeathremumHandler: EventHandler {
 						setNextToOutdoorSectorData( l, lsector );
 				}
 
-				allSectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
+				w2level.allSectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
 				nextGroupNum++;
 			} // of if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {}
 
@@ -110,7 +111,7 @@ class mcm_WeathremumHandler: EventHandler {
 
 		// Understand sectors data for sectors next to under sky:
 		for ( int i = 0; i < level.sectors.Size(); i++ ) {
-			W2SectorData sdata = allSectorsData[ i ];
+			W2SectorData sdata = w2level.allSectorsData[ i ];
 
 			if ( sdata.w2type == W2ST_NextToOutdoor ) {
 				sdata.groupnum = nextGroupNum;
@@ -131,7 +132,7 @@ class mcm_WeathremumHandler: EventHandler {
 						setNextToSillSectorData( lsector );
 				}
 
-				allSectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
+				w2level.allSectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
 				nextGroupNum++;
 			}
 		}
@@ -143,7 +144,7 @@ class mcm_WeathremumHandler: EventHandler {
 
 		// Substitute group numbers for sectors under sky & next to them:
 		for ( int i = 0; i < level.sectors.Size(); i++ ) {
-			W2SectorData sdata = allSectorsData[ i ];
+			W2SectorData sdata = w2level.allSectorsData[ i ];
 
 			if ( sdata.w2type != W2ST_None ) {
 				console.printf( "Grouping sector #" .. i .. ". Group " .. sdata.groupnum .. ", subst " .. groupNumsSubstitution[ groupNumsSubstitution[ sdata.groupnum ] ] .. "." );
@@ -152,20 +153,20 @@ class mcm_WeathremumHandler: EventHandler {
 					sdata.groupnum = groupNumsSubstitution[ sdata.groupnum ];
 
 				// Linking sector and group with each other:
-				W2SectorGroup curgroup = allSectorGroups[ sdata.groupnum ];
+				W2SectorGroup curgroup = w2level.allSectorGroups[ sdata.groupnum ];
 				curgroup.sectors.Push( sdata.s );
 				sdata.group = curgroup;
 			}
 		}
 
 		// Remove excess group numbers and locate a perimeter lines for every megasector:
-		for ( int i = 0; i < allSectorGroups.Size(); i++ ) {
-			W2SectorGroup curgroup = allSectorGroups[ i ];
+		for ( int i = 0; i < w2level.allSectorGroups.Size(); i++ ) {
+			W2SectorGroup curgroup = w2level.allSectorGroups[ i ];
 
 			if ( !curgroup.sectors.Size() )
 				continue;
 
-			realSectorGroups.Push( curgroup );
+			w2level.realSectorGroups.Push( curgroup );
 
 			for ( int j = 0; j < curgroup.sectors.Size(); j++ ) {
 				Sector cursector = curgroup.sectors[ j ];
@@ -175,7 +176,7 @@ class mcm_WeathremumHandler: EventHandler {
 					Sector fsec = curline.frontsector;
 					Sector bsec = curline.backsector;
 
-					if ( !fsec || !bsec || ( allSectorsData[ fsec.Index() ].groupnum != allSectorsData[ bsec.Index() ].groupnum ) ) {
+					if ( !fsec || !bsec || ( w2level.allSectorsData[ fsec.Index() ].groupnum != w2level.allSectorsData[ bsec.Index() ].groupnum ) ) {
 						curgroup.lines.Push( curline );
 
 						//double zspawnpos = ( fsec? ( bsec? max( fsec.floorplane.d, bsec.floorplane.d ) : fsec.floorplane.negiC * fsec.floorplane.d ) : bsec.floorplane.negiC * bsec.floorplane.d );
@@ -185,14 +186,14 @@ class mcm_WeathremumHandler: EventHandler {
 				} // of for ( int k = 0; k < cursector.lines.Size(); k++ ) {}
 			} // of for ( int j = 0; j < curgroup.sectors.Size(); j++ ) {}
 
-		} // of for ( int i = 0; i < realSectorGroups.Size(); i++ ) {}
+		} // of for ( int i = 0; i < w2level.realSectorGroups.Size(); i++ ) {}
 
 
-		console.printf( "realSectorGroups.Size(): " .. realSectorGroups.Size() .. "." );
+		console.printf( "w2level.realSectorGroups.Size(): " .. w2level.realSectorGroups.Size() .. "." );
 
-		String debugstr = "realSectorGroups elements:";
-		for ( int i = 0; i < realSectorGroups.Size(); i++ )
-			debugstr.AppendFormat( " " .. realSectorGroups[ i ].num );
+		String debugstr = "w2level.realSectorGroups elements:";
+		for ( int i = 0; i < w2level.realSectorGroups.Size(); i++ )
+			debugstr.AppendFormat( " " .. w2level.realSectorGroups[ i ].num );
 
 		console.printf( debugstr .. "." );
 
@@ -208,8 +209,8 @@ class mcm_WeathremumHandler: EventHandler {
 		if ( players[ e.PlayerNumber ].mo ) {
 			W2PlayerHandler playerhandler = W2PlayerHandler( Actor.Spawn( "W2PlayerHandler", players[ e.PlayerNumber ].mo.pos ) );
 			playerhandler.FriendPlayer = e.PlayerNumber;
-			playerhandler.groupsdata.Copy( allSectorGroups );
-			playerhandler.w2handler = self;
+			playerhandler.groupsdata.Copy( w2level.allSectorGroups );
+			playerhandler.w2level = w2level;
 
 			if ( e.PlayerNumber == 0 )
 				firstplayerhandler = playerhandler;

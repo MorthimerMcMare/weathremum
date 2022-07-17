@@ -19,6 +19,16 @@ enum EWeathremumSectorType {
 }
 
 
+class W2LevelGeneralData {
+	Array<W2SectorData> allSectorsData;		// All of the sectors.
+
+	Array<W2SectorGroup> allSectorGroups;	// Megasectors: uniting all neighbour sectors with same "w2type" to same unique "groupnum".
+	Array<W2SectorGroup> realSectorGroups;	// Megasectors: same as above, but only for existing groups.
+
+	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
+}
+
+
 class W2SectorData {
 	Sector s;
 	Array<Line> lines;
