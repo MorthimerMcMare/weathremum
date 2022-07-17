@@ -3,7 +3,7 @@
 class W2PlayerHandler: Actor {
 	mcm_WeathremumHandler w2handler;
 
-	Array<W2SectorData> sectorsdata;// All of the level sectors saved for the quick access. This is separated from global definition for the optimization in multiplayer.
+	Array<W2SectorGroup> groupsdata;// All of the level sectors saved for the quick access. This is separated from global definition for the optimization in multiplayer.
 	Array<int> loopdataindices;		// Array storing currently playing sector groups.
 	Array<int> newdataindices;		// Temporary array with group data updates.
 	Array<Line> corniceLines;		// Lines between outdoor and indoor areas.
@@ -21,11 +21,11 @@ class W2PlayerHandler: Actor {
 		if ( !s )
 			return NULL;
 
-		int groupnum = sectorsdata[ s.Index() ].groupnum;
+		int groupnum = w2handler.allSectorsData[ s.Index() ].groupnum;
 		if ( groupnum < 0 )
 			return NULL;
 
-		W2SectorGroup groupdata = w2handler.allSectorGroups[ groupnum ];
+		W2SectorGroup groupdata = groupsdata[ groupnum ];
 
 		// Starts sector sound or continues it (by stop preventing) if it is still needed.
 		if ( groupdata.status == W2HS_Off )
@@ -42,7 +42,7 @@ class W2PlayerHandler: Actor {
 	void DoSectorEffects( void ) {
 		// Suggest potential excess sounds to stop:
 		for ( int i = 0; i < loopdataindices.Size(); i++ )
-			w2handler.allSectorGroups[ loopdataindices[ i ] ].status = W2HS_StopSuggestion;
+			groupsdata[ loopdataindices[ i ] ].status = W2HS_StopSuggestion;
 
 		newdataindices.Clear();
 		corniceLines.Clear();
@@ -76,7 +76,7 @@ class W2PlayerHandler: Actor {
 
 		// Wiping sounds from too far sector groups:
 		for ( int i = 0; i < loopdataindices.Size(); i++ ) {
-			W2SectorGroup groupdata = w2handler.allSectorGroups[ loopdataindices[ i ] ];
+			W2SectorGroup groupdata = groupsdata[ loopdataindices[ i ] ];
 
 			// Clearing excess sound origins:
 			if ( groupdata.status == W2HS_StopSuggestion ) {
@@ -93,9 +93,9 @@ class W2PlayerHandler: Actor {
 
 		// Creating new sound actors and pushing their sector groups to the time-through array:
 		for ( int i = 0; i < newdataindices.Size(); i++ ) {
-			W2SectorGroup groupdata = w2handler.allSectorGroups[ newdataindices[ i ] ];
+			W2SectorGroup groupdata = groupsdata[ newdataindices[ i ] ];
 
-			if ( sectorsdata[ groupdata.sectors[ 0 ].Index() ].w2type != W2ST_None ) {
+			if ( w2handler.allSectorsData[ groupdata.sectors[ 0 ].Index() ].w2type != W2ST_None ) {
 				W2SoundOrigin sndactor = groupdata.soundorigin = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( groupdata.lines[ 0 ].v1.p, groupdata.sectors[ 0 ].floorplane.d ) ) );
 				sndactor.master = self;
 				sndactor.target = target; // Player or his camera.
@@ -103,7 +103,7 @@ class W2PlayerHandler: Actor {
 
 				//console.printf( TEXTCOLOR_GREEN .. "+Started\c- sound for sector " .. newdataindices[ i ] .. "." );
 
-				switch ( sectorsdata[ groupdata.sectors[ 0 ].Index() ].w2type ) {
+				switch ( w2handler.allSectorsData[ groupdata.sectors[ 0 ].Index() ].w2type ) {
 					case W2ST_Outdoor:
 						sndactor.seq = sndactor.StartSoundSequence( "weather/rain", SeqNode.ENVIRONMENT );
 						break;
@@ -121,7 +121,7 @@ class W2PlayerHandler: Actor {
 
 		// Moving all the sound origins to their new positions:
 		for ( int i = 0; i < loopdataindices.Size(); i++ ) {
-			W2SectorGroup groupdata = w2handler.allSectorGroups[ loopdataindices[ i ] ];
+			W2SectorGroup groupdata = groupsdata[ loopdataindices[ i ] ];
 
 			if ( !groupdata.soundorigin )
 				continue;
@@ -129,7 +129,7 @@ class W2PlayerHandler: Actor {
 			W2SoundOrigin sndactor = groupdata.soundorigin;
 
 			// Moving sound origins:
-			if ( sectorsdata[ floorsector.Index() ].groupnum == groupdata.num ) {
+			if ( w2handler.allSectorsData[ floorsector.Index() ].groupnum == groupdata.num ) {
 				sndactor.SetOrigin( ( Vec2Angle( sndactor.intersectionOffset.Length(), sndactor.intersectionAngle + angle ), sndactor.floorz ), true );
 				//sndactor.interpMaxTics = sndactor.interpTic = 15;
 			} else {

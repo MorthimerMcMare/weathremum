@@ -10,7 +10,7 @@ const mcm_WeathremumVersion = "0.16";
 class mcm_WeathremumHandler: EventHandler {
 	bool mustCreateGeneralSectorsData;		// "PlayerEntered()" is called before "WorldLoaded()".
 
-	Array<W2SectorData> generalSectorsData;	// Just a copyable structure.
+	Array<W2SectorData> allSectorsData;	// Just a copyable structure.
 	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
 
 	Array<W2SectorGroup> allSectorGroups;	// Megasectors: uniting all neighbour sectors with same "w2type" to same unique "groupnum".
@@ -43,7 +43,7 @@ class mcm_WeathremumHandler: EventHandler {
 	}
 
 	private void setNextToOutdoorSectorData( Line curline, Sector ls ) {
-		W2SectorData closeSectorData = generalSectorsData[ ls.Index() ];
+		W2SectorData closeSectorData = allSectorsData[ ls.Index() ];
 
 		if ( ls.GetTexture( Sector.ceiling ) != skyflatnum ) {
 			closeSectorData.w2type = W2ST_NextToOutdoor;
@@ -54,7 +54,7 @@ class mcm_WeathremumHandler: EventHandler {
 	}
 
 	private void setNextToSillSectorData( Sector lsector ) {
-		W2SectorData closeSectorData = generalSectorsData[ lsector.Index() ];
+		W2SectorData closeSectorData = allSectorsData[ lsector.Index() ];
 
 		if ( closeSectorData.w2type == W2ST_NextToOutdoor )
 			adjustSectorGroupNum( closeSectorData );
@@ -62,26 +62,28 @@ class mcm_WeathremumHandler: EventHandler {
 
 	void CreateGeneralSectorsData( void ) {
 		nextGroupNum = 0;
-		generalSectorsData.Clear();
+		allSectorsData.Clear();
 		groupNumsSubstitution.Clear();
 		allSectorGroups.Clear();
 		realSectorGroups.Clear();
 		corniceLinesFlags.Clear();
 
-		// Save all of the level sectors and lines for the quick index-based access:
+		// Save all of the level lines and sectors for the quick index-based
+		//access. Filled up before any other operations because the next ones
+		//may (and will) get any element, not only less than their "Index()".
 		for ( int i = 0; i < level.lines.Size(); i++ )
 			corniceLinesFlags.Push( 0 );
 
 		for ( int i = 0; i < level.sectors.Size(); i++ )
-			generalSectorsData.Push( W2SectorData.Create( level.sectors[ i ] ) );
+			allSectorsData.Push( W2SectorData.Create( level.Sectors[ i ] ) );
 
-		// Understand sectors data such as "w2type" and "groupnum" for sectors under sky:
+		// Understand its data such as "w2type" and "groupnum" for sectors under sky:
 		for ( int i = 0; i < level.sectors.Size(); i++ ) {
 			//console.printf( "Sector " .. i .. ": " .. level.Sectors[ i ].GetTexture( Sector.ceiling ) .. "." );
 			Sector s = level.Sectors[ i ];
 
 			if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {
-				W2SectorData curOutdoorSectorData = generalSectorsData[ i ];
+				W2SectorData curOutdoorSectorData = allSectorsData[ i ];
 
 				curOutdoorSectorData.w2type = W2ST_Outdoor;
 				curOutdoorSectorData.groupnum = nextGroupNum;
@@ -108,7 +110,7 @@ class mcm_WeathremumHandler: EventHandler {
 
 		// Understand sectors data for sectors next to under sky:
 		for ( int i = 0; i < level.sectors.Size(); i++ ) {
-			W2SectorData sdata = generalSectorsData[ i ];
+			W2SectorData sdata = allSectorsData[ i ];
 
 			if ( sdata.w2type == W2ST_NextToOutdoor ) {
 				sdata.groupnum = nextGroupNum;
@@ -141,7 +143,7 @@ class mcm_WeathremumHandler: EventHandler {
 
 		// Substitute group numbers for sectors under sky & next to them:
 		for ( int i = 0; i < level.sectors.Size(); i++ ) {
-			W2SectorData sdata = generalSectorsData[ i ];
+			W2SectorData sdata = allSectorsData[ i ];
 
 			if ( sdata.w2type != W2ST_None ) {
 				console.printf( "Grouping sector #" .. i .. ". Group " .. sdata.groupnum .. ", subst " .. groupNumsSubstitution[ groupNumsSubstitution[ sdata.groupnum ] ] .. "." );
@@ -173,7 +175,7 @@ class mcm_WeathremumHandler: EventHandler {
 					Sector fsec = curline.frontsector;
 					Sector bsec = curline.backsector;
 
-					if ( !fsec || !bsec || ( generalSectorsData[ fsec.Index() ].groupnum != generalSectorsData[ bsec.Index() ].groupnum ) ) {
+					if ( !fsec || !bsec || ( allSectorsData[ fsec.Index() ].groupnum != allSectorsData[ bsec.Index() ].groupnum ) ) {
 						curgroup.lines.Push( curline );
 
 						//double zspawnpos = ( fsec? ( bsec? max( fsec.floorplane.d, bsec.floorplane.d ) : fsec.floorplane.negiC * fsec.floorplane.d ) : bsec.floorplane.negiC * bsec.floorplane.d );
@@ -206,7 +208,7 @@ class mcm_WeathremumHandler: EventHandler {
 		if ( players[ e.PlayerNumber ].mo ) {
 			W2PlayerHandler playerhandler = W2PlayerHandler( Actor.Spawn( "W2PlayerHandler", players[ e.PlayerNumber ].mo.pos ) );
 			playerhandler.FriendPlayer = e.PlayerNumber;
-			playerhandler.sectorsdata.Copy( generalSectorsData );
+			playerhandler.groupsdata.Copy( allSectorGroups );
 			playerhandler.w2handler = self;
 
 			if ( e.PlayerNumber == 0 )
