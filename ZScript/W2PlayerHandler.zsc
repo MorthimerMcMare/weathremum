@@ -4,8 +4,8 @@ class W2PlayerHandler: Actor {
 	mcm_WeathremumHandler w2handler;
 
 	Array<W2SectorData> sectorsdata;// All of the level sectors saved for the quick access. This is separated from global definition for the optimization in multiplayer.
-	Array<int> loopdataindices;		// Array storing currently playing sectors.
-	Array<int> newdataindices;		// Temporary array with data updates.
+	Array<int> loopdataindices;		// Array storing currently playing sector groups.
+	Array<int> newdataindices;		// Temporary array with group data updates.
 	Array<Line> corniceLines;		// Lines between outdoor and indoor areas.
 
 	// "target" is an actor to follow (updates every "Tick()").
@@ -242,10 +242,10 @@ class W2PlayerHandler: Actor {
 		angle = target.angle;
 
 
-		// Sector sounds (rain, winds) and raindrops from cornices:
+		// Sector sounds (rain, winds):
 		DoSectorEffects();
 
-		// Rain itself:
+		// Rain itself, raindrops from cornices:
 		DoRainEffects();
 
 		Super.Tick();

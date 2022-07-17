@@ -13,7 +13,8 @@ class mcm_WeathremumHandler: EventHandler {
 	Array<W2SectorData> generalSectorsData;	// Just a copyable structure.
 	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
 
-	Array<W2SectorGroup> sectorGroups;		// Megasectors: uniting all neighbour sectors with same "w2type" to same unique "groupnum".
+	Array<W2SectorGroup> allSectorGroups;	// Megasectors: uniting all neighbour sectors with same "w2type" to same unique "groupnum".
+	Array<W2SectorGroup> realSectorGroups;	// Megasectors: same as above, but only for existing groups.
 	Array<int> groupNumsSubstitution;		// Quick access provided for the pre-handling process of megasectors.
 	int nextGroupNum;						// Also for uniting all neighbour sectors. Main work variable.
 
@@ -61,7 +62,11 @@ class mcm_WeathremumHandler: EventHandler {
 
 	void CreateGeneralSectorsData( void ) {
 		nextGroupNum = 0;
+		generalSectorsData.Clear();
 		groupNumsSubstitution.Clear();
+		allSectorGroups.Clear();
+		realSectorGroups.Clear();
+		corniceLinesFlags.Clear();
 
 		// Save all of the level sectors and lines for the quick index-based access:
 		for ( int i = 0; i < level.lines.Size(); i++ )
@@ -95,7 +100,7 @@ class mcm_WeathremumHandler: EventHandler {
 						setNextToOutdoorSectorData( l, lsector );
 				}
 
-				sectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
+				allSectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
 				nextGroupNum++;
 			} // of if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {}
 
@@ -124,7 +129,7 @@ class mcm_WeathremumHandler: EventHandler {
 						setNextToSillSectorData( lsector );
 				}
 
-				sectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
+				allSectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
 				nextGroupNum++;
 			}
 		}
@@ -144,44 +149,48 @@ class mcm_WeathremumHandler: EventHandler {
 				if ( sdata.groupnum > groupNumsSubstitution[ sdata.groupnum ] )
 					sdata.groupnum = groupNumsSubstitution[ sdata.groupnum ];
 
-				W2SectorGroup curgroup = sectorGroups[ sdata.groupnum ];
+				// Linking sector and group with each other:
+				W2SectorGroup curgroup = allSectorGroups[ sdata.groupnum ];
 				curgroup.sectors.Push( sdata.s );
+				sdata.group = curgroup;
 			}
 		}
 
 		// Remove excess group numbers and locate a perimeter lines for every megasector:
-		for ( int i = 0; i < sectorGroups.Size(); i++ ) {
-			W2SectorGroup curgroup = sectorGroups[ i ];
+		for ( int i = 0; i < allSectorGroups.Size(); i++ ) {
+			W2SectorGroup curgroup = allSectorGroups[ i ];
 
-			if ( !curgroup.sectors.Size() ) {
-				sectorGroups.Delete( i );
-				i--;
-			} else {
-				for ( int j = 0; j < curgroup.sectors.Size(); j++ ) {
-					Sector cursector = curgroup.sectors[ j ];
+			if ( !curgroup.sectors.Size() )
+				continue;
 
-					for ( int k = 0; k < cursector.lines.Size(); k++ ) {
-						Line curline = cursector.lines[ k ];
-						Sector fsec = curline.frontsector;
-						Sector bsec = curline.backsector;
+			realSectorGroups.Push( curgroup );
 
-						if ( !fsec || !bsec || ( generalSectorsData[ fsec.Index() ].groupnum != generalSectorsData[ bsec.Index() ].groupnum ) ) {
-							curgroup.lines.Push( curline );
+			for ( int j = 0; j < curgroup.sectors.Size(); j++ ) {
+				Sector cursector = curgroup.sectors[ j ];
 
-							//double zspawnpos = ( fsec? ( bsec? max( fsec.floorplane.d, bsec.floorplane.d ) : fsec.floorplane.negiC * fsec.floorplane.d ) : bsec.floorplane.negiC * bsec.floorplane.d );
-							//Actor.Spawn( "Unknown", ( curline.v1.p + curline.delta / 2, zspawnpos ) );
-						}
+				for ( int k = 0; k < cursector.lines.Size(); k++ ) {
+					Line curline = cursector.lines[ k ];
+					Sector fsec = curline.frontsector;
+					Sector bsec = curline.backsector;
+
+					if ( !fsec || !bsec || ( generalSectorsData[ fsec.Index() ].groupnum != generalSectorsData[ bsec.Index() ].groupnum ) ) {
+						curgroup.lines.Push( curline );
+
+						//double zspawnpos = ( fsec? ( bsec? max( fsec.floorplane.d, bsec.floorplane.d ) : fsec.floorplane.negiC * fsec.floorplane.d ) : bsec.floorplane.negiC * bsec.floorplane.d );
+						//Actor.Spawn( "Unknown", ( curline.v1.p + curline.delta / 2, zspawnpos ) );
 					}
-				}
-			}
-		} // of for ( int i = 0; i < sectorGroups.Size(); i++ ) {}
+
+				} // of for ( int k = 0; k < cursector.lines.Size(); k++ ) {}
+			} // of for ( int j = 0; j < curgroup.sectors.Size(); j++ ) {}
+
+		} // of for ( int i = 0; i < realSectorGroups.Size(); i++ ) {}
 
 
-		console.printf( "sectorGroups.Size(): " .. sectorGroups.Size() .. "." );
+		console.printf( "realSectorGroups.Size(): " .. realSectorGroups.Size() .. "." );
 
-		String debugstr = "sectorGroups elements:";
-		for ( int i = 0; i < sectorGroups.Size(); i++ )
-			debugstr.AppendFormat( " " .. sectorGroups[ i ].num );
+		String debugstr = "realSectorGroups elements:";
+		for ( int i = 0; i < realSectorGroups.Size(); i++ )
+			debugstr.AppendFormat( " " .. realSectorGroups[ i ].num );
 
 		console.printf( debugstr .. "." );
 
