@@ -17,29 +17,32 @@ class W2PlayerHandler: Actor {
 	}
 
 
-	private W2SectorData TryAddSector( Sector s ) {
+	private W2SectorGroup TryAddSectorGroup( Sector s ) {
 		if ( !s )
 			return NULL;
 
-		W2SectorData secdata = sectorsdata[ s.Index() ];
+		int groupnum = sectorsdata[ s.Index() ].groupnum;
+		if ( groupnum < 0 )
+			return NULL;
+
+		W2SectorGroup groupdata = w2handler.allSectorGroups[ groupnum ];
 
 		// Starts sector sound or continues it (by stop preventing) if it is still needed.
-		if ( secdata.status == W2HS_Off )
-			newdataindices.Push( s.Index() );
+		if ( groupdata.status == W2HS_Off )
+			newdataindices.Push( groupnum );
 
-		if ( secdata.status != W2HS_Active ) {
-			secdata.status = W2HS_Active;
-			secdata.lines.Clear();
-			secdata.lineindices.Clear();
+		if ( groupdata.status != W2HS_Active ) {
+			groupdata.status = W2HS_Active;
+			groupdata.lines.Clear();
 		}
 
-		return secdata;
+		return groupdata;
 	}
 
 	void DoSectorEffects( void ) {
 		// Suggest potential excess sounds to stop:
 		for ( int i = 0; i < loopdataindices.Size(); i++ )
-			sectorsdata[ loopdataindices[ i ] ].status = W2HS_StopSuggestion;
+			w2handler.allSectorGroups[ loopdataindices[ i ] ].status = W2HS_StopSuggestion;
 
 		newdataindices.Clear();
 		corniceLines.Clear();
@@ -47,19 +50,19 @@ class W2PlayerHandler: Actor {
 		// Second argument is an environment test radius.
 		BlockLinesIterator it = BlockLinesIterator.Create( self, 768 );
 
-		// Saving all of the surrounding sectors and creating canopy raindrops:
+		// Saving all of the surrounding sectors and defining a canopy raindrops:
 		while ( it.Next() ) {
 			Line l = it.curline;
-			W2SectorData secdata = NULL;
+			W2SectorGroup groupdata = NULL;
 
-			if ( secdata = TryAddSector( l.frontsector ) ) {
-				secdata.lines.Push( l );
-				secdata.lineindices.Push( l.Index() );
+			if ( groupdata = TryAddSectorGroup( l.frontsector ) ) {
+				groupdata.lines.Push( l );
+				//groupdata.lineindices.Push( l.Index() );
 			}
 
-			if ( secdata = TryAddSector( l.backsector ) ) {
-				secdata.lines.Push( l );
-				secdata.lineindices.Push( l.Index() );
+			if ( groupdata = TryAddSectorGroup( l.backsector ) ) {
+				groupdata.lines.Push( l );
+				//groupdata.lineindices.Push( l.Index() );
 			}
 
 			// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to "validcount" variable.
@@ -67,40 +70,40 @@ class W2PlayerHandler: Actor {
 				corniceLines.Push( l );
 		} // of while ( it.Next() ) {}
 
-		TryAddSector( ceilingsector );
+		TryAddSectorGroup( ceilingsector );
 		// I think there's no matter to use the floorsector field.
 
 
-		// Wiping sounds from too far sectors:
+		// Wiping sounds from too far sector groups:
 		for ( int i = 0; i < loopdataindices.Size(); i++ ) {
-			W2SectorData secdata = sectorsdata[ loopdataindices[ i ] ];
+			W2SectorGroup groupdata = w2handler.allSectorGroups[ loopdataindices[ i ] ];
 
 			// Clearing excess sound origins:
-			if ( secdata.status == W2HS_StopSuggestion ) {
+			if ( groupdata.status == W2HS_StopSuggestion ) {
 				//console.printf( TEXTCOLOR_DARKRED .. "-Stopped\c- sound for sector " .. loopdataindices[ i ] .. "." );
-				if ( secdata.soundorigin )
-					secdata.soundorigin.Destroy();
+				if ( groupdata.soundorigin )
+					groupdata.soundorigin.Destroy();
 
-				secdata.status = W2HS_Off;
+				groupdata.status = W2HS_Off;
 
 				loopdataindices.Delete( i );
 				i--;
 			}
 		}
 
-		// Creating new sound actors and pushing their sector indices to the time-through array:
+		// Creating new sound actors and pushing their sector groups to the time-through array:
 		for ( int i = 0; i < newdataindices.Size(); i++ ) {
-			W2SectorData secdata = sectorsdata[ newdataindices[ i ] ];
+			W2SectorGroup groupdata = w2handler.allSectorGroups[ newdataindices[ i ] ];
 
-			if ( secdata.w2type != W2ST_None ) {
-				W2SoundOrigin sndactor = secdata.soundorigin = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( secdata.s.centerspot, secdata.s.floorplane.d ) ) );
+			if ( sectorsdata[ groupdata.sectors[ 0 ].Index() ].w2type != W2ST_None ) {
+				W2SoundOrigin sndactor = groupdata.soundorigin = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( groupdata.lines[ 0 ].v1.p, groupdata.sectors[ 0 ].floorplane.d ) ) );
 				sndactor.master = self;
 				sndactor.target = target; // Player or his camera.
 				sndactor.justCreated = true;
 
 				//console.printf( TEXTCOLOR_GREEN .. "+Started\c- sound for sector " .. newdataindices[ i ] .. "." );
 
-				switch ( secdata.w2type ) {
+				switch ( sectorsdata[ groupdata.sectors[ 0 ].Index() ].w2type ) {
 					case W2ST_Outdoor:
 						sndactor.seq = sndactor.StartSoundSequence( "weather/rain", SeqNode.ENVIRONMENT );
 						break;
@@ -112,21 +115,21 @@ class W2PlayerHandler: Actor {
 				}
 			}
 
-			// Saving new active sectors.
+			// Saving new active sector groups.
 			loopdataindices.Push( newdataindices[ i ] );
 		}
 
 		// Moving all the sound origins to their new positions:
 		for ( int i = 0; i < loopdataindices.Size(); i++ ) {
-			W2SectorData secdata = sectorsdata[ loopdataindices[ i ] ];
+			W2SectorGroup groupdata = w2handler.allSectorGroups[ loopdataindices[ i ] ];
 
-			if ( !secdata.soundorigin )
+			if ( !groupdata.soundorigin )
 				continue;
 
-			W2SoundOrigin sndactor = secdata.soundorigin;
+			W2SoundOrigin sndactor = groupdata.soundorigin;
 
 			// Moving sound origins:
-			if ( secdata.s == floorsector ) {
+			if ( sectorsdata[ floorsector.Index() ].groupnum == groupdata.num ) {
 				sndactor.SetOrigin( ( Vec2Angle( sndactor.intersectionOffset.Length(), sndactor.intersectionAngle + angle ), sndactor.floorz ), true );
 				//sndactor.interpMaxTics = sndactor.interpTic = 15;
 			} else {
@@ -135,8 +138,8 @@ class W2PlayerHandler: Actor {
 
 				vector2 plp = pos.xy;
 
-				for ( int j = 0; j < secdata.lines.Size(); j++ ) {
-					Line curline = secdata.lines[ j ];
+				for ( int j = 0; j < groupdata.lines.Size(); j++ ) {
+					Line curline = groupdata.lines[ j ];
 					double curminlength = 1e304;
 					vector2 curposxy;
 
@@ -178,7 +181,7 @@ class W2PlayerHandler: Actor {
 						minposxy = curposxy;
 					}
 
-				} // of for ( int j = 0; j < secdata.lines.Size(); j++ ) {}
+				} // of for ( int j = 0; j < groupdata.lines.Size(); j++ ) {}
 
 				sndactor.LinedefMove( minposxy );
 

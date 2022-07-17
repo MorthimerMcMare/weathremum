@@ -4,7 +4,7 @@ version "2.4.0"
 #include "ZScript/W2PlayerHandler.zsc"
 #include "ZScript/W2AmbientActors.zsc"
 
-const mcm_WeathremumVersion = "0.15";
+const mcm_WeathremumVersion = "0.16";
 
 
 class mcm_WeathremumHandler: EventHandler {

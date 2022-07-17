@@ -20,12 +20,9 @@ enum EWeathremumSectorType {
 
 
 class W2SectorData {
-	EWeathremumHandleStatus status;
 	Sector s;
 	Array<Line> lines;
-	Array<int> lineindices; // Temporary, for the UI-scoped "RenderOverlay()".
-
-	W2SoundOrigin soundorigin;
+	//Array<int> lineindices; // Temporary, for the UI-scoped "RenderOverlay()".
 
 	int groupnum;
 	W2SectorGroup group;
@@ -43,6 +40,9 @@ class W2SectorData {
 // Megasectors/sectors union.
 class W2SectorGroup {
 	int num;
+
+	EWeathremumHandleStatus status;
+	W2SoundOrigin soundorigin;
 
 	Array<Sector> sectors;
 	Array<Line> lines;		// A perimeter lines.
