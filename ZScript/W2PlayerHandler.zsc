@@ -92,7 +92,7 @@ class W2PlayerHandler: Actor {
 		for ( int i = 0; i < newdataindices.Size(); i++ ) {
 			W2SectorData secdata = sectorsdata[ newdataindices[ i ] ];
 
-			if ( secdata.sectype != W2ST_None ) {
+			if ( secdata.w2type != W2ST_None ) {
 				W2SoundOrigin sndactor = secdata.soundorigin = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( secdata.s.centerspot, secdata.s.floorplane.d ) ) );
 				sndactor.master = self;
 				sndactor.target = target; // Player or his camera.
@@ -100,7 +100,7 @@ class W2PlayerHandler: Actor {
 
 				//console.printf( TEXTCOLOR_GREEN .. "+Started\c- sound for sector " .. newdataindices[ i ] .. "." );
 
-				switch ( secdata.sectype ) {
+				switch ( secdata.w2type ) {
 					case W2ST_Outdoor:
 						sndactor.seq = sndactor.StartSoundSequence( "weather/rain", SeqNode.ENVIRONMENT );
 						break;

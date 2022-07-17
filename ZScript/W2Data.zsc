@@ -23,17 +23,18 @@ class W2SectorData {
 	EWeathremumHandleStatus status;
 	Sector s;
 	Array<Line> lines;
-
 	Array<int> lineindices; // Temporary, for the UI-scoped "RenderOverlay()".
 
-	int secgroup;
-	EWeathremumSectorType sectype;
 	W2SoundOrigin soundorigin;
+
+	int groupnum;
+	W2SectorGroup group;
+	EWeathremumSectorType w2type;
 
 	static W2SectorData Create( Sector initSector ) {
 		W2SectorData newdata = new( 'W2SectorData' );
 		newdata.s = initSector;
-		newdata.secgroup = -1;
+		newdata.groupnum = -1;
 
 		return newdata;
 	}

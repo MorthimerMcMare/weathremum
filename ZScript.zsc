@@ -13,7 +13,7 @@ class mcm_WeathremumHandler: EventHandler {
 	Array<W2SectorData> generalSectorsData;	// Just a copyable structure.
 	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
 
-	Array<W2SectorGroup> sectorGroups;		// Megasectors: uniting all neighbour sectors with same "sectype" to same unique "secgroup".
+	Array<W2SectorGroup> sectorGroups;		// Megasectors: uniting all neighbour sectors with same "w2type" to same unique "groupnum".
 	Array<int> groupNumsSubstitution;		// Quick access provided for the pre-handling process of megasectors.
 	int nextGroupNum;						// Also for uniting all neighbour sectors. Main work variable.
 
@@ -29,12 +29,12 @@ class mcm_WeathremumHandler: EventHandler {
 	private void adjustSectorGroupNum( W2SectorData closeSectorData ) {
 		// Uniting all adjacent sectors with same type to one group (in O(1), really!).
 
-		if ( closeSectorData.secgroup == -1 ) {
-			closeSectorData.secgroup = nextGroupNum;
+		if ( closeSectorData.groupnum == -1 ) {
+			closeSectorData.groupnum = nextGroupNum;
 
-		} else if ( closeSectorData.secgroup != groupNumsSubstitution[ nextGroupNum ] ) {
-			int groupNumToGet = groupNumsSubstitution[ min( closeSectorData.secgroup, groupNumsSubstitution[ nextGroupNum ] ) ];
-			int groupToSet = max( closeSectorData.secgroup, groupNumsSubstitution[ nextGroupNum ] );
+		} else if ( closeSectorData.groupnum != groupNumsSubstitution[ nextGroupNum ] ) {
+			int groupNumToGet = groupNumsSubstitution[ min( closeSectorData.groupnum, groupNumsSubstitution[ nextGroupNum ] ) ];
+			int groupToSet = max( closeSectorData.groupnum, groupNumsSubstitution[ nextGroupNum ] );
 
 			groupNumsSubstitution[ groupNumsSubstitution[ groupToSet ] ] = groupNumToGet;
 			groupNumsSubstitution[ groupToSet ] = groupNumToGet;
@@ -45,7 +45,7 @@ class mcm_WeathremumHandler: EventHandler {
 		W2SectorData closeSectorData = generalSectorsData[ ls.Index() ];
 
 		if ( ls.GetTexture( Sector.ceiling ) != skyflatnum ) {
-			closeSectorData.sectype = W2ST_NextToOutdoor;
+			closeSectorData.w2type = W2ST_NextToOutdoor;
 			corniceLinesFlags[ curline.Index() ] = 1;
 		} else {
 			adjustSectorGroupNum( closeSectorData );
@@ -55,7 +55,7 @@ class mcm_WeathremumHandler: EventHandler {
 	private void setNextToSillSectorData( Sector lsector ) {
 		W2SectorData closeSectorData = generalSectorsData[ lsector.Index() ];
 
-		if ( closeSectorData.sectype == W2ST_NextToOutdoor )
+		if ( closeSectorData.w2type == W2ST_NextToOutdoor )
 			adjustSectorGroupNum( closeSectorData );
 	}
 
@@ -70,7 +70,7 @@ class mcm_WeathremumHandler: EventHandler {
 		for ( int i = 0; i < level.sectors.Size(); i++ )
 			generalSectorsData.Push( W2SectorData.Create( level.sectors[ i ] ) );
 
-		// Understand sectors data such as "sectype" and "secgroup" for sectors under sky:
+		// Understand sectors data such as "w2type" and "groupnum" for sectors under sky:
 		for ( int i = 0; i < level.sectors.Size(); i++ ) {
 			//console.printf( "Sector " .. i .. ": " .. level.Sectors[ i ].GetTexture( Sector.ceiling ) .. "." );
 			Sector s = level.Sectors[ i ];
@@ -78,8 +78,8 @@ class mcm_WeathremumHandler: EventHandler {
 			if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {
 				W2SectorData curOutdoorSectorData = generalSectorsData[ i ];
 
-				curOutdoorSectorData.sectype = W2ST_Outdoor;
-				curOutdoorSectorData.secgroup = nextGroupNum;
+				curOutdoorSectorData.w2type = W2ST_Outdoor;
+				curOutdoorSectorData.groupnum = nextGroupNum;
 				groupNumsSubstitution.Push( nextGroupNum );
 
 				for ( int j = 0; j < s.Lines.Size(); j++ ) {
@@ -105,8 +105,8 @@ class mcm_WeathremumHandler: EventHandler {
 		for ( int i = 0; i < level.sectors.Size(); i++ ) {
 			W2SectorData sdata = generalSectorsData[ i ];
 
-			if ( sdata.sectype == W2ST_NextToOutdoor ) {
-				sdata.secgroup = nextGroupNum;
+			if ( sdata.w2type == W2ST_NextToOutdoor ) {
+				sdata.groupnum = nextGroupNum;
 				groupNumsSubstitution.Push( nextGroupNum );
 
 				Sector s = sdata.s;
@@ -138,13 +138,13 @@ class mcm_WeathremumHandler: EventHandler {
 		for ( int i = 0; i < level.sectors.Size(); i++ ) {
 			W2SectorData sdata = generalSectorsData[ i ];
 
-			if ( sdata.sectype != W2ST_None ) {
-				console.printf( "Grouping sector #" .. i .. ". Group " .. sdata.secgroup .. ", subst " .. groupNumsSubstitution[ groupNumsSubstitution[ sdata.secgroup ] ] .. "." );
+			if ( sdata.w2type != W2ST_None ) {
+				console.printf( "Grouping sector #" .. i .. ". Group " .. sdata.groupnum .. ", subst " .. groupNumsSubstitution[ groupNumsSubstitution[ sdata.groupnum ] ] .. "." );
 
-				if ( sdata.secgroup > groupNumsSubstitution[ sdata.secgroup ] )
-					sdata.secgroup = groupNumsSubstitution[ sdata.secgroup ];
+				if ( sdata.groupnum > groupNumsSubstitution[ sdata.groupnum ] )
+					sdata.groupnum = groupNumsSubstitution[ sdata.groupnum ];
 
-				W2SectorGroup curgroup = sectorGroups[ sdata.secgroup ];
+				W2SectorGroup curgroup = sectorGroups[ sdata.groupnum ];
 				curgroup.sectors.Push( sdata.s );
 			}
 		}
@@ -165,7 +165,7 @@ class mcm_WeathremumHandler: EventHandler {
 						Sector fsec = curline.frontsector;
 						Sector bsec = curline.backsector;
 
-						if ( !fsec || !bsec || ( generalSectorsData[ fsec.Index() ].secgroup != generalSectorsData[ bsec.Index() ].secgroup ) ) {
+						if ( !fsec || !bsec || ( generalSectorsData[ fsec.Index() ].groupnum != generalSectorsData[ bsec.Index() ].groupnum ) ) {
 							curgroup.lines.Push( curline );
 
 							//double zspawnpos = ( fsec? ( bsec? max( fsec.floorplane.d, bsec.floorplane.d ) : fsec.floorplane.negiC * fsec.floorplane.d ) : bsec.floorplane.negiC * bsec.floorplane.d );
@@ -227,12 +227,12 @@ class mcm_WeathremumHandler: EventHandler {
 		for ( int i = 0; i < firstplayerhandler.sectorsdata.Size(); i++ ) {
 			W2SectorData cursecdata = firstplayerhandler.sectorsdata[ i ];
 
-			if ( cursecdata.sectype == W2ST_None ) {
+			if ( cursecdata.w2type == W2ST_None ) {
 				outStr.AppendFormat( TEXTCOLOR_GRAY .. "#%i (g" .. TEXTCOLOR_DARKGRAY .. "%3i" .. TEXTCOLOR_GRAY .. "): ",
-									i, cursecdata.secgroup, cursecdata.sectype );
+									i, cursecdata.groupnum, cursecdata.w2type );
 			} else {
 				outStr.AppendFormat( TEXTCOLOR_GRAY .. "#%i (g" .. TEXTCOLOR_TEAL .. "%3i" .. TEXTCOLOR_GRAY .. ", t%i): ",
-									i, cursecdata.secgroup, cursecdata.sectype );
+									i, cursecdata.groupnum, cursecdata.w2type );
 			}
 
 			switch ( cursecdata.status ) {
