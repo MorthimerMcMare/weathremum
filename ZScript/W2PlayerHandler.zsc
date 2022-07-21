@@ -201,7 +201,7 @@ class W2PlayerHandler: Actor {
 		//thanks to https://habr.com/ru/post/583838/.
 
 		// Outdoor areas raindrop effect:
-		for ( int i = 0; i < 200; i++ ) {
+		for ( int i = 0; i < 50; i++ ) {
 			double angletheta = FRandom( 0.0, 360.0 );
 
 			vector2 raindropPos = target.pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom( 0.0, 1.0 ) ) * 764.0 );
@@ -212,7 +212,7 @@ class W2PlayerHandler: Actor {
 		}
 
 		// Second argument is an environment test radius.
-		BlockLinesIterator it = BlockLinesIterator.Create( self, 768 );
+		BlockLinesIterator it = BlockLinesIterator.Create( self, 320 );
 		corniceLines.Clear();
 
 		// Saving all of the surrounding sectors and defining a canopy raindrops:
