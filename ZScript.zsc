@@ -206,7 +206,7 @@ class mcm_WeathremumHandler: EventHandler {
 		if ( mustCreateGeneralSectorsData )
 			CreateGeneralSectorsData();
 
-		if ( players[ e.PlayerNumber ].mo && e.PlayerNumber == consoleplayer ) {
+		if ( players[ e.PlayerNumber ].mo ) {
 			W2PlayerHandler playerhandler = W2PlayerHandler( Actor.Spawn( "W2PlayerHandler", players[ e.PlayerNumber ].mo.pos ) );
 			playerhandler.FriendPlayer = e.PlayerNumber;
 			playerhandler.groupsdata.Copy( w2level.allSectorGroups );
