@@ -207,7 +207,8 @@ class W2PlayerHandler: Actor {
 			vector2 raindropPos = target.pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom( 0.0, 1.0 ) ) * 764.0 );
 
 			Actor raindrop = Actor.Spawn( "Weathremum_Raindrop", ( raindropPos, pos.z ) );
-			raindrop.master = target;
+			raindrop.target = target;
+			raindrop.master = self;
 			//raindrop.vel.xy = ( 10.0, 10.0 ) * ( sin( rainwaveOffset ) + 1.0 );
 		}
 
