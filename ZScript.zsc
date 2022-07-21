@@ -226,13 +226,29 @@ class mcm_WeathremumHandler: EventHandler {
 	}
 
 	override void WorldTick() {
-		for ( int i = 0; i < MAXPLAYERS; i++ ) {
-			if ( playeringame[ i ] && playerHandlers[ i ] ) {
-				playerHandlers[ i ].target = players[ i ].Camera;
-			}
+		if ( players[ consoleplayer ].mo != players[ consoleplayer ].Camera ) {
+			vector3 camerapos = players[ consoleplayer ].Camera.pos;
+			SendNetworkEvent( "mcm_weathremum_SetCameraXYZ", int( camerapos.x ), int( camerapos.y ), int( camerapos.z ) );
+
+		} else if ( playerHandlers[ consoleplayer ].useMultiplayerPos ) {
+			SendNetworkEvent( "mcm_weathremum_CancelCameraXYZ" );
+
 		}
 
 		Super.WorldTick();
+	}
+
+	override void NetworkProcess( ConsoleEvent e ) {
+		if ( !e.IsManual && multiplayer ) {
+			if ( e.Name == "mcm_weathremum_SetCameraXYZ" ) {
+				playerHandlers[ e.Player ].useMultiplayerPos = true;
+				playerHandlers[ e.Player ].multiplayerPos = ( e.args[ 0 ], e.args[ 1 ], e.args[ 2 ] );
+			} else if ( e.Name == "mcm_weathremum_CancelCameraXYZ" ) {
+				playerHandlers[ e.Player ].useMultiplayerPos = false;
+			}
+		}
+
+		Super.NetworkProcess( e );
 	}
 
 	/*override void RenderOverlay( RenderEvent e ) {
