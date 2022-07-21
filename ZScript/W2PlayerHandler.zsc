@@ -211,6 +211,30 @@ class W2PlayerHandler: Actor {
 			//raindrop.vel.xy = ( 10.0, 10.0 ) * ( sin( rainwaveOffset ) + 1.0 );
 		}
 
+		// Second argument is an environment test radius.
+		BlockLinesIterator it = BlockLinesIterator.Create( self, 768 );
+		corniceLines.Clear();
+
+		// Saving all of the surrounding sectors and defining a canopy raindrops:
+		while ( it.Next() ) {
+			Line l = it.curline;
+			W2SectorGroup groupdata = NULL;
+
+			if ( groupdata = TryAddSectorGroup( l.frontsector ) ) {
+				groupdata.lines.Push( l );
+				//groupdata.lineindices.Push( l.Index() );
+			}
+
+			if ( groupdata = TryAddSectorGroup( l.backsector ) ) {
+				groupdata.lines.Push( l );
+				//groupdata.lineindices.Push( l.Index() );
+			}
+
+			// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to "validcount" variable.
+			if ( w2level.corniceLinesFlags[ l.Index() ] == 1 )
+				corniceLines.Push( l );
+		} // of while ( it.Next() ) {}
+
 		// Cornice raindrops effect:
 		for ( int i = 0; i < corniceLines.Size(); i++ ) {
 			Line l = corniceLines[ i ];
@@ -246,7 +270,7 @@ class W2PlayerHandler: Actor {
 
 
 		// Sector sounds (rain, winds):
-		DoSectorEffects();
+		//DoSectorEffects();
 
 		// Rain itself, raindrops from cornices:
 		DoRainEffects();
