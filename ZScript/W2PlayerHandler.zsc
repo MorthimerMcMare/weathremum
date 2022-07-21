@@ -207,10 +207,10 @@ class W2PlayerHandler: Actor {
 		//thanks to https://habr.com/ru/post/583838/.
 
 		// Outdoor areas raindrop effect:
-		for ( int i = 0; i < 200; i++ ) {
+		for ( int i = 0; i < 100; i++ ) {
 			double angletheta = FRandom( 0.0, 360.0 );
 
-			vector2 raindropPos = target.pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom( 0.0, 1.0 ) ) * 764.0 );
+			vector2 raindropPos = pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom( 0.0, 1.0 ) ) * 764.0 );
 
 			Actor raindrop = Actor.Spawn( "Weathremum_Raindrop", ( raindropPos, pos.z ) );
 			raindrop.target = target;
@@ -244,13 +244,18 @@ class W2PlayerHandler: Actor {
 
 		target = pl.mo;
 
-		vector3 newpos = ( useMultiplayerPos? multiplayerPos : target.pos );
+		vector3 newpos;
 
-		console.printf( "W2PlH <" .. self .. "> target: <" .. target .. "> (Frnd <" .. pl.mo .. ">), useMultipl " .. useMultiplayerPos .. "-> " .. newpos );
+		if ( !multiplayer )
+			newpos = ( pl.Camera? pl.Camera.pos : target.pos );
+		else
+			newpos = ( useMultiplayerPos? multiplayerPos : target.pos );
+
+		//console.printf( "W2PlH <" .. self .. "> target: <" .. target .. "> (Frnd <" .. pl.mo .. ">), useMultipl " .. useMultiplayerPos .. "-> " .. newpos );
 
 		// Move the handler actor to the camera position:
 		SetOrigin( newpos, true );
-		angle = target.angle; // Singleplayer-aware??
+		angle = target.angle; // Singleplayer-aware!!
 
 
 		// Sector sounds (rain, winds):
