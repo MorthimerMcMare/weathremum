@@ -220,11 +220,11 @@ class mcm_WeathremumHandler: EventHandler {
 		
 		Super.PlayerEntered( e );
 
-		if ( e.PlayerNumber == consoleplayer && gl_texture_format == "5" ) {
+		/*if ( e.PlayerNumber == consoleplayer && gl_texture_format == "5" ) {
 			console.printf( TEXTCOLOR_DARKGRAY .. GetClassName() .. "::PlayerEntered(). " .. TEXTCOLOR_YELLOW
 							.. "Your OpenGL texture format seems to be set to \"" .. TEXTCOLOR_CYAN .. "S3TC_DXT3" .. TEXTCOLOR_YELLOW .."\", so translucent raindrops might look weird. " .. TEXTCOLOR_GRAY
 							.. "Change it in the \"Display options\"->\"OpenGL renderer\"->\"Texture options\" or alter the \"gl_texture_format\" variable." );
-		}
+		}*/
 	}
 
 
