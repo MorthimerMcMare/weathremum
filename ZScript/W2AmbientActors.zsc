@@ -105,6 +105,8 @@ class Weathremum_Raindrop: Actor {
 		if ( !cursector || ( ceilingpic != skyflatnum ) )
 			Destroy();
 
+		console.printf( "master.FriendPlayer != consoleplayer: "  .. master.FriendPlayer .. "!=" .. consoleplayer );
+
 		if ( master.FriendPlayer != consoleplayer )
 			bINVISIBLE = true;
 
