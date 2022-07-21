@@ -11,11 +11,10 @@ class mcm_WeathremumHandler: EventHandler {
 	bool mustCreateGeneralSectorsData;		// "PlayerEntered()" is called before "WorldLoaded()".
 
 	W2LevelGeneralData w2level;
+	W2PlayerHandler playerHandlers[ MAXPLAYERS ];
 
 	Array<int> groupNumsSubstitution;		// Quick access provided for the pre-handling process of megasectors.
 	int nextGroupNum;						// Also for uniting all neighbour sectors. Main work variable.
-
-	W2PlayerHandler firstplayerhandler;		// Temporary debug thing...
 
 	override void OnRegister() {
 		SetOrder( WeathremumHandlerOrder );
@@ -212,8 +211,7 @@ class mcm_WeathremumHandler: EventHandler {
 			playerhandler.groupsdata.Copy( w2level.allSectorGroups );
 			playerhandler.w2level = w2level;
 
-			if ( e.PlayerNumber == 0 )
-				firstplayerhandler = playerhandler;
+			playerHandlers[ e.PlayerNumber ] = playerhandler;
 
 			console.printf( "Added a " .. playerhandler.GetClassName() .. " for player " .. e.PlayerNumber .. "." );
 		}
@@ -227,17 +225,28 @@ class mcm_WeathremumHandler: EventHandler {
 		}*/
 	}
 
+	override void WorldTick() {
+		for ( int i = 0; i < MAXPLAYERS; i++ ) {
+			if ( playeringame[ i ] && playerHandlers[ i ] ) {
+				playerHandlers[ i ].target = players[ i ].Camera;
+			}
+		}
+
+		Super.WorldTick();
+	}
 
 	/*override void RenderOverlay( RenderEvent e ) {
-		if ( !firstplayerhandler ) {
+		W2PlayerHandler playerhandler = playerHandlers[ consoleplayer ];
+
+		if ( !playerhandler ) {
 			Super.RenderOverlay( e );
 			return;
 		}
 
-		String outStr = "Total active sectors: " .. firstplayerhandler.loopdataindices.Size() .. ".\n";
+		String outStr = "Total active sectors: " .. playerhandler.loopdataindices.Size() .. ".\n";
 
-		for ( int i = 0; i < firstplayerhandler.sectorsdata.Size(); i++ ) {
-			W2SectorData cursecdata = firstplayerhandler.sectorsdata[ i ];
+		for ( int i = 0; i < playerhandler.sectorsdata.Size(); i++ ) {
+			W2SectorData cursecdata = playerhandler.sectorsdata[ i ];
 
 			if ( cursecdata.w2type == W2ST_None ) {
 				outStr.AppendFormat( TEXTCOLOR_GRAY .. "#%i (g" .. TEXTCOLOR_DARKGRAY .. "%3i" .. TEXTCOLOR_GRAY .. "): ",
@@ -272,7 +281,7 @@ class mcm_WeathremumHandler: EventHandler {
 		Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 30, 60, outStr,
 						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
-		Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 1100, 60, "Current sector: " .. ( firstplayerhandler.floorsector? firstplayerhandler.floorsector.sectornum .. "" : "NULL" ),
+		Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 1100, 60, "Current sector: " .. ( playerhandler.floorsector? playerhandler.floorsector.sectornum .. "" : "NULL" ),
 						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
 		Super.RenderOverlay( e );

@@ -236,10 +236,10 @@ class W2PlayerHandler: Actor {
 		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo || globalfreeze || level.frozen )
 			return;
 
-		target = pl.Camera;
+		//target = pl.Camera;
 
-		if ( !target )
-			target = pl.mo;
+		//if ( !target )
+		//	target = pl.mo;
 
 		console.printf( GetClassName() .. " <" .. self .. "> target: <" .. target .. "> (FriendPlayer " .. FriendPlayer .. " <" .. pl.mo .. ">)" );
 
