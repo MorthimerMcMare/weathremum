@@ -105,7 +105,12 @@ class Weathremum_Raindrop: Actor {
 		if ( !cursector || ( ceilingpic != skyflatnum ) )
 			Destroy();
 
-		double minspawnheight = ( master? min( ceilingz, master.pos.z + master.height + 256.0 ) : ceilingz );
+		//console.printf( self .. ". master.FriendPlayer != consoleplayer: "  .. master.FriendPlayer .. "!=" .. consoleplayer );
+
+		if ( master.FriendPlayer != consoleplayer )
+			bINVISIBLE = true;
+
+		double minspawnheight = ( master? min( ceilingz, target.pos.z + target.height + 256.0 ) : ceilingz );
 
 		SetZ( minspawnheight - FRandom( 8.0, 19.0 ) );
 
@@ -175,7 +180,7 @@ class Weathremum_Raindrop: Actor {
 		RAIN "#" 0 RaindropPreSplash();
 		RAIN "##" 1 { frame++; }
 		RWIN "#" 0 {
-			if ( ( level.maptime & 1 ) || ( master && Distance2D( master ) > 512.0 ) )
+			if ( ( level.maptime & 1 ) || ( target && Distance2D( target ) > 512.0 ) )
 				Destroy();
 			else
 				RaindropSplash();
@@ -211,7 +216,7 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 		RAIN "#" 1 RaindropPreSplash();
 		RAIN "##" 1 { frame++; }
 		RWIN "#" 0 {
-			if ( master && Distance2D( master ) > 512.0 )
+			if ( target && Distance2D( target ) > 512.0 )
 				Destroy();
 			else
 				RaindropSplash();
