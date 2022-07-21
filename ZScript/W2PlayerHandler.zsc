@@ -241,6 +241,8 @@ class W2PlayerHandler: Actor {
 		if ( !target )
 			target = pl.mo;
 
+		console.printf( GetClassName() .. " <" .. self .. "> target: <" .. target .. "> (FriendPlayer " .. FriendPlayer .. " <" .. pl.mo .. ">)" );
+
 		// Move the handler actor to the player position:
 		SetOrigin( target.pos, true );
 		angle = target.angle;
