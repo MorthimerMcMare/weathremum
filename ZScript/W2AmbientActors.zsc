@@ -114,11 +114,13 @@ class Weathremum_Raindrop: Actor {
 
 		double minspawnheight = ( master? min( ceilingz, target.pos.z + target.height + 256.0 ) : ceilingz );
 
-		SetZ( minspawnheight - FRandom( 8.0, 19.0 ) );
+		SetZ( minspawnheight - FRandom( 8.0, 25.0 ) );
 
 		vel.z = -35.0;
 		scale = ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
 		alpha = FRandom( 0.2, 0.7 );
+
+		ClearInterpolation();
 	}
 
 	override void Tick() {
@@ -136,7 +138,7 @@ class Weathremum_Raindrop: Actor {
 		alpha *= 0.4;
 
 		frame = Random( 2, 3 );
-		tics = 4 - frame;
+		tics = 5 - frame; //Random( 2, 3 );
 
 		SetZ( floorz );
 		ClearInterpolation();
@@ -167,7 +169,7 @@ class Weathremum_Raindrop: Actor {
 
 	States {
 	Spawn:
-		RAIN A -1;
+		RAIN N -1;
 		Stop;
 	Death:
 		RAIN "#" 0 RaindropPreSplash();
