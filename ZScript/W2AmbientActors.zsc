@@ -91,10 +91,10 @@ class Weathremum_Raindrop: Actor {
 		+MISSILE;
 		-SOLID;
 		+NOBLOCKMAP;
-		+DONTSPLASH;
 		+NOTONAUTOMAP;
 		Height 0;
 		Radius 1;
+		Mass 3;
 		RenderStyle "Translucent";
 	}
 
