@@ -88,7 +88,9 @@ class W2SoundOrigin: Actor {
 
 class Weathremum_Raindrop: Actor {
 	Default {
-		+NOINTERACTION;
+		+MISSILE;
+		-SOLID;
+		+NOBLOCKMAP;
 		+DONTSPLASH;
 		+NOTONAUTOMAP;
 		Height 0;
@@ -126,15 +128,6 @@ class Weathremum_Raindrop: Actor {
 		}
 
 		Super.Tick();
-
-		if ( !bCORPSE ) {
-			if ( cursector && pos.z < floorz - 19.0 ) {
-				SetStateLabel( "Death" );
-				bCORPSE = true;
-			}
-		} else if ( bMOVEWITHSECTOR ) {
-			ClearInterpolation();
-		}
 	}
 
 	void RaindropPreSplash( void ) {
