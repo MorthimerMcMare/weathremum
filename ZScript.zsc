@@ -108,18 +108,28 @@ class mcm_WeathremumHandler: EventHandler {
 				String floorTexNameLeft5 = floorTexName.Left( 5 );
 				String floorTexNameLeft6 = floorTexName.Left( 6 );
 
-				if ( floorTexNameLeft6 == "FWATER" || ( floorTexNameLeft6 == "SLIME0" && floorTexName.CharCodeAt( 6 ) <= 0x38 ) ) {
+				bool isSlime00Slime08 = ( floorTexNameLeft6 == "SLIME0" && floorTexName.CharCodeAt( 6 ) <= 0x38 );
+
+				if ( floorTexNameLeft6 == "FWATER" || ( isSlime00Slime08 && s.damageamount ) ) {
 					curOutdoorSectorData.w2floor = W2FT_Water;
 
 				} else if ( floorTexNameLeft5 == "SLIME" || floorTexNameLeft5 == "RROCK" ) {
 					int texSubindex = floorTexName.Mid( 5, 2 ).ToInt();
 
-					if (   ( floorTexNameLeft5 == "SLIME" && texSubindex >= 9 && texSubindex <= 12 )
+					if (     isSlime00Slime08
+						|| ( floorTexNameLeft5 == "SLIME" && texSubindex >= 9 && texSubindex <= 12 )
 						|| ( floorTexNameLeft5 == "RROCK" && texSubindex <= 8 && texSubindex != 3 && texSubindex != 4 ) ) {
-						curOutdoorSectorData.w2floor = W2FT_Hot;
+						curOutdoorSectorData.w2floor = W2FT_Incandecent;
+
+					} else if ( floorTexNameLeft5 == "RROCK" ) {
+						curOutdoorSectorData.w2floor = W2FT_HardSurface;
 					}
+
+				} else if ( floorTexNameLeft5 == "METAL" ) {
+					curOutdoorSectorData.w2floor = W2FT_HardSurface;
+
 				} else if ( floorTexName.Left( 4 ) == "LAVA" ) {
-					curOutdoorSectorData.w2floor = W2FT_Hot;
+					curOutdoorSectorData.w2floor = W2FT_Incandecent;
 
 				} else if ( floorTexNameLeft5 == "BLOOD" || floorTexNameLeft6 == "NUKAGE" ) {
 					curOutdoorSectorData.w2floor = W2FT_Nukage;

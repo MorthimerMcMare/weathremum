@@ -21,11 +21,14 @@ enum EWeathremumSectorType {
 
 enum EWeathremumFloorTerrain {
 	W2FT_Default = 0,
-	W2FT_Water,
-	W2FT_Nukage,
-	W2FT_Hot,
+	W2FT_SoftSurface,	// Grass, carpets, ...
+	W2FT_HardSurface,	// Rocks, metal tiles, ...
+	W2FT_Water,			// Non-damaging liquids.
+	W2FT_Nukage,		// Damaging nukage and slime.
+	W2FT_Incandecent,	// Lava and hot rocks (both harmful and harmless).
 
-	W2FT_Normal = W2FT_Default
+	W2FT_Normal = W2FT_Default,
+	W2FT_User = 0xFF
 }
 
 
