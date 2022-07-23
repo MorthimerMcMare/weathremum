@@ -3,7 +3,8 @@
 // AA: 0x7FAA0004.
 // ZC: 0x7FAA0005 + 0x7FAA0006.
 const WeathremumHandlerOrder = 0x7FAA0007;
-const STAT_WEATHREMUM = Thinker.STAT_USER + 5;
+const STAT_WEATHREMUM_MAINDECOR = Thinker.STAT_USER + 5;
+const STAT_WEATHREMUM_EXTRADECOR = STAT_WEATHREMUM_MAINDECOR + 1;
 
 
 enum EWeathremumHandleStatus {
@@ -16,6 +17,15 @@ enum EWeathremumSectorType {
 	W2ST_None = 0,
 	W2ST_Outdoor,
 	W2ST_NextToOutdoor
+}
+
+enum EWeathremumFloorTerrain {
+	W2FT_Default = 0,
+	W2FT_Water,
+	W2FT_Nukage,
+	W2FT_Hot,
+
+	W2FT_Normal = W2FT_Default
 }
 
 
@@ -37,11 +47,14 @@ class W2SectorData {
 	int groupnum;
 	W2SectorGroup group;
 	EWeathremumSectorType w2type;
+	EWeathremumFloorTerrain w2floor;
 
 	static W2SectorData Create( Sector initSector ) {
 		W2SectorData newdata = new( 'W2SectorData' );
 		newdata.s = initSector;
 		newdata.groupnum = -1;
+		newdata.w2type = W2ST_None;
+		newdata.w2floor = W2FT_Default;
 
 		return newdata;
 	}

@@ -87,11 +87,14 @@ class W2SoundOrigin: Actor {
 
 
 class Weathremum_Raindrop: Actor {
+	W2SectorData w2sector;
+
 	Default {
 		+MISSILE;
 		-SOLID;
 		+NOBLOCKMAP;
 		+NOTONAUTOMAP;
+		+DONTSPLASH;
 		Height 0;
 		Radius 1;
 		Mass 3;
@@ -99,7 +102,7 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	override void BeginPlay() {
-		ChangeStatNum( STAT_WEATHREMUM ); // 75.
+		ChangeStatNum( STAT_WEATHREMUM_MAINDECOR ); // 75.
 		Super.BeginPlay();
 	}
 
@@ -133,6 +136,24 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	void RaindropPreSplash( void ) {
+		if ( w2sector && w2sector.w2floor != W2FT_Default ) {
+
+			if ( w2sector.w2floor == W2FT_Water ) {
+				if ( target && Distance2D( target ) <= 512.0 ) {
+					for ( int i = 0; i < 3; i++ ) {
+						Actor ripple = Actor.Spawn( "Weathremum_WaterRipple", pos + ( FRandom( -4.0, 4.0 ), FRandom( -4.0, 4.0 ), 0.0 ) );
+						ripple.SetZ( floorz );
+						ripple.ClearInterpolation();
+					}
+				}
+			} else if ( !Random( 0, 15 ) && ( w2sector.w2floor == W2FT_Nukage || w2sector.w2floor == W2FT_Hot ) ) {
+				Actor.Spawn( "Weathremum_NukageVapor", pos + ( 0.0, 0.0, 5.0 ) );
+			}
+
+			Destroy();
+			return;
+		}
+
 		vel = (0, 0, 0);
 		scale.y = 0.75;
 		alpha *= 0.4;
@@ -218,5 +239,67 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 		}
 		RWIN "#" 1 A_FadeOut( 0.005 );
 		Wait;
+	}
+}
+
+class Weathremum_WaterRipple: Actor {
+	Default {
+		+NOINTERACTION;
+		+FLATSPRITE;
+		+FLOORCLIP;
+		RenderStyle "Translucent";
+	}
+
+	override void BeginPlay() {
+		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay() {
+		frame = Random( 0, 3 );
+		alpha = FRandom( 0.1, 0.4 );
+		scale.x = scale.y = FRandom( 0.1, 0.25 );
+	}
+
+	override void Tick() {
+		if ( !globalfreeze && !level.frozen ) {
+			Super.Tick();
+
+			scale.y = ( scale.x += 0.025 );
+			A_FadeOut( 0.025 );
+		}
+	}
+
+	States {
+	Spawn:
+		WRPL "#" 2 {
+			frame = ( frame + 1 ) % 4;
+		}
+		Loop;
+	}
+}
+
+class Weathremum_NukageVapor: Actor {
+	Default {
+		+NOINTERACTION;
+		+FLATSPRITE;
+		RenderStyle "Add";
+	}
+
+	override void BeginPlay() {
+		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay() {
+		vel.z = FRandom( 0.0, 5.0 );
+		alpha = FRandom( 0.1, 0.5 );
+		scale.x = scale.y = FRandom( 0.25, 0.75 ) * FRandomPick( -1.0, 1.0 );
+	}
+
+	States {
+	Spawn:
+		RAIS ABCDEFGHI 2 A_FadeOut( 0.05 );
+		Stop;
 	}
 }
