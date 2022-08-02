@@ -241,7 +241,7 @@ class W2PlayerHandler: Actor {
 	override void Tick() {
 		PlayerInfo pl = players[ FriendPlayer ];
 
-		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo || globalfreeze || level.frozen )
+		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo || FriendPlayer != consoleplayer || globalfreeze || level.frozen )
 			return;
 
 		target = pl.mo;
