@@ -1,10 +1,10 @@
-version "2.4.0"
+version "3.3.0"
 
 #include "ZScript/W2Data.zsc"
 #include "ZScript/W2PlayerHandler.zsc"
 #include "ZScript/W2AmbientActors.zsc"
 
-const mcm_WeathremumVersion = "0.16";
+const mcm_WeathremumVersion = "0.18";
 
 
 class mcm_WeathremumHandler: EventHandler {
@@ -85,6 +85,7 @@ class mcm_WeathremumHandler: EventHandler {
 			if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {
 				W2SectorData curOutdoorSectorData = w2level.allSectorsData[ i ];
 
+				// Setting relationship to neighbour sectors:
 				curOutdoorSectorData.w2type = W2ST_Outdoor;
 				curOutdoorSectorData.groupnum = nextGroupNum;
 				groupNumsSubstitution.Push( nextGroupNum );
@@ -102,6 +103,40 @@ class mcm_WeathremumHandler: EventHandler {
 						setNextToOutdoorSectorData( l, lsector );
 				}
 
+				// Understanding the sector floor terrain Weathremum type:
+				String floorTexName = TexMan.GetName( s.GetTexture( s.FLOOR ) );
+				String floorTexNameLeft5 = floorTexName.Left( 5 );
+				String floorTexNameLeft6 = floorTexName.Left( 6 );
+
+				bool isSlime00Slime08 = ( floorTexNameLeft6 == "SLIME0" && floorTexName.CharCodeAt( 6 ) <= 0x38 );
+
+				if ( floorTexNameLeft6 == "FWATER" || ( isSlime00Slime08 && s.damageamount ) ) {
+					curOutdoorSectorData.w2floor = W2FT_Water;
+
+				} else if ( floorTexNameLeft5 == "SLIME" || floorTexNameLeft5 == "RROCK" ) {
+					int texSubindex = floorTexName.Mid( 5, 2 ).ToInt();
+
+					if (     isSlime00Slime08
+						|| ( floorTexNameLeft5 == "SLIME" && texSubindex >= 9 && texSubindex <= 12 )
+						|| ( floorTexNameLeft5 == "RROCK" && texSubindex <= 8 && texSubindex != 3 && texSubindex != 4 ) ) {
+						curOutdoorSectorData.w2floor = W2FT_Incandecent;
+
+					} else if ( floorTexNameLeft5 == "RROCK" ) {
+						curOutdoorSectorData.w2floor = W2FT_HardSurface;
+					}
+
+				} else if ( floorTexNameLeft5 == "METAL" ) {
+					curOutdoorSectorData.w2floor = W2FT_HardSurface;
+
+				} else if ( floorTexName.Left( 4 ) == "LAVA" ) {
+					curOutdoorSectorData.w2floor = W2FT_Incandecent;
+
+				} else if ( floorTexNameLeft5 == "BLOOD" || floorTexNameLeft6 == "NUKAGE" ) {
+					curOutdoorSectorData.w2floor = W2FT_Nukage;
+
+				}
+
+				// New group saving:
 				w2level.allSectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
 				nextGroupNum++;
 			} // of if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {}

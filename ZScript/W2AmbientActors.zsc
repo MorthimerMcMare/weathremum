@@ -71,7 +71,7 @@ class W2SoundOrigin: Actor {
 			//console.printf( self .. ". newsetpos " .. newsetpos .. ", deltaArclinePos: " .. deltaArclinePos .. ", deltapos %f", deltapos );
 		}
 
-		SetOrigin( ( newsetpos, floorz ), false );
+		SetOrigin( ( newsetpos, target.pos.z ), false );
 	}
 
 	override void Tick() {
@@ -87,17 +87,22 @@ class W2SoundOrigin: Actor {
 
 
 class Weathremum_Raindrop: Actor {
+	W2SectorData w2sector;
+
 	Default {
-		+NOINTERACTION;
-		+DONTSPLASH;
+		+MISSILE;
+		-SOLID;
+		+NOBLOCKMAP;
 		+NOTONAUTOMAP;
+		+DONTSPLASH;
 		Height 0;
 		Radius 1;
+		Mass 3;
 		RenderStyle "Translucent";
 	}
 
 	override void BeginPlay() {
-		ChangeStatNum( STAT_WEATHREMUM ); // 75.
+		ChangeStatNum( STAT_WEATHREMUM_MAINDECOR ); // 75.
 		Super.BeginPlay();
 	}
 
@@ -112,11 +117,13 @@ class Weathremum_Raindrop: Actor {
 
 		double minspawnheight = ( master? min( ceilingz, target.pos.z + target.height + 256.0 ) : ceilingz );
 
-		SetZ( minspawnheight - FRandom( 8.0, 19.0 ) );
+		SetZ( minspawnheight - FRandom( 8.0, 25.0 ) );
 
 		vel.z = -35.0;
 		scale = ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
 		alpha = FRandom( 0.2, 0.7 );
+
+		ClearInterpolation();
 	}
 
 	override void Tick() {
@@ -126,24 +133,32 @@ class Weathremum_Raindrop: Actor {
 		}
 
 		Super.Tick();
-
-		if ( !bCORPSE ) {
-			if ( cursector && pos.z < floorz - 19.0 ) {
-				SetStateLabel( "Death" );
-				bCORPSE = true;
-			}
-		} else if ( bMOVEWITHSECTOR ) {
-			ClearInterpolation();
-		}
 	}
 
 	void RaindropPreSplash( void ) {
+		if ( w2sector && w2sector.w2floor >= W2FT_Water ) {
+
+			if ( w2sector.w2floor == W2FT_Water ) {
+				if ( target && Distance2D( target ) <= 512.0 ) {
+					for ( int i = 0; i < 3; i++ )
+						Actor.Spawn( "Weathremum_WaterRipple", pos + ( FRandom( -4.0, 4.0 ), FRandom( -4.0, 4.0 ), 0.0 ) );
+				}
+
+			} else if ( !Random( 0, 7 ) ) {
+				if ( w2sector.w2floor == W2FT_Incandecent || ( w2sector.w2floor == W2FT_Nukage && !Random( 0, 3 ) ) )
+					Actor.Spawn( "Weathremum_NukageVapor", pos + ( 0.0, 0.0, 5.0 ) );
+			}
+
+			Destroy();
+			return;
+		}
+
 		vel = (0, 0, 0);
 		scale.y = 0.75;
 		alpha *= 0.4;
 
-		frame = Random( 2, 3 );
-		tics = 4 - frame;
+		frame = Random( 1, 2 );
+		tics = 3 - frame; //Random( 2, 3 );
 
 		SetZ( floorz );
 		ClearInterpolation();
@@ -154,6 +169,13 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	void RaindropSplash( void ) {
+		if ( w2sector && w2sector.w2floor == W2FT_HardSurface ) {
+			Actor.Spawn( "Weathremum_HardSurfaceRaindropBreak", pos + ( FRandom( -4.0, 4.0 ), FRandom( -4.0, 4.0 ), 0.0 ) );
+
+			Destroy();
+			return;
+		}
+
 		bFLATSPRITE = bROLLSPRITE = bFLOORCLIP = bCORPSE = true;
 
 		// General visual tweaks:
@@ -174,11 +196,11 @@ class Weathremum_Raindrop: Actor {
 
 	States {
 	Spawn:
-		RAIN A -1;
+		RAIN N -1;
 		Stop;
 	Death:
 		RAIN "#" 0 RaindropPreSplash();
-		RAIN "##" 1 { frame++; }
+		RAIN "#" 2 { frame++; }
 		RWIN "#" 0 {
 			if ( ( level.maptime & 1 ) || ( target && Distance2D( target ) > 512.0 ) )
 				Destroy();
@@ -200,7 +222,7 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 	override void Tick() {
 		if ( !bCORPSE && !globalfreeze && !level.frozen ) {
 			if ( vel.z > -35.0 )
-				vel.z -= 2.0;
+				vel.z -= 1.5;
 
 			scale.y *= 1.1;
 
@@ -223,5 +245,103 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 		}
 		RWIN "#" 1 A_FadeOut( 0.005 );
 		Wait;
+	}
+}
+
+class Weathremum_WaterRipple: Actor {
+	Default {
+		+NOTONAUTOMAP;
+		+NOINTERACTION;
+		+FLATSPRITE;
+		+FLOORCLIP;
+		RenderStyle "Translucent";
+	}
+
+	override void BeginPlay() {
+		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay() {
+		frame = Random( 0, 3 );
+		alpha = FRandom( 0.095, 0.333 );
+		scale.x = scale.y = FRandom( 0.1, 0.25 );
+	}
+
+	override void Tick() {
+		if ( !globalfreeze && !level.frozen ) {
+			Super.Tick();
+
+			scale.y = ( scale.x += 0.025 );
+			A_FadeOut( 0.025 );
+		}
+	}
+
+	States {
+	Spawn:
+		WRPL "#" 2 {
+			frame = ( frame + 1 ) % 4;
+		}
+		Loop;
+	}
+}
+
+class Weathremum_HardSurfaceRaindropBreak: Actor {
+	Default {
+		+NOTONAUTOMAP;
+		+NOINTERACTION;
+		+FLATSPRITE;
+		+FLOORCLIP;
+		RenderStyle "Translucent";
+	}
+
+	override void BeginPlay() {
+		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay() {
+		frame = Random( 0, 3 );
+		alpha = FRandom( 0.5, 1.0 );
+		scale.x = scale.y = FRandom( 0.175, 0.45 );
+	}
+
+	override void Tick() {
+		if ( !globalfreeze && !level.frozen ) {
+			frame = ( frame + 1 ) % 4;
+			A_FadeOut( 0.175 );
+		}
+	}
+
+	States {
+	Spawn:
+		WRPL "#" -1;
+		Stop;
+	}	
+}
+
+class Weathremum_NukageVapor: Actor {
+	Default {
+		+NOTONAUTOMAP;
+		+NOINTERACTION;
+		+FLATSPRITE;
+		RenderStyle "Add";
+	}
+
+	override void BeginPlay() {
+		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay() {
+		vel.z = FRandom( 0.0, 5.0 );
+		alpha = FRandom( 0.075, 0.33 );
+		scale.x = scale.y = FRandom( 0.25, 0.75 ) * FRandomPick( -1.0, 1.0 );
+	}
+
+	States {
+	Spawn:
+		RAIS ABCDEFGHI 2 A_FadeOut( 0.05 );
+		Stop;
 	}
 }
