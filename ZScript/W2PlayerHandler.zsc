@@ -264,7 +264,7 @@ class W2PlayerHandler: Actor {
 		DoSectorEffects();
 
 		// Rain itself, raindrops from cornices:
-		//DoRainEffects();
+		DoRainEffects();
 
 		Super.Tick();
 	}
