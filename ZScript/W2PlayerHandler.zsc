@@ -230,7 +230,15 @@ class W2PlayerHandler: Actor {
 			if ( l.backsector && ( l.backsector.ceilingplane.d < minspawnheight ) )
 				minspawnheight = l.backsector.ceilingplane.d;
 
-			if ( !Random( 0, 1 ) ) {
+			double spawnCoef = linelength / 96.0;
+
+			int spawnAmount = int( floor( spawnCoef ) );
+			double extraSpawnChange = spawnCoef - spawnAmount;
+
+			if ( extraSpawnChange > 0.0 && FRandom( 0.0, 1.0 ) < extraSpawnChange )
+				spawnAmount++;
+
+			for ( int i = 0; i < spawnAmount; i++ ) {
 				Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + l.delta / linelength * FRandom( 0.0, linelength ), minspawnheight ) );
 				raindrop.master = target;
 			}
