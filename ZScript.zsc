@@ -283,8 +283,15 @@ class mcm_WeathremumHandler: EventHandler {
 			}
 		}
 
+		/*if ( e.Name ~== "test_turn180" ) {
+			players[ e.Player ].mo.angle = ( players[ e.Player ].mo.angle + 180.0 ) % 360.0;
+		} else if ( e.Name ~== "test_turnto" ) {
+			players[ e.Player ].mo.angle = e.args[ 0 ] % 360.0;
+		}*/
+
 		Super.NetworkProcess( e );
 	}
+
 
 	/*override void RenderOverlay( RenderEvent e ) {
 		W2PlayerHandler playerhandler = playerHandlers[ consoleplayer ];
@@ -332,10 +339,14 @@ class mcm_WeathremumHandler: EventHandler {
 		Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 30, 60, outStr,
 						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
-		Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 1100, 60, "Current sector: " .. ( playerhandler.floorsector? playerhandler.floorsector.sectornum .. "" : "NULL" ),
-						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
+		W2SectorData secdata = ( playerhandler.floorsector? w2level.allSectorsData[ playerhandler.floorsector.Index() ] : NULL );
+
+		if ( secdata )
+			Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 1100, 100, "Current sector: " .. secdata.s.Index() .. "\nCurrent group: " .. secdata.groupnum,
+							DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
 		Super.RenderOverlay( e );
-	}*/
+	} */
+
 
 } // of class mcm_WeathremumHandler: EventHandler {}

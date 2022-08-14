@@ -2,6 +2,7 @@
 
 // A base weather sound actor.
 class W2SoundOrigin: Actor {
+
 	SeqNode seq;
 	bool justCreated;
 
@@ -21,6 +22,7 @@ class W2SoundOrigin: Actor {
 	}
 
 	// It's implied that "master" is a W2PlayerHandler and a "target" is a handling player actor.
+	// [McM]: Not used since stereo sound test (!!!).
 	void LinedefMove( vector2 nextpos ) {
 		vector2 newsetpos = nextpos;
 
@@ -157,8 +159,8 @@ class Weathremum_Raindrop: Actor {
 		scale.y = 0.75;
 		alpha *= 0.4;
 
-		frame = Random( 0, 1 );
-		tics = 2 - frame; //Random( 2, 3 );
+		frame = Random( 1, 2 );
+		tics = frame; //Random( 2, 3 );
 
 		SetZ( floorz );
 		ClearInterpolation();
@@ -285,6 +287,42 @@ class Weathremum_WaterRipple: Actor {
 		Loop;
 	}
 }
+
+/*class Weathremum_WaterRipple: Actor {
+	Default {
+		+NOTONAUTOMAP;
+		+NOINTERACTION;
+		+FLATSPRITE;
+		+FLOORCLIP;
+		RenderStyle "Add";
+	}
+
+	override void BeginPlay() {
+		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay() {
+		//frame = Random( 0, 3 );
+		alpha = FRandom( 0.03, 0.33 );
+		scale.x = scale.y = FRandom( 0.001, 0.05 );
+	}
+
+	override void Tick() {
+		if ( !globalfreeze && !level.frozen ) {
+			Super.Tick();
+
+			scale.y = ( scale.x += 0.005 );
+			A_FadeOut( 0.025 );
+		}
+	}
+
+	States {
+	Spawn:
+		GRPL A -1;
+		Stop;
+	}
+}*/
 
 class Weathremum_HardSurfaceRaindropBreak: Actor {
 	Default {

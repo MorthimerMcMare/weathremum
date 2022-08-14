@@ -31,6 +31,13 @@ enum EWeathremumFloorTerrain {
 	W2FT_User = 0xFF
 }
 
+enum EWeathremumSoundDirection {
+	W2SD_Left = 0,
+	W2SD_Right,
+
+	W2SD_Quantity
+}
+
 
 class W2LevelGeneralData {
 	Array<W2SectorData> allSectorsData;		// All of the sectors.
@@ -63,12 +70,12 @@ class W2SectorData {
 	}
 }
 
-// Megasectors/sectors union.
+// Megasector/sectors union.
 class W2SectorGroup {
 	int num;
 
 	EWeathremumHandleStatus status;
-	W2SoundOrigin soundorigin;
+	W2SoundOrigin sndorigin[ W2SD_Quantity ];
 
 	Array<Sector> sectors;
 	Array<Line> lines;		// A perimeter lines.
