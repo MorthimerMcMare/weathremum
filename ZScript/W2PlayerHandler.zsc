@@ -133,7 +133,7 @@ class W2PlayerHandler: Actor {
 							sndactor.seq = sndactor.StartSoundSequence( "weather/rain", SeqNode.ENVIRONMENT );
 							break;
 						case W2ST_NextToOutdoor:
-							sndactor.seq = sndactor.StartSoundSequence( "weather/wind", SeqNode.ENVIRONMENT );
+							sndactor.seq = sndactor.StartSoundSequence( "weather/wind2", SeqNode.ENVIRONMENT );
 							break;
 						default:
 							break;
@@ -164,11 +164,10 @@ class W2PlayerHandler: Actor {
 
 				//sndactor.interpMaxTics = sndactor.interpTic = 15;
 			} else {
-				vector2 minposxy[ W2SD_Quantity ];
-				double minlength[ W2SD_Quantity ];
+				vector2 minposxy;
+				double minlength;
 
-				minlength[ W2SD_Left ] = 9999.9; // Actually must be greater than an environment test radius.
-				minlength[ W2SD_Right ] = 9999.9;
+				minlength = 9999.9; // Actually must be greater than an environment test radius.
 
 				vector2 plp = pos.xy;
 
@@ -210,25 +209,10 @@ class W2PlayerHandler: Actor {
 						curminlength = ( curposxy - plp ).Length();
 					}
 
-					// Belonging of the sound origin (to left/to right from current player):
-					if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {
-						vector2 vec2plleft = AngleToVector( target.angle - 90.0, 1.0 );
-
-						double v1leftProjection = ( ( plp - v1p ) dot vec2plleft );
-						double v2leftProjection = ( ( plp - v2p ) dot vec2plleft );
-
-						//if ( loopdataindices[ i ] == 10 ) console.printf( loopdataindices[ i ] .. "v1leftProjection " .. v1leftProjection .. ", v2leftProjection " .. v2leftProjection );
-
-						if ( ( v1leftProjection >= 0.0 || v2leftProjection >= 0.0 ) && ( curminlength < minlength[ W2SD_Left ] ) ) {
-							minlength[ W2SD_Left ] = curminlength;
-							minposxy[ W2SD_Left ] = curposxy;
-						}
-
-						if ( ( v1leftProjection <= 0.0 || v2leftProjection <= 0.0 ) && ( curminlength < minlength[ W2SD_Right ] ) ) {
-							minlength[ W2SD_Right ] = curminlength;
-							minposxy[ W2SD_Right ] = curposxy;
-						}
-					} // of if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {}
+					if ( curminlength < minlength ) {
+						minlength = curminlength;
+						minposxy = curposxy;
+					}
 
 				} // of for ( int j = 0; j < groupdata.lines.Size(); j++ ) {}
 
@@ -260,20 +244,10 @@ class W2PlayerHandler: Actor {
 					marker.angle = 180.0;
 				}*/
 
-				if ( minlength[ W2SD_Right ] > 9000.0 )
-					minposxy[ W2SD_Right ] = minposxy[ W2SD_Left ];
-				else if ( minlength[ W2SD_Left ] > 9000.0 )
-					minposxy[ W2SD_Left ] = minposxy[ W2SD_Right ];
+				double anglediff = ( atan2( minposxy.y - target.pos.y, minposxy.x - target.pos.x ) - target.angle ) % 360.0;
 
-				double langlediff = ( atan2( minposxy[ W2SD_Left ].y - target.pos.y, minposxy[ W2SD_Left ].x - target.pos.x ) - target.angle ) % 360.0;
-				double ranglediff = ( atan2( minposxy[ W2SD_Right ].y - target.pos.y, minposxy[ W2SD_Right ].x - target.pos.x ) - target.angle ) % 360.0;
-
-				double leftmul = oppositeSoundDistMul( langlediff - 90.0 );
-				double rightmul = oppositeSoundDistMul( ranglediff + 90.0 );
-
-				// TODO: Find and use a weighted formula.
-				double leftlen = min( 768.0, minlength[ W2SD_Left ], minlength[ W2SD_Right ] * leftmul );
-				double rightlen = min( 768.0, minlength[ W2SD_Right ], minlength[ W2SD_Left ] * rightmul );
+				double leftlen = minlength * oppositeSoundDistMul( anglediff );
+				double rightlen = minlength * oppositeSoundDistMul( anglediff + 180.0 );
 
 				//console.printf( TEXTCOLOR_DARKGREEN .. "%4i grp %2i. SetLeft " .. leftlen .. " (mult %2.2f), SetRight " .. rightlen .. " (mult %2.2f).", level.maptime, loopdataindices[ i ], leftmul, rightmul );
 
@@ -296,10 +270,18 @@ class W2PlayerHandler: Actor {
 	} // of void DoSectorEffects( void ) {}
 
 	double oppositeSoundDistMul( double ang ) {
-		return max( 1.0, 4.0 - abs( ( ang % 360.0 ) / 360.0 - 0.5 ) * 12.0 );
+		double x = ( ang % 360.0 ) / 360.0;
+
+		if ( x < 0.25 )
+			return -0.2 * x + 1.0;
+		else if ( x < 0.5 )
+			return 1.8 * x + 0.5;
+		else if ( x < 0.75 )
+			return 4.4 * x - 0.8;
+
+		return -6.0 * x + 7.0;
 
 		//return ( abs( ( ang % 360.0 ) / 360.0 - 0.5 ) * 5.0 + 1.0 );
-		//return ( abs( 1.0 / sin( angle ) + 2.0 ) ) / 3.0;
 	}
 
 
