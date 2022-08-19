@@ -39,7 +39,7 @@ class W2PlayerHandler: Actor {
 		useMultiplayerPos = false;
 	}
 
-	private W2SectorGroup TryAddSectorGroup( Sector s ) {
+	/*private W2SectorGroup TryAddSectorGroup( Sector s ) {
 		if ( !s )
 			return NULL;
 
@@ -49,19 +49,11 @@ class W2PlayerHandler: Actor {
 
 		W2SectorGroup groupdata = groupsdata[ groupnum ];
 
-		// Starts sector sound or continues it (by stop preventing) if it is still needed.
-		if ( groupdata.status == W2HS_Off )
-			newdataindices.Push( groupnum );
-
-		if ( groupdata.status != W2HS_Active ) {
-			groupdata.status = W2HS_Active;
-			groupdata.lines.Clear();
-		}
-
 		return groupdata;
-	}
+	}*/
 
 	void DoSectorEffects( void ) {
+
 		// Suggest potential excess sounds to stop:
 		for ( int i = 0; i < loopdataindices.Size(); i++ )
 			groupsdata[ loopdataindices[ i ] ].status = W2HS_StopSuggestion;
@@ -70,10 +62,24 @@ class W2PlayerHandler: Actor {
 		corniceLines.Clear();
 
 		// Second argument is an environment test radius.
-		BlockLinesIterator it = BlockLinesIterator.Create( self, 768 );
+		W2BlockmapData blockmapCell = w2level.GetWorldCell( pos.xy );
+
+		for ( int i = 0; i < blockmapCell.includedGroups.Size(); i++ ) {
+			W2SectorGroup groupdata = blockmapCell.includedGroups[ i ];
+
+			// Starts sector sound or continues it (by stop preventing) if it is still needed.
+			if ( groupdata.status == W2HS_Off )
+				newdataindices.Push( groupdata.num );
+
+			if ( groupdata.status != W2HS_Active )
+				groupdata.status = W2HS_Active;
+		}
+
+
+		//BlockLinesIterator it = BlockLinesIterator.Create( self, 768 );
 
 		// Saving all of the surrounding sectors and defining a canopy raindrops:
-		while ( it.Next() ) {
+		/*while ( it.Next() ) {
 			Line l = it.curline;
 			W2SectorGroup groupdata = NULL;
 
@@ -92,9 +98,8 @@ class W2PlayerHandler: Actor {
 				corniceLines.Push( l );
 		} // of while ( it.Next() ) {}
 
-		TryAddSectorGroup( ceilingsector );
+		TryAddSectorGroup( ceilingsector );*/
 		// I think there's no matter to use the floorsector field.
-
 
 		// Wiping sounds from too far sector groups:
 		for ( int i = 0; i < loopdataindices.Size(); i++ ) {
@@ -102,7 +107,8 @@ class W2PlayerHandler: Actor {
 
 			// Clearing excess sound origins:
 			if ( groupdata.status == W2HS_StopSuggestion ) {
-				//console.printf( TEXTCOLOR_DARKRED .. "-Stopped\c- sound for sector " .. loopdataindices[ i ] .. "." );
+				//console.printf( TEXTCOLOR_DARKRED .. "-Stopped\c- sound for group " .. loopdataindices[ i ] .. "." );
+
 				for ( int j = 0; j < W2SD_Quantity; j++ )
 					if ( groupdata.sndorigin[ j ] )
 						groupdata.sndorigin[ j ].Destroy();
@@ -126,8 +132,6 @@ class W2PlayerHandler: Actor {
 					sndactor.target = target; // Player or his camera.
 					sndactor.justCreated = true;
 
-					//console.printf( TEXTCOLOR_GREEN .. "+Started\c- sound for sector " .. newdataindices[ i ] .. "." );
-
 					switch ( w2level.allSectorsData[ groupdata.sectors[ 0 ].Index() ].w2type ) {
 						case W2ST_Outdoor:
 							sndactor.seq = sndactor.StartSoundSequence( "weather/rain", SeqNode.ENVIRONMENT );
@@ -140,6 +144,8 @@ class W2PlayerHandler: Actor {
 					}
 
 				} // of for ( int j = 0; j < W2SD_Quantity; j++ ) {}
+
+				//console.printf( TEXTCOLOR_GREEN .. "+Started\c- sound for group " .. newdataindices[ i ] .. "." );
 			}
 
 			// Saving new active sector groups.
@@ -213,6 +219,9 @@ class W2PlayerHandler: Actor {
 						minlength = curminlength;
 						minposxy = curposxy;
 					}
+
+					if ( w2level.corniceLinesFlags[ curline.Index() ] == 1 )
+						corniceLines.Push( curline );
 
 				} // of for ( int j = 0; j < groupdata.lines.Size(); j++ ) {}
 

@@ -63,10 +63,7 @@ class mcm_WeathremumHandler: EventHandler {
 		nextGroupNum = 0;
 		groupNumsSubstitution.Clear();
 
-		w2level.allSectorsData.Clear();
-		w2level.allSectorGroups.Clear();
-		w2level.realSectorGroups.Clear();
-		w2level.corniceLinesFlags.Clear();
+		w2level.Reinit();
 
 		// Save all of the level lines and sectors for the quick index-based
 		//access. Filled up before any other operations because the next ones
@@ -181,7 +178,7 @@ class mcm_WeathremumHandler: EventHandler {
 			W2SectorData sdata = w2level.allSectorsData[ i ];
 
 			if ( sdata.w2type != W2ST_None ) {
-				console.printf( "Grouping sector #" .. i .. ". Group " .. sdata.groupnum .. ", subst " .. groupNumsSubstitution[ groupNumsSubstitution[ sdata.groupnum ] ] .. "." );
+				console.printf( TEXTCOLOR_DARKGRAY .. "Grouping sector #" .. i .. ". Group " .. sdata.groupnum .. ", subst " .. groupNumsSubstitution[ groupNumsSubstitution[ sdata.groupnum ] ] .. "." );
 
 				if ( sdata.groupnum > groupNumsSubstitution[ sdata.groupnum ] )
 					sdata.groupnum = groupNumsSubstitution[ sdata.groupnum ];
@@ -215,6 +212,31 @@ class mcm_WeathremumHandler: EventHandler {
 
 						//double zspawnpos = ( fsec? ( bsec? max( fsec.floorplane.d, bsec.floorplane.d ) : fsec.floorplane.negiC * fsec.floorplane.d ) : bsec.floorplane.negiC * bsec.floorplane.d );
 						//Actor.Spawn( "Unknown", ( curline.v1.p + curline.delta / 2, zspawnpos ) );
+
+						// Group and level bound box determining:
+						if ( curline.v1.p.x < curgroup.firstpos.x ) {
+							curgroup.firstpos.x = curline.v1.p.x;
+
+							if ( curgroup.firstpos.x < w2level.startWorldPos.x )
+								w2level.startWorldPos.x = curgroup.firstpos.x;
+						} else if ( curline.v1.p.x > curgroup.lastpos.x ) {
+							curgroup.lastpos.x = curline.v1.p.x;
+
+							if ( curgroup.lastpos.x > w2level.endWorldPos.x )
+								w2level.endWorldPos.x = curgroup.lastpos.x;
+						}
+
+						if ( curline.v1.p.y < curgroup.firstpos.y ) {
+							curgroup.firstpos.y = curline.v1.p.y;
+
+							if ( curgroup.firstpos.y < w2level.startWorldPos.y )
+								w2level.startWorldPos.y = curgroup.firstpos.y;
+						} else if ( curline.v1.p.y > curgroup.lastpos.y ) {
+							curgroup.lastpos.y = curline.v1.p.y;
+
+							if ( curgroup.lastpos.y > w2level.endWorldPos.y )
+								w2level.endWorldPos.y = curgroup.lastpos.y;
+						}
 					}
 
 				} // of for ( int k = 0; k < cursector.lines.Size(); k++ ) {}
@@ -222,14 +244,24 @@ class mcm_WeathremumHandler: EventHandler {
 
 		} // of for ( int i = 0; i < w2level.realSectorGroups.Size(); i++ ) {}
 
+		w2level.CreateBlockmap();
 
-		console.printf( "w2level.realSectorGroups.Size(): " .. w2level.realSectorGroups.Size() .. "." );
+		double extraGridPosOffset = w2level.BLOCKMAP_GRID_SIZE * 2;
+		vector2 extraPosOffsets = ( extraGridPosOffset, extraGridPosOffset );
 
-		String debugstr = "w2level.realSectorGroups elements:";
-		for ( int i = 0; i < w2level.realSectorGroups.Size(); i++ )
-			debugstr.AppendFormat( " " .. w2level.realSectorGroups[ i ].num );
+		for ( int i = 0; i < w2level.realSectorGroups.Size(); i++ ) {
+			W2SectorGroup curgroup = w2level.realSectorGroups[ i ];
 
-		console.printf( debugstr .. "." );
+			int x1, y1, x2, y2;
+			[ x1, y1 ] = w2level.WorldCellOffsets( curgroup.firstpos - extraPosOffsets );
+			[ x2, y2 ] = w2level.WorldCellOffsets( curgroup.lastpos + extraPosOffsets );
+
+			console.printf( "Group #" .. curgroup.num .. " W2Blockmap: X [%i..%i], Y [%i..%i].  WorldPos: first " .. curgroup.firstpos .. ", last " .. curgroup.lastpos, x1, x2, y1, y2 );
+
+			for ( int x = x1; x <= x2; x++ )
+				for ( int y = y1; y <= y2; y++ )
+					w2level.GetCell( x, y ).includedGroups.Push( curgroup );
+		}
 
 
 		mustCreateGeneralSectorsData = false;
@@ -248,7 +280,7 @@ class mcm_WeathremumHandler: EventHandler {
 
 			playerHandlers[ e.PlayerNumber ] = playerhandler;
 
-			console.printf( "Added a " .. playerhandler.GetClassName() .. " for player " .. e.PlayerNumber .. "." );
+			console.printf( TEXTCOLOR_DARKGRAY .. "Added a " .. playerhandler.GetClassName() .. " for player " .. e.PlayerNumber .. "." );
 		}
 		
 		Super.PlayerEntered( e );
@@ -300,7 +332,6 @@ class mcm_WeathremumHandler: EventHandler {
 			Super.RenderOverlay( e );
 			return;
 		}
-
 		String outStr = "Total active sectors: " .. playerhandler.loopdataindices.Size() .. ".\n";
 
 		for ( int i = 0; i < playerhandler.sectorsdata.Size(); i++ ) {
@@ -346,7 +377,7 @@ class mcm_WeathremumHandler: EventHandler {
 							DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
 		Super.RenderOverlay( e );
-	} */
+	}*/
 
 
 } // of class mcm_WeathremumHandler: EventHandler {}
