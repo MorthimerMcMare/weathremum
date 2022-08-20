@@ -11,3 +11,9 @@ end
 	attenuation 2.0
 	playrepeat weather/wind
 end
+
+:weather/wind2
+	volumerand 24 127
+	attenuation 2.0
+	playrepeat weather/wind2
+end

@@ -1,21 +1,20 @@
-version "2.4.0"
+version "3.3.0"
 
 #include "ZScript/W2Data.zsc"
 #include "ZScript/W2PlayerHandler.zsc"
 #include "ZScript/W2AmbientActors.zsc"
 
-const mcm_WeathremumVersion = "0.16";
+const mcm_WeathremumVersion = "0.18";
 
 
 class mcm_WeathremumHandler: EventHandler {
 	bool mustCreateGeneralSectorsData;		// "PlayerEntered()" is called before "WorldLoaded()".
 
 	W2LevelGeneralData w2level;
+	W2PlayerHandler playerHandlers[ MAXPLAYERS ];
 
 	Array<int> groupNumsSubstitution;		// Quick access provided for the pre-handling process of megasectors.
 	int nextGroupNum;						// Also for uniting all neighbour sectors. Main work variable.
-
-	W2PlayerHandler firstplayerhandler;		// Temporary debug thing...
 
 	override void OnRegister() {
 		SetOrder( WeathremumHandlerOrder );
@@ -86,6 +85,7 @@ class mcm_WeathremumHandler: EventHandler {
 			if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {
 				W2SectorData curOutdoorSectorData = w2level.allSectorsData[ i ];
 
+				// Setting relationship to neighbour sectors:
 				curOutdoorSectorData.w2type = W2ST_Outdoor;
 				curOutdoorSectorData.groupnum = nextGroupNum;
 				groupNumsSubstitution.Push( nextGroupNum );
@@ -103,6 +103,40 @@ class mcm_WeathremumHandler: EventHandler {
 						setNextToOutdoorSectorData( l, lsector );
 				}
 
+				// Understanding the sector floor terrain Weathremum type:
+				String floorTexName = TexMan.GetName( s.GetTexture( s.FLOOR ) );
+				String floorTexNameLeft5 = floorTexName.Left( 5 );
+				String floorTexNameLeft6 = floorTexName.Left( 6 );
+
+				bool isSlime00Slime08 = ( floorTexNameLeft6 == "SLIME0" && floorTexName.CharCodeAt( 6 ) <= 0x38 );
+
+				if ( floorTexNameLeft6 == "FWATER" || ( isSlime00Slime08 && s.damageamount ) ) {
+					curOutdoorSectorData.w2floor = W2FT_Water;
+
+				} else if ( floorTexNameLeft5 == "SLIME" || floorTexNameLeft5 == "RROCK" ) {
+					int texSubindex = floorTexName.Mid( 5, 2 ).ToInt();
+
+					if (     isSlime00Slime08
+						|| ( floorTexNameLeft5 == "SLIME" && texSubindex >= 9 && texSubindex <= 12 )
+						|| ( floorTexNameLeft5 == "RROCK" && texSubindex <= 8 && texSubindex != 3 && texSubindex != 4 ) ) {
+						curOutdoorSectorData.w2floor = W2FT_Incandecent;
+
+					} else if ( floorTexNameLeft5 == "RROCK" ) {
+						curOutdoorSectorData.w2floor = W2FT_HardSurface;
+					}
+
+				} else if ( floorTexNameLeft5 == "METAL" ) {
+					curOutdoorSectorData.w2floor = W2FT_HardSurface;
+
+				} else if ( floorTexName.Left( 4 ) == "LAVA" ) {
+					curOutdoorSectorData.w2floor = W2FT_Incandecent;
+
+				} else if ( floorTexNameLeft5 == "BLOOD" || floorTexNameLeft6 == "NUKAGE" ) {
+					curOutdoorSectorData.w2floor = W2FT_Nukage;
+
+				}
+
+				// New group saving:
 				w2level.allSectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
 				nextGroupNum++;
 			} // of if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {}
@@ -212,8 +246,7 @@ class mcm_WeathremumHandler: EventHandler {
 			playerhandler.groupsdata.Copy( w2level.allSectorGroups );
 			playerhandler.w2level = w2level;
 
-			if ( e.PlayerNumber == 0 )
-				firstplayerhandler = playerhandler;
+			playerHandlers[ e.PlayerNumber ] = playerhandler;
 
 			console.printf( "Added a " .. playerhandler.GetClassName() .. " for player " .. e.PlayerNumber .. "." );
 		}
@@ -227,17 +260,51 @@ class mcm_WeathremumHandler: EventHandler {
 		}*/
 	}
 
+	override void WorldTick() {
+		if ( players[ consoleplayer ].mo != players[ consoleplayer ].Camera ) {
+			vector3 camerapos = players[ consoleplayer ].Camera.pos;
+			SendNetworkEvent( "mcm_weathremum_SetCameraXYZ", int( camerapos.x ), int( camerapos.y ), int( camerapos.z ) );
+
+		} else if ( playerHandlers[ consoleplayer ].useMultiplayerPos ) {
+			SendNetworkEvent( "mcm_weathremum_CancelCameraXYZ" );
+
+		}
+
+		Super.WorldTick();
+	}
+
+	override void NetworkProcess( ConsoleEvent e ) {
+		if ( !e.IsManual && multiplayer ) {
+			if ( e.Name == "mcm_weathremum_SetCameraXYZ" ) {
+				playerHandlers[ e.Player ].useMultiplayerPos = true;
+				playerHandlers[ e.Player ].multiplayerPos = ( e.args[ 0 ], e.args[ 1 ], e.args[ 2 ] );
+			} else if ( e.Name == "mcm_weathremum_CancelCameraXYZ" ) {
+				playerHandlers[ e.Player ].useMultiplayerPos = false;
+			}
+		}
+
+		/*if ( e.Name ~== "test_turn180" ) {
+			players[ e.Player ].mo.angle = ( players[ e.Player ].mo.angle + 180.0 ) % 360.0;
+		} else if ( e.Name ~== "test_turnto" ) {
+			players[ e.Player ].mo.angle = e.args[ 0 ] % 360.0;
+		}*/
+
+		Super.NetworkProcess( e );
+	}
+
 
 	/*override void RenderOverlay( RenderEvent e ) {
-		if ( !firstplayerhandler ) {
+		W2PlayerHandler playerhandler = playerHandlers[ consoleplayer ];
+
+		if ( !playerhandler ) {
 			Super.RenderOverlay( e );
 			return;
 		}
 
-		String outStr = "Total active sectors: " .. firstplayerhandler.loopdataindices.Size() .. ".\n";
+		String outStr = "Total active sectors: " .. playerhandler.loopdataindices.Size() .. ".\n";
 
-		for ( int i = 0; i < firstplayerhandler.sectorsdata.Size(); i++ ) {
-			W2SectorData cursecdata = firstplayerhandler.sectorsdata[ i ];
+		for ( int i = 0; i < playerhandler.sectorsdata.Size(); i++ ) {
+			W2SectorData cursecdata = playerhandler.sectorsdata[ i ];
 
 			if ( cursecdata.w2type == W2ST_None ) {
 				outStr.AppendFormat( TEXTCOLOR_GRAY .. "#%i (g" .. TEXTCOLOR_DARKGRAY .. "%3i" .. TEXTCOLOR_GRAY .. "): ",
@@ -272,10 +339,14 @@ class mcm_WeathremumHandler: EventHandler {
 		Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 30, 60, outStr,
 						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
-		Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 1100, 60, "Current sector: " .. ( firstplayerhandler.floorsector? firstplayerhandler.floorsector.sectornum .. "" : "NULL" ),
-						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
+		W2SectorData secdata = ( playerhandler.floorsector? w2level.allSectorsData[ playerhandler.floorsector.Index() ] : NULL );
+
+		if ( secdata )
+			Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 1100, 100, "Current sector: " .. secdata.s.Index() .. "\nCurrent group: " .. secdata.groupnum,
+							DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
 		Super.RenderOverlay( e );
-	}*/
+	} */
+
 
 } // of class mcm_WeathremumHandler: EventHandler {}
