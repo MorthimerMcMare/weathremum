@@ -219,7 +219,8 @@ class mcm_WeathremumHandler: EventHandler {
 
 							if ( curgroup.firstpos.x < w2level.startWorldPos.x )
 								w2level.startWorldPos.x = curgroup.firstpos.x;
-						} else if ( curline.v1.p.x > curgroup.lastpos.x ) {
+						}
+						if ( curline.v1.p.x > curgroup.lastpos.x ) {
 							curgroup.lastpos.x = curline.v1.p.x;
 
 							if ( curgroup.lastpos.x > w2level.endWorldPos.x )
@@ -231,7 +232,8 @@ class mcm_WeathremumHandler: EventHandler {
 
 							if ( curgroup.firstpos.y < w2level.startWorldPos.y )
 								w2level.startWorldPos.y = curgroup.firstpos.y;
-						} else if ( curline.v1.p.y > curgroup.lastpos.y ) {
+						}
+						if ( curline.v1.p.y > curgroup.lastpos.y ) {
 							curgroup.lastpos.y = curline.v1.p.y;
 
 							if ( curgroup.lastpos.y > w2level.endWorldPos.y )
@@ -246,7 +248,7 @@ class mcm_WeathremumHandler: EventHandler {
 
 		w2level.CreateBlockmap();
 
-		double extraGridPosOffset = w2level.BLOCKMAP_GRID_SIZE * 2;
+		double extraGridPosOffset = w2level.BLOCKMAP_GRID_SIZE * 2.0;
 		vector2 extraPosOffsets = ( extraGridPosOffset, extraGridPosOffset );
 
 		for ( int i = 0; i < w2level.realSectorGroups.Size(); i++ ) {
@@ -258,9 +260,16 @@ class mcm_WeathremumHandler: EventHandler {
 
 			console.printf( "Group #" .. curgroup.num .. " W2Blockmap: X [%i..%i], Y [%i..%i].  WorldPos: first " .. curgroup.firstpos .. ", last " .. curgroup.lastpos, x1, x2, y1, y2 );
 
-			for ( int x = x1; x <= x2; x++ )
-				for ( int y = y1; y <= y2; y++ )
+			for ( int y = y1; y <= y2; y++ ) {
+				for ( int x = x1; x <= x2; x++ ) {
 					w2level.GetCell( x, y ).includedGroups.Push( curgroup );
+
+					/*Actor marker = Actor.Spawn( "Unknown", ( w2level.WorldOffsetByIndex( x, y ), 0.0 ) );
+					marker.sprite = 100 + curgroup.num;
+					marker.FindFloorCeiling();
+					marker.SetZ( marker.floorsector.floorplane.d + curgroup.num * 3.0 );*/
+				}
+			}
 		}
 
 

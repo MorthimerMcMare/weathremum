@@ -55,18 +55,23 @@ class W2LevelGeneralData {
 	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
 
 	// W2Blockmap data and its methods:
-	const BLOCKMAP_GRID_SIZE = 192;
+	const BLOCKMAP_GRID_SIZE = 192.0;
 	vector2 startWorldPos, endWorldPos;
 	int blockmapMaxX, blockmapMaxY;
 	Array<W2BlockmapData> blockmap;
 
 	int, int WorldCellOffsets( vector2 worldpos ) {
-		vector2 gridpos = ( clamp( worldpos.x, startWorldPos.x, endWorldPos.x ), clamp( worldpos.y, startWorldPos.y, endWorldPos.y ) );
+		vector2 gridpos = ( clamp( worldpos.x, startWorldPos.x, endWorldPos.x - BLOCKMAP_GRID_SIZE ), clamp( worldpos.y, startWorldPos.y, endWorldPos.y - BLOCKMAP_GRID_SIZE ) );
 
-		int x = int( ceil( gridpos.x - startWorldPos.x ) / BLOCKMAP_GRID_SIZE );
-		int y = int( ceil( gridpos.y - startWorldPos.y ) / BLOCKMAP_GRID_SIZE );
+		int x = int( ceil( ( gridpos.x - startWorldPos.x ) / BLOCKMAP_GRID_SIZE ) );
+		int y = int( ceil( ( gridpos.y - startWorldPos.y ) / BLOCKMAP_GRID_SIZE ) );
 
 		return x, y;
+	}
+
+	vector2 WorldOffsetByIndex( int x, int y ) {
+		// Returns left-bottom point world position of the blockmap cell.
+		return ( x * BLOCKMAP_GRID_SIZE + startWorldPos.x, y * BLOCKMAP_GRID_SIZE + startWorldPos.y );
 	}
 
 	W2BlockmapData GetWorldCell( vector2 worldpos ) {
@@ -84,16 +89,16 @@ class W2LevelGeneralData {
 		blockmap.Clear();
 
 		if ( startWorldPos.x < endWorldPos.x && startWorldPos.y < endWorldPos.y ) {
-			blockmapMaxX = int( ceil( endWorldPos.x - startWorldPos.x ) / BLOCKMAP_GRID_SIZE );
-			blockmapMaxY = int( ceil( endWorldPos.y - startWorldPos.y ) / BLOCKMAP_GRID_SIZE );
+			blockmapMaxX = int( ceil( ( endWorldPos.x - startWorldPos.x ) / BLOCKMAP_GRID_SIZE ) );
+			blockmapMaxY = int( ceil( ( endWorldPos.y - startWorldPos.y ) / BLOCKMAP_GRID_SIZE ) );
 
 			console.printf( "Blockmap max X/Y: (%i, %i).", blockmapMaxX, blockmapMaxY );
 			console.printf( "World pos. Start " .. startWorldPos .. ", end " .. endWorldPos .. "." );
 
-			for ( int i = 0; i < blockmapMaxX * blockmapMaxY; i++ )
+			for ( int i = 0; i < ( blockmapMaxX + 1 ) * ( blockmapMaxY + 1 ); i++ )
 				blockmap.Push( new( 'W2BlockmapData' ) );
 		} else {
-			console.printf( "[Weathremum] " .. TEXTCOLOR_FIRE .. "Level data bound box corruted: start " .. startWorldPos .. ", end " .. endWorldPos .. "." );
+			console.printf( "[Weathremum] " .. TEXTCOLOR_FIRE .. "Level data bound box corrupted: start " .. startWorldPos .. ", end " .. endWorldPos .. "." );
 		}
 	} // of void CreateBlockmap( void ) {}
 
