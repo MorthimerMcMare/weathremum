@@ -159,8 +159,8 @@ class Weathremum_Raindrop: Actor {
 		scale.y = 0.75;
 		alpha *= 0.4;
 
-		frame = Random( 1, 2 );
-		tics = frame; //Random( 2, 3 );
+		frame = Random( 2, 3 );
+		tics = 4 - frame; //Random( 2, 3 );
 
 		SetZ( floorz );
 		ClearInterpolation();
@@ -213,6 +213,108 @@ class Weathremum_Raindrop: Actor {
 		Wait;
 	}
 } // of class Weathremum_Raindrop: Actor {}
+
+class Weathremum_Raindrop_Old: Actor {
+	Default {
+		+NOINTERACTION;
+		+DONTSPLASH;
+		+NOTONAUTOMAP;
+		Height 0;
+		Radius 1;
+		RenderStyle "Translucent";
+	}
+
+	override void BeginPlay() {
+		ChangeStatNum( STAT_WEATHREMUM_MAINDECOR );
+		Super.BeginPlay();
+	}
+
+	override void PostBeginPlay() {
+		if ( !cursector || ( ceilingpic != skyflatnum ) )
+			Destroy();
+
+		double minspawnheight = ( master? min( ceilingz, master.pos.z + master.height + 256.0 ) : ceilingz );
+
+		SetZ( minspawnheight - FRandom( 8.0, 19.0 ) );
+
+		vel.z = -35.0;
+		scale = ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
+		alpha = FRandom( 0.2, 0.7 );
+
+		ClearInterpolation();
+	}
+
+	override void Tick() {
+		if ( master && pos.z - master.pos.z < -256.0 ) {
+			Destroy();
+			return;
+		}
+
+		Super.Tick();
+
+		if ( !bCORPSE ) {
+			if ( cursector && pos.z < floorz - 19.0 ) {
+				SetStateLabel( "Death" );
+				bCORPSE = true;
+			}
+		} else if ( bMOVEWITHSECTOR ) {
+			ClearInterpolation();
+		}
+	}
+
+	void RaindropPreSplash( void ) {
+		vel = (0, 0, 0);
+		scale.y = 0.75;
+		alpha *= 0.4;
+
+		frame = Random( 2, 3 );
+		tics = 4 - frame;
+
+		SetZ( floorz );
+		ClearInterpolation();
+
+		// Optimizing out raindrop splashes on the static surfaces:
+		if ( ( cursector.floordata is 'Mover' ) )
+			bMOVEWITHSECTOR = true;
+	}
+
+	void RaindropSplash( void ) {
+		bFLATSPRITE = bROLLSPRITE = bFLOORCLIP = bCORPSE = true;
+
+		// General visual tweaks:
+		ClearInterpolation();
+		A_SetRenderStyle( 0.1, STYLE_Add );
+		scale = ( 1, 1 ) * FRandom( 0.1, 0.25 );
+		frame = Random( 0, 4 );
+
+		// Setting the position on a slopes:
+		vector3 norm = cursector.floorplane.normal;
+		vector2 norm_p1 = ( norm.x != 0 || norm.y != 0 )? (norm.x, norm.y).Unit() : (0, 0);
+		vector2 norm_p2 = ((norm.x, norm.y).Length(), norm.z );
+
+		angle = atan2( norm_p1.y, norm_p1.x );
+		pitch = atan2( norm_p2.x, norm_p2.y );
+		roll = FRandom( 0.0, 360.0 );
+	}
+
+	States {
+	Spawn:
+		RAIN A -1;
+		Stop;
+	Death:
+		RAIN "#" 0 RaindropPreSplash();
+		RAIN "##" 1 { frame++; }
+		RWIN "#" 0 {
+			if ( ( level.maptime & 1 ) || ( master && Distance2D( master ) > 512.0 ) )
+				Destroy();
+			else
+				RaindropSplash();
+		}
+		RWIN "#" 1 A_FadeOut( 0.005 );
+		Wait;
+	}
+} // of class Weathremum_Raindrop_Old: Actor {}
+
 
 class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 	override void PostBeginPlay() {
