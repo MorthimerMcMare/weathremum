@@ -14,21 +14,21 @@ enum EWeathremumHandleStatus {
 }
 
 enum EWeathremumSectorType {
-	W2ST_None = 0,
-	W2ST_Outdoor,
-	W2ST_NextToOutdoor
-}
+	W2ST_None = -1,
 
-enum EWeathremumFloorTerrain {
-	W2FT_Default = 0,
-	W2FT_SoftSurface,	// Grass, carpets, ...
-	W2FT_HardSurface,	// Rocks, metal tiles, ...
-	W2FT_Water,			// Non-damaging liquids.
-	W2FT_Nukage,		// Damaging nukage and slime.
-	W2FT_Incandecent,	// Lava and hot rocks (both harmful and harmless).
+	W2ST_NextToOutdoor,	// Sill/wind.
 
-	W2FT_Normal = W2FT_Default,
-	W2FT_User = 0xFF
+	W2ST_NormalSurface,
+	W2ST_SoftSurface,	// Grass, carpets, ...
+	W2ST_HardSurface,	// Rocks, metal tiles, ...
+	W2ST_Water,			// Non-damaging liquids.
+	W2ST_Nukage,		// Damaging nukage and slime.
+	W2ST_Incandecent,	// Lava and hot rocks (both harmful and harmless).
+
+	W2ST_User,
+
+	W2ST_Normal = W2ST_None,
+	W2ST_Wind = W2ST_NextToOutdoor
 }
 
 enum EWeathremumSoundDirection {
@@ -42,9 +42,7 @@ enum EWeathremumSoundDirection {
 class W2LevelGeneralData {
 	Array<W2SectorData> allSectorsData;		// All of the sectors.
 
-	Array<W2SectorGroup> allSectorGroups;	// Megasectors: uniting all neighbour sectors with same "w2type" to same unique "groupnum".
-	Array<W2SectorGroup> realSectorGroups;	// Megasectors: same as above, but only for existing groups.
-
+	// TODO: remove??
 	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
 }
 
@@ -54,36 +52,148 @@ class W2SectorData {
 	Array<Line> lines;
 	//Array<int> lineindices; // Temporary, for the UI-scoped "RenderOverlay()".
 
-	int groupnum;
-	W2SectorGroup group;
 	EWeathremumSectorType w2type;
-	EWeathremumFloorTerrain w2floor;
 
 	static W2SectorData Create( Sector initSector ) {
 		W2SectorData newdata = new( 'W2SectorData' );
 		newdata.s = initSector;
-		newdata.groupnum = -1;
 		newdata.w2type = W2ST_None;
-		newdata.w2floor = W2FT_Default;
 
 		return newdata;
 	}
 }
 
-// Megasector/sectors union.
-class W2SectorGroup {
-	int num;
-
+class W2SoundKeeper play {
 	EWeathremumHandleStatus status;
+
+	Sound snd;
 	W2SoundOrigin sndorigin[ W2SD_Quantity ];
 
-	Array<Sector> sectors;
-	Array<Line> lines;		// A perimeter lines.
+	Actor master;
+	double minlength;
+	vector2 minposxy;
+	vector2 plp;
 
-	static W2SectorGroup Create( int initnum = -1 ) {
-		W2SectorGroup newdata = new( 'W2SectorGroup' );
-		newdata.num = initnum;
+	void SuggestPos( vector2 testpos ) {
+		double testlength = ( plp - testpos ).Length();
 
-		return newdata;
+		if ( testlength < minlength ) {
+			minlength = testlength;
+			minposxy = testpos;
+		}
 	}
-}
+
+	void SuggestLine( Line curline ) {
+		double curminlength = 1e304;
+		vector2 curposxy;
+
+		vector2 v1p = curline.v1.p;
+		vector2 v2p = curline.v2.p;
+
+		if ( ( (v1p - plp) dot (v1p - v2p) <= 0.0 ) || ( (v2p - plp) dot (v2p - v1p) <= 0.0 ) ) {
+			double length1 = ( plp - v1p ).Length();
+			double length2 = ( plp - v2p ).Length();
+
+			if ( length1 < length2 ) {
+				curminlength = length1;
+				curposxy = v1p;
+			} else {
+				curminlength = length2;
+				curposxy = v2p;
+			}
+
+		} else {
+			double dlx = curline.delta.x;
+			double dly = curline.delta.y;
+
+			if ( dlx == 0 ) {
+				curposxy = (v1p.x, plp.y);
+
+			} else if ( dly == 0 ) {
+				curposxy = (plp.x, v1p.y);
+
+			} else {
+				curposxy.y = (dlx * (v1p.y * (dlx/dly) - v1p.x + plp.x) + dly*plp.y)/((dlx * dlx/dly) + dly);
+				curposxy.x = (curposxy.y - v1p.y) * (dlx / dly) + v1p.x;
+			}
+
+			curminlength = ( curposxy - plp ).Length();
+		}
+
+		if ( curminlength < minlength ) {
+			minlength = curminlength;
+			minposxy = curposxy;
+		}
+
+	} // of void SuggestLine( Line curline ) {}
+
+	static W2SoundKeeper Create( Sound initsnd, Actor initmaster ) {
+		W2SoundKeeper newkeeper = new( 'W2SoundKeeper' );
+		newkeeper.snd = initsnd;
+		newkeeper.master = initmaster;
+
+		for ( int j = 0; j < W2SD_Quantity; j++ ) {
+			W2SoundOrigin sndactor = newkeeper.sndorigin[ j ] = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( 0.0, 0.0, 0.0 ) ) );
+			//sndactor.master = newkeeper;
+			sndactor.target = newkeeper.master; // Player or his camera.
+			sndactor.justCreated = true;
+			String xsnd = initsnd;
+			sndactor.seq = sndactor.StartSoundSequence( xsnd, SeqNode.ENVIRONMENT );
+		} // of for ( int j = 0; j < W2SoundKeeper.W2SD_Quantity; j++ ) {}
+
+		return newkeeper;
+	} // of static W2SoundKeeper Create( SoundLabel initsnd ) {}
+
+
+	void PreTick( void ) {
+		minlength = 1e304;
+		plp = master.pos.xy;
+
+		// Suggest potential excess sounds to stop:
+		//status = W2HS_StopSuggestion;
+	}
+
+	protected virtual double GetOppositeSoundDistMul( double ang ) {
+		double x = ( ang % 360.0 ) / 360.0;
+
+		if ( x < 0.25 )
+			return -0.2 * x + 1.0;
+		else if ( x < 0.5 )
+			return 1.8 * x + 0.5;
+		else if ( x < 0.75 )
+			return 4.4 * x - 0.8;
+
+		return -6.0 * x + 7.0;
+
+		//return ( abs( ( ang % 360.0 ) / 360.0 - 0.5 ) * 5.0 + 1.0 );
+	}
+
+	void PostTick( void ) {
+		if ( status == W2HS_StopSuggestion ) {
+			// Wiping out too far sounds:
+			status = W2HS_Off;
+
+			//console.printf( TEXTCOLOR_DARKRED .. "-Stopped\c- sound for sector " .. loopdataindices[ i ] .. "." );
+
+			//for ( int i = 0; i < W2SD_Quantity; i++ ) {
+			//	sndorigin[ i ].Destroy();
+		} else {
+			//if ( status == W2HS_Active ) {
+			//}
+
+			double anglediff = ( atan2( minposxy.y - plp.y, minposxy.x - plp.y ) - master.angle ) % 360.0;
+
+			// TODO: separate left/right lengths!!!
+			double leftlen = min( 9999.9, minlength * GetOppositeSoundDistMul( anglediff ) );
+			double rightlen = min( 9999.9, minlength * GetOppositeSoundDistMul( anglediff + 180.0 ) );
+
+			//console.printf( TEXTCOLOR_DARKGREEN .. "%4i grp %2i. SetLeft " .. leftlen .. " (mult %2.2f), SetRight " .. rightlen .. " (mult %2.2f).", level.maptime, loopdataindices[ i ], leftmul, rightmul );
+
+			// TODO: "pos.z" coordinate based on the closest (?) sector in current group.
+			sndorigin[ W2SD_Left ].SetOrigin( ( master.Vec2Angle( leftlen, master.angle + 90.0 ), master.pos.z ), true );
+			sndorigin[ W2SD_Right ].SetOrigin( ( master.Vec2Angle( rightlen, master.angle - 90.0 ), master.pos.z ), true );
+		}
+
+	} // of void PostTick( void ) {}
+
+} // of class W2SoundKeeper {}
