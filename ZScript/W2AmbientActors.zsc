@@ -94,7 +94,7 @@ class Weathremum_Raindrop: Actor {
 		alpha *= 0.4;
 
 		frame = Random( 1, 2 );
-		tics = frame; //Random( 2, 3 );
+		//tics = frame; //Random( 2, 3 );
 
 		SetZ( floorz );
 		ClearInterpolation();
@@ -136,7 +136,8 @@ class Weathremum_Raindrop: Actor {
 		Stop;
 	Death:
 		RAIN "#" 0 RaindropPreSplash();
-		RAIN "##" 1 { frame++; }
+		RAIN "#" 2 { frame++; tics = 5 - frame; }
+		RAIN "#" 2 { frame++; }
 		RWIN "#" 0 {
 			if ( ( level.maptime & 1 ) || ( target && Distance2D( target ) > 512.0 ) )
 				Destroy();

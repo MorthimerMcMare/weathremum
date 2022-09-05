@@ -1,4 +1,8 @@
-weather/rain		rain
+weather/rain/default	rain_def
+weather/rain/heavy		rain_hvy
+weather/rain/surfmet	rain_met
+weather/rain/surfhard	rain_s_h
+
 
 $random weather/thunder { weather/thunder1 weather/thunder2 weather/thunder3 weather/thunder4 weather/thunder5 }
 weather/thunder1	thunder1

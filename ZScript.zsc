@@ -120,13 +120,13 @@ class mcm_WeathremumHandler: EventHandler {
 			playerhandler.FriendPlayer = e.PlayerNumber;
 			playerhandler.w2level = w2level;
 
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/wind", plmo ) ); // W2ST_NextToOutdoor,
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain", plmo ) ); // W2ST_NormalSurface,
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain", plmo ) ); // W2ST_SoftSurface,
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain", plmo ) ); // W2ST_HardSurface,
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain", plmo ) ); // W2ST_Water,
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain", plmo ) ); // W2ST_Nukage,
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain", plmo ) ); // W2ST_Incandecent.
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/windx", plmo ) ); // W2ST_NextToOutdoor,
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain/default", plmo ) ); // W2ST_NormalSurface,
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain/default", plmo ) ); // W2ST_SoftSurface,
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain/surfhard", plmo ) ); // W2ST_HardSurface,
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain/heavy", plmo ) ); // W2ST_Water,
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain/surfhard", plmo ) ); // W2ST_Nukage,
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain/default", plmo ) ); // W2ST_Incandecent.
 
 			playerHandlers[ e.PlayerNumber ] = playerhandler;
 

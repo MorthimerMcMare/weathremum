@@ -1,10 +1,30 @@
-:weather/rain
-	//volumerand (int min) (int max): from 1 to 256?
-	//attenuation (float attn): from 0 (full wolume at whole level) to +inf? (momental silence)
+//
+
+:weather/rain/default
 	volumerel 1
 	attenuation 2.5
-	playrepeat weather/rain
+	playrepeat weather/rain/default
 end
+
+:weather/rain/heavy
+	volumerel 1
+	attenuation 1.5
+	playrepeat weather/rain/heavy
+end
+
+:weather/rain/surfmet
+	volumerel 1
+	attenuation 2.5
+	playrepeat weather/rain/surfmet
+end
+
+:weather/rain/surfhard
+	volumerel 1
+	attenuation 2.5
+	playrepeat weather/rain/surfhard
+end
+
+
 
 :weather/wind
 	volumerand 24 127

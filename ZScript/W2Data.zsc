@@ -66,7 +66,7 @@ class W2SectorData {
 class W2SoundKeeper play {
 	EWeathremumHandleStatus status;
 
-	Sound snd;
+	String sndname;
 	W2SoundOrigin sndorigin[ W2SD_Quantity ];
 
 	Actor master;
@@ -129,15 +129,13 @@ class W2SoundKeeper play {
 
 	static W2SoundKeeper Create( Sound initsnd, Actor initmaster ) {
 		W2SoundKeeper newkeeper = new( 'W2SoundKeeper' );
-		newkeeper.snd = initsnd;
+		newkeeper.sndname = initsnd;
 		newkeeper.master = initmaster;
 
 		for ( int j = 0; j < W2SD_Quantity; j++ ) {
 			W2SoundOrigin sndactor = newkeeper.sndorigin[ j ] = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( 0.0, 0.0, 0.0 ) ) );
-			//sndactor.master = newkeeper;
 			sndactor.target = newkeeper.master; // Player or his camera.
-			String xsnd = initsnd;
-			sndactor.seq = sndactor.StartSoundSequence( xsnd, SeqNode.ENVIRONMENT );
+			sndactor.seq = sndactor.StartSoundSequence( newkeeper.sndname, SeqNode.ENVIRONMENT );
 		} // of for ( int j = 0; j < W2SoundKeeper.W2SD_Quantity; j++ ) {}
 
 		return newkeeper;
@@ -145,7 +143,7 @@ class W2SoundKeeper play {
 
 
 	void PreTick( void ) {
-		minlength = 1e304;
+		minlength = 9999.9;
 		plp = master.pos.xy;
 
 		// Suggest potential excess sounds to stop:
@@ -156,13 +154,13 @@ class W2SoundKeeper play {
 		double x = ( ang % 360.0 ) / 360.0;
 
 		if ( x < 0.25 )
-			return -0.2 * x + 1.0;
+			return 0.2 * x + 0.95;
 		else if ( x < 0.5 )
 			return 1.8 * x + 0.5;
 		else if ( x < 0.75 )
 			return 4.4 * x - 0.8;
 
-		return -6.0 * x + 7.0;
+		return -6.2 * x + 7.15;
 
 		//return ( abs( ( ang % 360.0 ) / 360.0 - 0.5 ) * 5.0 + 1.0 );
 	}
@@ -183,8 +181,8 @@ class W2SoundKeeper play {
 			double anglediff = ( atan2( minposxy.y - plp.y, minposxy.x - plp.y ) - master.angle ) % 360.0;
 
 			// TODO: separate left/right lengths!!!
-			double leftlen = min( 9999.9, minlength * GetOppositeSoundDistMul( anglediff ) );
-			double rightlen = min( 9999.9, minlength * GetOppositeSoundDistMul( anglediff + 180.0 ) );
+			double leftlen = minlength * GetOppositeSoundDistMul( anglediff );
+			double rightlen = minlength * GetOppositeSoundDistMul( anglediff + 180.0 );
 
 			//console.printf( TEXTCOLOR_DARKGREEN .. "%4i grp %2i. SetLeft " .. leftlen .. " (mult %2.2f), SetRight " .. rightlen .. " (mult %2.2f).", level.maptime, loopdataindices[ i ], leftmul, rightmul );
 
