@@ -136,7 +136,6 @@ class W2SoundKeeper play {
 			W2SoundOrigin sndactor = newkeeper.sndorigin[ j ] = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( 0.0, 0.0, 0.0 ) ) );
 			//sndactor.master = newkeeper;
 			sndactor.target = newkeeper.master; // Player or his camera.
-			sndactor.justCreated = true;
 			String xsnd = initsnd;
 			sndactor.seq = sndactor.StartSoundSequence( xsnd, SeqNode.ENVIRONMENT );
 		} // of for ( int j = 0; j < W2SoundKeeper.W2SD_Quantity; j++ ) {}
