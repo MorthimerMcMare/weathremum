@@ -4,7 +4,7 @@ version "3.3.0"
 #include "ZScript/W2PlayerHandler.zsc"
 #include "ZScript/W2AmbientActors.zsc"
 
-const mcm_WeathremumVersion = "0.18";
+const mcm_WeathremumVersion = "0.19";
 
 
 class mcm_WeathremumHandler: EventHandler {
@@ -12,9 +12,6 @@ class mcm_WeathremumHandler: EventHandler {
 
 	W2LevelGeneralData w2level;
 	W2PlayerHandler playerHandlers[ MAXPLAYERS ];
-
-	Array<int> groupNumsSubstitution;		// Quick access provided for the pre-handling process of megasectors.
-	int nextGroupNum;						// Also for uniting all neighbour sectors. Main work variable.
 
 	override void OnRegister() {
 		SetOrder( WeathremumHandlerOrder );
@@ -26,46 +23,17 @@ class mcm_WeathremumHandler: EventHandler {
 	}
 
 
-	private void adjustSectorGroupNum( W2SectorData closeSectorData ) {
-		// Uniting all adjacent sectors with same type to one group (in O(1), really!).
-
-		if ( closeSectorData.groupnum == -1 ) {
-			closeSectorData.groupnum = nextGroupNum;
-
-		} else if ( closeSectorData.groupnum != groupNumsSubstitution[ nextGroupNum ] ) {
-			int groupNumToGet = groupNumsSubstitution[ min( closeSectorData.groupnum, groupNumsSubstitution[ nextGroupNum ] ) ];
-			int groupToSet = max( closeSectorData.groupnum, groupNumsSubstitution[ nextGroupNum ] );
-
-			groupNumsSubstitution[ groupNumsSubstitution[ groupToSet ] ] = groupNumToGet;
-			groupNumsSubstitution[ groupToSet ] = groupNumToGet;
-		}
-	}
-
 	private void setNextToOutdoorSectorData( Line curline, Sector ls ) {
 		W2SectorData closeSectorData = w2level.allSectorsData[ ls.Index() ];
 
 		if ( ls.GetTexture( Sector.ceiling ) != skyflatnum ) {
 			closeSectorData.w2type = W2ST_NextToOutdoor;
 			w2level.corniceLinesFlags[ curline.Index() ] = 1;
-		} else {
-			adjustSectorGroupNum( closeSectorData );
 		}
 	}
 
-	private void setNextToSillSectorData( Sector lsector ) {
-		W2SectorData closeSectorData = w2level.allSectorsData[ lsector.Index() ];
-
-		if ( closeSectorData.w2type == W2ST_NextToOutdoor )
-			adjustSectorGroupNum( closeSectorData );
-	}
-
 	void CreateGeneralSectorsData( void ) {
-		nextGroupNum = 0;
-		groupNumsSubstitution.Clear();
-
 		w2level.allSectorsData.Clear();
-		w2level.allSectorGroups.Clear();
-		w2level.realSectorGroups.Clear();
 		w2level.corniceLinesFlags.Clear();
 
 		// Save all of the level lines and sectors for the quick index-based
@@ -86,9 +54,7 @@ class mcm_WeathremumHandler: EventHandler {
 				W2SectorData curOutdoorSectorData = w2level.allSectorsData[ i ];
 
 				// Setting relationship to neighbour sectors:
-				curOutdoorSectorData.w2type = W2ST_Outdoor;
-				curOutdoorSectorData.groupnum = nextGroupNum;
-				groupNumsSubstitution.Push( nextGroupNum );
+				curOutdoorSectorData.w2type = W2ST_NormalSurface;
 
 				for ( int j = 0; j < s.Lines.Size(); j++ ) {
 					Line l = s.Lines[ j ];
@@ -111,7 +77,7 @@ class mcm_WeathremumHandler: EventHandler {
 				bool isSlime00Slime08 = ( floorTexNameLeft6 == "SLIME0" && floorTexName.CharCodeAt( 6 ) <= 0x38 );
 
 				if ( floorTexNameLeft6 == "FWATER" || ( isSlime00Slime08 && s.damageamount ) ) {
-					curOutdoorSectorData.w2floor = W2FT_Water;
+					curOutdoorSectorData.w2type = W2ST_Water;
 
 				} else if ( floorTexNameLeft5 == "SLIME" || floorTexNameLeft5 == "RROCK" ) {
 					int texSubindex = floorTexName.Mid( 5, 2 ).ToInt();
@@ -119,118 +85,25 @@ class mcm_WeathremumHandler: EventHandler {
 					if (     isSlime00Slime08
 						|| ( floorTexNameLeft5 == "SLIME" && texSubindex >= 9 && texSubindex <= 12 )
 						|| ( floorTexNameLeft5 == "RROCK" && texSubindex <= 8 && texSubindex != 3 && texSubindex != 4 ) ) {
-						curOutdoorSectorData.w2floor = W2FT_Incandecent;
+						curOutdoorSectorData.w2type = W2ST_Incandecent;
 
 					} else if ( floorTexNameLeft5 == "RROCK" ) {
-						curOutdoorSectorData.w2floor = W2FT_HardSurface;
+						curOutdoorSectorData.w2type = W2ST_HardSurface;
 					}
 
 				} else if ( floorTexNameLeft5 == "METAL" ) {
-					curOutdoorSectorData.w2floor = W2FT_HardSurface;
+					curOutdoorSectorData.w2type = W2ST_HardSurface;
 
 				} else if ( floorTexName.Left( 4 ) == "LAVA" ) {
-					curOutdoorSectorData.w2floor = W2FT_Incandecent;
+					curOutdoorSectorData.w2type = W2ST_Incandecent;
 
 				} else if ( floorTexNameLeft5 == "BLOOD" || floorTexNameLeft6 == "NUKAGE" ) {
-					curOutdoorSectorData.w2floor = W2FT_Nukage;
+					curOutdoorSectorData.w2type = W2ST_Nukage;
 
 				}
-
-				// New group saving:
-				w2level.allSectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
-				nextGroupNum++;
 			} // of if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {}
 
 		} // of for ( int i = 0; i < level.Sectors.Size(); i++ ) {}
-
-		// Understand sectors data for sectors next to under sky:
-		for ( int i = 0; i < level.sectors.Size(); i++ ) {
-			W2SectorData sdata = w2level.allSectorsData[ i ];
-
-			if ( sdata.w2type == W2ST_NextToOutdoor ) {
-				sdata.groupnum = nextGroupNum;
-				groupNumsSubstitution.Push( nextGroupNum );
-
-				Sector s = sdata.s;
-
-				for ( int j = 0; j < s.Lines.Size(); j++ ) {
-					Line l = s.Lines[ j ];
-					Sector lsector = l.frontsector;
-
-					if ( lsector && lsector != s )
-						setNextToSillSectorData( lsector );
-
-					lsector = l.backsector;
-
-					if ( lsector && lsector != s )
-						setNextToSillSectorData( lsector );
-				}
-
-				w2level.allSectorGroups.Push( W2SectorGroup.Create( nextGroupNum ) );
-				nextGroupNum++;
-			}
-		}
-
-		// Backtrace substitution. As far as I calculated, this helps in
-		//preventing the "group num degeneration" ("5->4->0", not "5->4->4"):
-		for ( int i = groupNumsSubstitution.Size() - 1; i >= 0; i-- )
-			groupNumsSubstitution[ i ] = groupNumsSubstitution[ groupNumsSubstitution[ i ] ];
-
-		// Substitute group numbers for sectors under sky & next to them:
-		for ( int i = 0; i < level.sectors.Size(); i++ ) {
-			W2SectorData sdata = w2level.allSectorsData[ i ];
-
-			if ( sdata.w2type != W2ST_None ) {
-				console.printf( "Grouping sector #" .. i .. ". Group " .. sdata.groupnum .. ", subst " .. groupNumsSubstitution[ groupNumsSubstitution[ sdata.groupnum ] ] .. "." );
-
-				if ( sdata.groupnum > groupNumsSubstitution[ sdata.groupnum ] )
-					sdata.groupnum = groupNumsSubstitution[ sdata.groupnum ];
-
-				// Linking sector and group with each other:
-				W2SectorGroup curgroup = w2level.allSectorGroups[ sdata.groupnum ];
-				curgroup.sectors.Push( sdata.s );
-				sdata.group = curgroup;
-			}
-		}
-
-		// Remove excess group numbers and locate a perimeter lines for every megasector:
-		for ( int i = 0; i < w2level.allSectorGroups.Size(); i++ ) {
-			W2SectorGroup curgroup = w2level.allSectorGroups[ i ];
-
-			if ( !curgroup.sectors.Size() )
-				continue;
-
-			w2level.realSectorGroups.Push( curgroup );
-
-			for ( int j = 0; j < curgroup.sectors.Size(); j++ ) {
-				Sector cursector = curgroup.sectors[ j ];
-
-				for ( int k = 0; k < cursector.lines.Size(); k++ ) {
-					Line curline = cursector.lines[ k ];
-					Sector fsec = curline.frontsector;
-					Sector bsec = curline.backsector;
-
-					if ( !fsec || !bsec || ( w2level.allSectorsData[ fsec.Index() ].groupnum != w2level.allSectorsData[ bsec.Index() ].groupnum ) ) {
-						curgroup.lines.Push( curline );
-
-						//double zspawnpos = ( fsec? ( bsec? max( fsec.floorplane.d, bsec.floorplane.d ) : fsec.floorplane.negiC * fsec.floorplane.d ) : bsec.floorplane.negiC * bsec.floorplane.d );
-						//Actor.Spawn( "Unknown", ( curline.v1.p + curline.delta / 2, zspawnpos ) );
-					}
-
-				} // of for ( int k = 0; k < cursector.lines.Size(); k++ ) {}
-			} // of for ( int j = 0; j < curgroup.sectors.Size(); j++ ) {}
-
-		} // of for ( int i = 0; i < w2level.realSectorGroups.Size(); i++ ) {}
-
-
-		console.printf( "w2level.realSectorGroups.Size(): " .. w2level.realSectorGroups.Size() .. "." );
-
-		String debugstr = "w2level.realSectorGroups elements:";
-		for ( int i = 0; i < w2level.realSectorGroups.Size(); i++ )
-			debugstr.AppendFormat( " " .. w2level.realSectorGroups[ i ].num );
-
-		console.printf( debugstr .. "." );
-
 
 		mustCreateGeneralSectorsData = false;
 	} // of override void WorldLoaded( WorldEvent e ) {}
@@ -241,10 +114,19 @@ class mcm_WeathremumHandler: EventHandler {
 			CreateGeneralSectorsData();
 
 		if ( players[ e.PlayerNumber ].mo ) {
-			W2PlayerHandler playerhandler = W2PlayerHandler( Actor.Spawn( "W2PlayerHandler", players[ e.PlayerNumber ].mo.pos ) );
+			Actor plmo = players[ e.PlayerNumber ].mo;
+
+			W2PlayerHandler playerhandler = W2PlayerHandler( Actor.Spawn( "W2PlayerHandler", plmo.pos ) );
 			playerhandler.FriendPlayer = e.PlayerNumber;
-			playerhandler.groupsdata.Copy( w2level.allSectorGroups );
 			playerhandler.w2level = w2level;
+
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/wind", plmo ) ); // W2ST_NextToOutdoor,
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain", plmo ) ); // W2ST_NormalSurface,
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain", plmo ) ); // W2ST_SoftSurface,
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain", plmo ) ); // W2ST_HardSurface,
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain", plmo ) ); // W2ST_Water,
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain", plmo ) ); // W2ST_Nukage,
+			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain", plmo ) ); // W2ST_Incandecent.
 
 			playerHandlers[ e.PlayerNumber ] = playerhandler;
 
@@ -292,6 +174,21 @@ class mcm_WeathremumHandler: EventHandler {
 		Super.NetworkProcess( e );
 	}
 
+
+	/*override void RenderOverlay( RenderEvent e ) {
+		W2PlayerHandler playerhandler = playerHandlers[ consoleplayer ];
+
+		if ( !playerhandler ) {
+			Super.RenderOverlay( e );
+			return;
+		}
+
+		for ( int i = 0; i < playerhandler.sndkeepers.Size(); i++ ) {
+			W2SoundKeeper sndkeeper = playerhandler.sndkeepers[ i ];
+		}
+
+		Super.RenderOverlay( e );
+	}*/
 
 	/*override void RenderOverlay( RenderEvent e ) {
 		W2PlayerHandler playerhandler = playerHandlers[ consoleplayer ];

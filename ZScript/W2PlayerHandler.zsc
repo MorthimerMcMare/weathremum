@@ -22,9 +22,9 @@ class W2PlayerHandler: Actor {
 
 	W2LevelGeneralData w2level;
 
-	Array<W2SectorGroup> groupsdata;// All of the level sectors saved for the quick access. This is separated from global definition for the optimization in multiplayer.
-	Array<int> loopdataindices;		// Array storing currently playing sector groups.
-	Array<int> newdataindices;		// Temporary array with group data updates.
+	Array<W2SoundKeeper> sndkeepers;
+	//Array<int> loopdataindices;		// Array storing currently playing sector groups.
+	//Array<int> newdataindices;		// Temporary array with group data updates.
 	Array<Line> corniceLines;		// Lines between outdoor and indoor areas.
 
 	// "target" is an actor to follow (updates every "Tick()").
@@ -39,250 +39,51 @@ class W2PlayerHandler: Actor {
 		useMultiplayerPos = false;
 	}
 
-	private W2SectorGroup TryAddSectorGroup( Sector s ) {
-		if ( !s )
-			return NULL;
-
-		int groupnum = w2level.allSectorsData[ s.Index() ].groupnum;
-		if ( groupnum < 0 )
-			return NULL;
-
-		W2SectorGroup groupdata = groupsdata[ groupnum ];
-
-		// Starts sector sound or continues it (by stop preventing) if it is still needed.
-		if ( groupdata.status == W2HS_Off )
-			newdataindices.Push( groupnum );
-
-		if ( groupdata.status != W2HS_Active ) {
-			groupdata.status = W2HS_Active;
-			groupdata.lines.Clear();
-		}
-
-		return groupdata;
-	}
 
 	void DoSectorEffects( void ) {
-		// Suggest potential excess sounds to stop:
-		for ( int i = 0; i < loopdataindices.Size(); i++ )
-			groupsdata[ loopdataindices[ i ] ].status = W2HS_StopSuggestion;
-
-		newdataindices.Clear();
 		corniceLines.Clear();
+
+		EWeathremumSectorType tCursector = W2ST_None;
+
+		if ( ceilingsector ) {
+			tCursector = w2level.allSectorsData[ ceilingsector.Index() ].w2type;
+
+			if ( tCursector != W2ST_None )
+				sndkeepers[ tCursector ].SuggestPos( pos.xy + ( 6.0, 0.0 ) );
+		}
+
 
 		// Second argument is an environment test radius.
 		BlockLinesIterator it = BlockLinesIterator.Create( self, 768 );
 
-		// Saving all of the surrounding sectors and defining a canopy raindrops:
 		while ( it.Next() ) {
 			Line l = it.curline;
-			W2SectorGroup groupdata = NULL;
 
-			if ( groupdata = TryAddSectorGroup( l.frontsector ) ) {
-				groupdata.lines.Push( l );
-				//groupdata.lineindices.Push( l.Index() );
-			}
+			EWeathremumSectorType tfront = ( l.frontsector? w2level.allSectorsData[ l.frontsector.Index() ].w2type : W2ST_None );
+			EWeathremumSectorType tback = ( l.backsector? w2level.allSectorsData[ l.backsector.Index() ].w2type : W2ST_None );
 
-			if ( groupdata = TryAddSectorGroup( l.backsector ) ) {
-				groupdata.lines.Push( l );
-				//groupdata.lineindices.Push( l.Index() );
-			}
+			// Try to find a minimal length for the current sound:
+			if ( tfront != W2ST_None && tfront != tCursector )
+				sndkeepers[ tfront ].SuggestLine( l );
+
+			if ( tback != W2ST_None && tback != tfront && tback != tCursector )
+				sndkeepers[ tback ].SuggestLine( l );
+
+			// Starts sector sound or continues it (by stop preventing) if it is still needed.
+			/*if ( groupdata.status == W2HS_Off )
+				newdataindices.Push( groupnum );
+
+			if ( groupdata.status != W2HS_Active ) {
+				groupdata.status = W2HS_Active;
+				groupdata.lines.Clear();
+			}*/
 
 			// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to "validcount" variable.
 			if ( w2level.corniceLinesFlags[ l.Index() ] == 1 )
 				corniceLines.Push( l );
 		} // of while ( it.Next() ) {}
 
-		TryAddSectorGroup( ceilingsector );
-		// I think there's no matter to use the floorsector field.
-
-
-		// Wiping sounds from too far sector groups:
-		for ( int i = 0; i < loopdataindices.Size(); i++ ) {
-			W2SectorGroup groupdata = groupsdata[ loopdataindices[ i ] ];
-
-			// Clearing excess sound origins:
-			if ( groupdata.status == W2HS_StopSuggestion ) {
-				//console.printf( TEXTCOLOR_DARKRED .. "-Stopped\c- sound for sector " .. loopdataindices[ i ] .. "." );
-				for ( int j = 0; j < W2SD_Quantity; j++ )
-					if ( groupdata.sndorigin[ j ] )
-						groupdata.sndorigin[ j ].Destroy();
-
-				groupdata.status = W2HS_Off;
-
-				loopdataindices.Delete( i );
-				i--;
-			}
-		}
-
-		// Creating new sound actors and pushing their sector groups to the time-through array:
-		for ( int i = 0; i < newdataindices.Size(); i++ ) {
-			W2SectorGroup groupdata = groupsdata[ newdataindices[ i ] ];
-
-			if ( w2level.allSectorsData[ groupdata.sectors[ 0 ].Index() ].w2type != W2ST_None ) {
-
-				for ( int j = 0; j < W2SD_Quantity; j++ ) {
-					W2SoundOrigin sndactor = groupdata.sndorigin[ j ] = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( groupdata.lines[ 0 ].v1.p, groupdata.sectors[ 0 ].floorplane.d ) ) );
-					sndactor.master = self;
-					sndactor.target = target; // Player or his camera.
-					sndactor.justCreated = true;
-
-					//console.printf( TEXTCOLOR_GREEN .. "+Started\c- sound for sector " .. newdataindices[ i ] .. "." );
-
-					switch ( w2level.allSectorsData[ groupdata.sectors[ 0 ].Index() ].w2type ) {
-						case W2ST_Outdoor:
-							sndactor.seq = sndactor.StartSoundSequence( "weather/rain", SeqNode.ENVIRONMENT );
-							break;
-						case W2ST_NextToOutdoor:
-							sndactor.seq = sndactor.StartSoundSequence( "weather/wind2", SeqNode.ENVIRONMENT );
-							break;
-						default:
-							break;
-					}
-
-				} // of for ( int j = 0; j < W2SD_Quantity; j++ ) {}
-			}
-
-			// Saving new active sector groups.
-			loopdataindices.Push( newdataindices[ i ] );
-		}
-
-		// Moving all the sound origins to their new positions:
-		for ( int i = 0; i < loopdataindices.Size(); i++ ) {
-			W2SectorGroup groupdata = groupsdata[ loopdataindices[ i ] ];
-
-			if ( !groupdata.sndorigin[ 0 ] )
-				continue;
-
-			W2SoundOrigin sndleft = groupdata.sndorigin[ W2SD_Left ];
-			W2SoundOrigin sndright = groupdata.sndorigin[ W2SD_Right ];
-
-			// Moving sound origins:
-			if ( w2level.allSectorsData[ floorsector.Index() ].groupnum == groupdata.num ) {
-				//sndleft.SetOrigin( ( Vec2Angle( sndleft.intersectionOffset.Length(), sndleft.intersectionAngle + angle ), sndleft.floorz ), true );
-				sndleft.SetOrigin( ( Vec2Angle( 8.0, angle + 90.0 ), target.pos.z ), true );
-				sndright.SetOrigin( ( Vec2Angle( 8.0, angle - 90.0 ), target.pos.z ), true );
-
-				//sndactor.interpMaxTics = sndactor.interpTic = 15;
-			} else {
-				vector2 minposxy;
-				double minlength;
-
-				minlength = 9999.9; // Actually must be greater than an environment test radius.
-
-				vector2 plp = pos.xy;
-
-				for ( int j = 0; j < groupdata.lines.Size(); j++ ) {
-					Line curline = groupdata.lines[ j ];
-					double curminlength = 1e304;
-					vector2 curposxy;
-
-					vector2 v1p = curline.v1.p;
-					vector2 v2p = curline.v2.p;
-
-					if ( ( (v1p - plp) dot (v1p - v2p) <= 0.0 ) || ( (v2p - plp) dot (v2p - v1p) <= 0.0 ) ) {
-						double length1 = ( plp - v1p ).Length();
-						double length2 = ( plp - v2p ).Length();
-
-						if ( length1 < length2 ) {
-							curminlength = length1;
-							curposxy = v1p;
-						} else {
-							curminlength = length2;
-							curposxy = v2p;
-						}
-
-					} else {
-						double dlx = curline.delta.x;
-						double dly = curline.delta.y;
-
-						if ( dlx == 0 ) {
-							curposxy = (v1p.x, pos.y);
-
-						} else if ( dly == 0 ) {
-							curposxy = (pos.x, v1p.y);
-
-						} else {
-							curposxy.y = (dlx * (v1p.y * (dlx/dly) - v1p.x + pos.x) + dly*pos.y)/((dlx * dlx/dly) + dly);
-							curposxy.x = (curposxy.y - v1p.y) * (dlx / dly) + v1p.x;
-						}
-
-						curminlength = ( curposxy - plp ).Length();
-					}
-
-					if ( curminlength < minlength ) {
-						minlength = curminlength;
-						minposxy = curposxy;
-					}
-
-				} // of for ( int j = 0; j < groupdata.lines.Size(); j++ ) {}
-
-				/*double minlengthOpposite[ W2SD_Quantity ];
-
-				for ( int dir = 0; dir < W2SD_Quantity; dir++ ) {
-					EWeathremumSoundDirection oppositeDir = dir ^ ( W2SD_Left ^ W2SD_Right );
-
-					minlengthOpposite[ oppositeDir ] = min( 768.0, oppositeSoundDistMul( target.angle ) * minlength[ dir ] );
-				}
-
-				minlength[ W2SD_Left ] = min( minlength[ W2SD_Left ], minlengthOpposite[ W2SD_Left ] );
-				minlength[ W2SD_Right ] = min( minlength[ W2SD_Right ], minlengthOpposite[ W2SD_RIght ] );*/
-
-				//console.printf( "%4i grp %2i. %s", level.maptime, loopdataindices[ i ], leftdebug );
-				//console.printf( "%4i grp %2i. %s", level.maptime, loopdataindices[ i ], rightdebug );
-
-				/*if ( minlength[ W2SD_Right ] < minlength[ W2SD_Left ] ) {
-					Actor marker = Actor.Spawn( "tempLeftRightMarker", ( minposxy[ W2SD_Right ], target.pos.z + 22.0 ) );
-					marker.scale = ( 0.5, 0.5 );
-					marker.angle = 0.0;
-				} else if ( minlength[ W2SD_Right ] == minlength[ W2SD_Left ] ) {
-					Actor marker = Actor.Spawn( "tempLeftRightMarker", ( minposxy[ W2SD_Left ], target.pos.z + 22.0 ) );
-					marker.scale = ( 0.25, 1.0 );
-					marker.angle = 90.0 + ( ( level.maptime & 1 ) * 180.0 );
-				} else {
-					Actor marker = Actor.Spawn( "tempLeftRightMarker", ( minposxy[ W2SD_Left ], target.pos.z + 22.0 ) );
-					marker.scale = ( -0.5, 0.5 );
-					marker.angle = 180.0;
-				}*/
-
-				double anglediff = ( atan2( minposxy.y - target.pos.y, minposxy.x - target.pos.x ) - target.angle ) % 360.0;
-
-				double leftlen = minlength * oppositeSoundDistMul( anglediff );
-				double rightlen = minlength * oppositeSoundDistMul( anglediff + 180.0 );
-
-				//console.printf( TEXTCOLOR_DARKGREEN .. "%4i grp %2i. SetLeft " .. leftlen .. " (mult %2.2f), SetRight " .. rightlen .. " (mult %2.2f).", level.maptime, loopdataindices[ i ], leftmul, rightmul );
-
-				// TODO: "pos.z" coordinate based on the closest (?) sector in current group.
-				sndleft.SetOrigin( ( Vec2Angle( leftlen, angle + 90.0 ), target.pos.z ), true );
-				sndright.SetOrigin( ( Vec2Angle( rightlen, angle - 90.0 ), target.pos.z ), true );
-
-				//sndleft.LinedefMove( minposxy[ W2SD_Left ] );
-				//sndright.LinedefMove( minposxy[ W2SD_Right ] );
-
-				//sndactor.intersectionOffset = ( sndactor.pos.xy - pos.xy );
-				//sndactor.intersectionAngle = atan2( sndactor.intersectionOffset.y, sndactor.intersectionOffset.x ) - angle;
-			}
-
-			sndleft.justCreated = false;
-			sndright.justCreated = false;
-
-		} // of for ( int i = 0; i < loopdataindices.Size(); i++ ) {}
-
 	} // of void DoSectorEffects( void ) {}
-
-	double oppositeSoundDistMul( double ang ) {
-		double x = ( ang % 360.0 ) / 360.0;
-
-		if ( x < 0.25 )
-			return -0.2 * x + 1.0;
-		else if ( x < 0.5 )
-			return 1.8 * x + 0.5;
-		else if ( x < 0.75 )
-			return 4.4 * x - 0.8;
-
-		return -6.0 * x + 7.0;
-
-		//return ( abs( ( ang % 360.0 ) / 360.0 - 0.5 ) * 5.0 + 1.0 );
-	}
 
 
 	void DoRainEffects( void ) {
@@ -351,11 +152,19 @@ class W2PlayerHandler: Actor {
 		angle = target.angle; // Singleplayer-aware!!
 
 
+		// Sound keepers pre-tick handling:
+		for ( int i = 0; i < sndkeepers.Size(); i++ )
+			sndkeepers[ i ].PreTick();
+
 		// Sector sounds (rain, winds):
 		DoSectorEffects();
 
 		// Rain itself, raindrops from cornices:
 		DoRainEffects();
+
+		// Sound keepers post-tick handling:
+		for ( int i = 0; i < sndkeepers.Size(); i++ )
+			sndkeepers[ i ].PostTick();
 
 		Super.Tick();
 	}
