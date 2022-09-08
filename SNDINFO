@@ -1,7 +1,9 @@
-weather/rain/default	rain_def
-weather/rain/heavy		rain_hvy
-weather/rain/surfmet	rain_met
-weather/rain/surfhard	rain_s_h
+weathremum/rain/default			"Sounds/Rain/Rain_default.mp3"
+weathremum/rain/heavy			"Sounds/Rain/rain_heavy1.mp3"
+weathremum/rainsurface/metal	"Sounds/Rain/rain_surface_metal.wav"
+weathremum/rainsurface/hard		"Sounds/Rain/rain_surface_hard.mp3"
+weathremum/rainsurface/plastic	"Sounds/Rain/rain_surface_plastic.wav"
+
 
 
 $random weather/thunder { weather/thunder1 weather/thunder2 weather/thunder3 weather/thunder4 weather/thunder5 }

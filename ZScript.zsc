@@ -109,6 +109,13 @@ class mcm_WeathremumHandler: EventHandler {
 	} // of override void WorldLoaded( WorldEvent e ) {}
 
 
+	W2PlayerHandler curW2PlayerHandler;
+
+	private void pushSound( String sndname ) {
+		Actor plmo = players[ curW2PlayerHandler.FriendPlayer ].mo;
+		curW2PlayerHandler.sndkeepers.Push( W2SoundKeeper.Create( sndname, plmo ) );
+	}
+
 	override void PlayerEntered( PlayerEvent e ) {
 		if ( mustCreateGeneralSectorsData )
 			CreateGeneralSectorsData();
@@ -116,21 +123,23 @@ class mcm_WeathremumHandler: EventHandler {
 		if ( players[ e.PlayerNumber ].mo ) {
 			Actor plmo = players[ e.PlayerNumber ].mo;
 
-			W2PlayerHandler playerhandler = W2PlayerHandler( Actor.Spawn( "W2PlayerHandler", plmo.pos ) );
-			playerhandler.FriendPlayer = e.PlayerNumber;
-			playerhandler.w2level = w2level;
+			curW2PlayerHandler = W2PlayerHandler( Actor.Spawn( "W2PlayerHandler", plmo.pos ) );
+			curW2PlayerHandler.FriendPlayer = e.PlayerNumber;
+			curW2PlayerHandler.w2level = w2level;
 
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/windx", plmo ) ); // W2ST_NextToOutdoor,
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain/default", plmo ) ); // W2ST_NormalSurface,
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain/default", plmo ) ); // W2ST_SoftSurface,
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain/surfhard", plmo ) ); // W2ST_HardSurface,
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain/heavy", plmo ) ); // W2ST_Water,
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain/surfhard", plmo ) ); // W2ST_Nukage,
-			playerhandler.sndkeepers.Push( W2SoundKeeper.Create( "weather/rain/default", plmo ) ); // W2ST_Incandecent.
+			pushSound( "weather/windx" );
+			pushSound( "weathremum/rain/default" );          // W2ST_NormalSurface, 
+			pushSound( "weathremum/rain/default" );          // W2ST_SoftSurface,	
+			pushSound( "weathremum/rainsurface/hard" );      // W2ST_HardSurface,	
+			pushSound( "weathremum/rain/heavy" );            // W2ST_Water,			
+			pushSound( "weathremum/rainsurface/hard" );      // W2ST_Nukage,		
+			pushSound( "weathremum/rain/default" );          // W2ST_Incandecent,	
+			pushSound( "weathremum/rainsurface/metal" );     // W2ST_Metal,         
+			pushSound( "weathremum/rainsurface/plastic" );   // W2ST_Plastic,       
 
-			playerHandlers[ e.PlayerNumber ] = playerhandler;
+			playerHandlers[ e.PlayerNumber ] = curW2PlayerHandler;
 
-			console.printf( "Added a " .. playerhandler.GetClassName() .. " for player " .. e.PlayerNumber .. "." );
+			console.printf( "Added a " .. curW2PlayerHandler.GetClassName() .. " for player " .. e.PlayerNumber .. "." );
 		}
 		
 		Super.PlayerEntered( e );

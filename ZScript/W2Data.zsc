@@ -16,7 +16,7 @@ enum EWeathremumHandleStatus {
 enum EWeathremumSectorType {
 	W2ST_None = -1,
 
-	W2ST_NextToOutdoor,	// Sill/wind.
+	W2ST_NextToOutdoor,	// Wind (on sills/cornices).
 
 	W2ST_NormalSurface,
 	W2ST_SoftSurface,	// Grass, carpets, ...
@@ -24,6 +24,8 @@ enum EWeathremumSectorType {
 	W2ST_Water,			// Non-damaging liquids.
 	W2ST_Nukage,		// Damaging nukage and slime.
 	W2ST_Incandecent,	// Lava and hot rocks (both harmful and harmless).
+	W2ST_Metal,
+	W2ST_Plastic,
 
 	W2ST_User,
 

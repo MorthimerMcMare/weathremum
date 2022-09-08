@@ -1,31 +1,39 @@
 //
 
-:weather/rain/default
+// General rain sounds.
+:weathremum/rain/default
 	volumerel 1
 	attenuation 2.5
-	playrepeat weather/rain/default
+	playrepeat weathremum/rain/default
 end
 
-:weather/rain/heavy
+:weathremum/rain/heavy
 	volumerel 1
-	attenuation 1.5
-	playrepeat weather/rain/heavy
+	attenuation 1.66
+	playrepeat weathremum/rain/heavy
 end
 
-:weather/rain/surfmet
-	volumerel 1
-	attenuation 2.5
-	playrepeat weather/rain/surfmet
-end
-
-:weather/rain/surfhard
+// Different rain surfaces.
+:weathremum/rainsurface/metal
 	volumerel 1
 	attenuation 2.5
-	playrepeat weather/rain/surfhard
+	playrepeat weathremum/rainsurface/metal
+end
+
+:weathremum/rainsurface/hard
+	volumerel 1
+	attenuation 2.5
+	playrepeat weathremum/rainsurface/hard
+end
+
+:weathremum/rainsurface/plastic
+	volumerel 1
+	attenuation 2.5
+	playrepeat weathremum/rainsurface/plastic
 end
 
 
-
+// Winds.
 :weather/wind
 	volumerand 24 127
 	attenuation 2.0
