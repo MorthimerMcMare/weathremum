@@ -71,6 +71,7 @@ class mcm_WeathremumHandler: EventHandler {
 
 				// Understanding the sector floor terrain Weathremum type:
 				String floorTexName = TexMan.GetName( s.GetTexture( s.FLOOR ) );
+				String floorTexNameLeft4 = floorTexName.Left( 4 );
 				String floorTexNameLeft5 = floorTexName.Left( 5 );
 				String floorTexNameLeft6 = floorTexName.Left( 6 );
 
@@ -88,13 +89,33 @@ class mcm_WeathremumHandler: EventHandler {
 						curOutdoorSectorData.w2type = W2ST_Incandecent;
 
 					} else if ( floorTexNameLeft5 == "RROCK" ) {
-						curOutdoorSectorData.w2type = W2ST_HardSurface;
+						curOutdoorSectorData.w2type = W2ST_RockSurface;
 					}
 
 				} else if ( floorTexNameLeft5 == "METAL" ) {
-					curOutdoorSectorData.w2type = W2ST_HardSurface;
+					curOutdoorSectorData.w2type = W2ST_MetalSurface;
 
-				} else if ( floorTexName.Left( 4 ) == "LAVA" ) {
+				} else if ( floorTexNameLeft5 == "FLOOR" ) {
+					String postfix = floorTexName.Mid( 5, 3 );
+
+					if ( postfix == "0_5" || postfix == "0_6" || postfix == "0_7" || postfix == "3_3" || postfix == "4_8" || postfix == "5_1" )
+						curOutdoorSectorData.w2type = W2ST_MetalSurface;
+
+				} else if ( floorTexName == "GATE4" || floorTexName == "SLIME14" || floorTexName == "SLIME15" || floorTexName == "SLIME16" || floorTexNameLeft4 == "STEP" || floorTexName == "CEIL3_5" || floorTexName == "CEIL3_6" || floorTexName == "CEIL1_2" ) {
+					curOutdoorSectorData.w2type = W2ST_MetalSurface;
+
+				} else if ( floorTexName == "FLOOR4_6" ) {
+					curOutdoorSectorData.w2type = W2ST_PlasticSurface;
+
+				} else if ( floorTexNameLeft4 == "FLAT" ) {
+					String postfix = floorTexName.Mid( 4, 3 );
+
+					if ( postfix == "20" || postfix == "22" || postfix == "23" || postfix == "3" || postfix == "4" )
+						curOutdoorSectorData.w2type = W2ST_MetalSurface;
+					else if ( postfix == "1" || postfix == "17" || postfix == "18" || postfix == "19" || postfix == "2" || postfix == "9" )
+						curOutdoorSectorData.w2type = W2ST_PlasticSurface;
+
+				} else if ( floorTexNameLeft4 == "LAVA" ) {
 					curOutdoorSectorData.w2type = W2ST_Incandecent;
 
 				} else if ( floorTexNameLeft5 == "BLOOD" || floorTexNameLeft6 == "NUKAGE" ) {
@@ -130,9 +151,9 @@ class mcm_WeathremumHandler: EventHandler {
 			pushSound( "weather/windx" );
 			pushSound( "weathremum/rain/default" );          // W2ST_NormalSurface, 
 			pushSound( "weathremum/rain/default" );          // W2ST_SoftSurface,	
-			pushSound( "weathremum/rainsurface/hard" );      // W2ST_HardSurface,	
+			pushSound( "weathremum/rainsurface/rock" );      // W2ST_RockSurface,	
 			pushSound( "weathremum/rain/heavy" );            // W2ST_Water,			
-			pushSound( "weathremum/rainsurface/hard" );      // W2ST_Nukage,		
+			pushSound( "weathremum/rainsurface/rock" );      // W2ST_Nukage,		
 			pushSound( "weathremum/rain/default" );          // W2ST_Incandecent,	
 			pushSound( "weathremum/rainsurface/metal" );     // W2ST_Metal,         
 			pushSound( "weathremum/rainsurface/plastic" );   // W2ST_Plastic,       

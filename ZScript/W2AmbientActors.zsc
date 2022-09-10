@@ -105,7 +105,7 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	void RaindropSplash( void ) {
-		if ( w2sector && w2sector.w2type == W2ST_HardSurface ) {
+		if ( w2sector && w2sector.w2type == W2ST_RockSurface ) {
 			Actor.Spawn( "Weathremum_HardSurfaceRaindropBreak", pos + ( FRandom( -4.0, 4.0 ), FRandom( -4.0, 4.0 ), 0.0 ) );
 
 			Destroy();

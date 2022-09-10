@@ -20,10 +20,16 @@ end
 	playrepeat weathremum/rainsurface/metal
 end
 
-:weathremum/rainsurface/hard
+:weathremum/rainsurface/tin
 	volumerel 1
 	attenuation 2.5
-	playrepeat weathremum/rainsurface/hard
+	playrepeat weathremum/rainsurface/tin
+end
+
+:weathremum/rainsurface/rocks
+	volumerel 1
+	attenuation 2.5
+	playrepeat weathremum/rainsurface/rocks
 end
 
 :weathremum/rainsurface/plastic

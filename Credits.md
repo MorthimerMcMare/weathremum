@@ -18,13 +18,14 @@ ika707: beta-testing.
 
 ## Resources ##
 
-#### Sounds
+### Sounds
 
 - mixkit.co
 - zvukipro.com
 - freesoundslibrary.com
+- soundeff.ru
 
-#### Sprites
+### Sprites
 
 **Ghosted II** by RaveYard: rain;
 
