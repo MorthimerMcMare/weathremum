@@ -67,26 +67,30 @@ class W2SectorData {
 
 class W2SoundKeeper play {
 	EWeathremumHandleStatus status;
+	EWeathremumSectorType w2type;
 
 	String sndname;
 	W2SoundOrigin sndorigin[ W2SD_Quantity ];
 
 	Actor master;
-	double minlength;
-	vector2 minposxy;
+	double minlength[ W2SD_Quantity ];
+	vector2 minposxy[ W2SD_Quantity ];
 	vector2 plp;
 
-	void SuggestPos( vector2 testpos ) {
+	void SuggestPos( vector2 testpos, EWeathremumSoundDirection direction ) {
+		if ( direction < 0 || direction >= W2SD_Quantity )
+			direction = W2SD_Left;
+
 		double testlength = ( plp - testpos ).Length();
 
-		if ( testlength < minlength ) {
-			minlength = testlength;
-			minposxy = testpos;
+		if ( testlength < minlength[ direction ] ) {
+			minlength[ direction ] = testlength;
+			minposxy[ direction ] = testpos;
 		}
 	}
 
 	void SuggestLine( Line curline ) {
-		double curminlength = 1e304;
+		double curminlength;
 		vector2 curposxy;
 
 		vector2 v1p = curline.v1.p;
@@ -122,17 +126,68 @@ class W2SoundKeeper play {
 			curminlength = ( curposxy - plp ).Length();
 		}
 
+		// Belonging of the sound origin (to left/to right from current player):
+		if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {
+			vector2 vec2plleft = master.AngleToVector( master.angle - 90.0, 1.0 );
+
+			double v1leftProjection = ( ( plp - v1p ) dot vec2plleft );
+			double v2leftProjection = ( ( plp - v2p ) dot vec2plleft );
+
+			//if ( loopdataindices[ i ] == 10 ) console.printf( loopdataindices[ i ] .. "v1leftProjection " .. v1leftProjection .. ", v2leftProjection " .. v2leftProjection );
+
+			if ( ( v1leftProjection >= 0.0 || v2leftProjection >= 0.0 ) && ( curminlength < minlength[ W2SD_Left ] ) ) {
+				minlength[ W2SD_Left ] = curminlength;
+				minposxy[ W2SD_Left ] = curposxy;
+			}
+
+			if ( ( v1leftProjection <= 0.0 || v2leftProjection <= 0.0 ) && ( curminlength < minlength[ W2SD_Right ] ) ) {
+				minlength[ W2SD_Right ] = curminlength;
+				minposxy[ W2SD_Right ] = curposxy;
+			}
+		} // of if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {}
+
+		/*
+		//atan2( curposxy.y - plp.y, minposxy[ dir ].x - plp.y ) - master.angle
+		GetSoundAngleDistMul(  );
+
+		bool isLeftHalfplane = false;
+		bool isRightHalfplane = false;
+
+		// Belonging of the sound origin (to left/to right from current player):
+		if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {
+			vector2 vec2plleft = master.AngleToVector( master.angle - 90.0, 1.0 );
+
+			//double v1leftProjection = ( ( plp - v1p ) dot vec2plleft );
+			double leftProjection = ( ( plp - curposxy ) dot vec2plleft );
+
+			//if ( loopdataindices[ i ] == 10 ) console.printf( loopdataindices[ i ] .. "v1leftProjection " .. v1leftProjection .. ", v2leftProjection " .. v2leftProjection );
+
+			if ( leftProjection >= 0.0 && ( curminlength < minlength[ W2SD_Left ] ) ) {
+				isLeftHalfplane = true;
+				//minlength[ W2SD_Left ] = curminlength;
+				//minposxy[ W2SD_Left ] = curposxy;
+			}
+
+			if ( leftProjection <= 0.0 && ( curminlength < minlength[ W2SD_Right ] ) ) {
+				isRightHalfplane = true;
+				//minlength[ W2SD_Right ] = curminlength;
+				//minposxy[ W2SD_Right ] = curposxy;
+			}
+		} // of if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {}
+
 		if ( curminlength < minlength ) {
 			minlength = curminlength;
 			minposxy = curposxy;
-		}
+		}*/
 
 	} // of void SuggestLine( Line curline ) {}
 
-	static W2SoundKeeper Create( Sound initsnd, Actor initmaster ) {
+	static W2SoundKeeper Create( Sound initsnd, EWeathremumSectorType inittype, Actor initmaster ) {
 		W2SoundKeeper newkeeper = new( 'W2SoundKeeper' );
+
 		newkeeper.sndname = initsnd;
 		newkeeper.master = initmaster;
+		newkeeper.w2type = inittype;
 
 		for ( int j = 0; j < W2SD_Quantity; j++ ) {
 			W2SoundOrigin sndactor = newkeeper.sndorigin[ j ] = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( 0.0, 0.0, 0.0 ) ) );
@@ -141,18 +196,20 @@ class W2SoundKeeper play {
 		} // of for ( int j = 0; j < W2SoundKeeper.W2SD_Quantity; j++ ) {}
 
 		return newkeeper;
-	} // of static W2SoundKeeper Create( SoundLabel initsnd ) {}
+	} // of static W2SoundKeeper Create( Sound initsnd, EWeathremumSectorType inittype, Actor initmaster ) {}
 
 
 	void PreTick( void ) {
-		minlength = 9999.9;
+		minlength[ W2SD_Left ] = minlength[ W2SD_Right ] = 999.9;
 		plp = master.pos.xy;
+
+		minposxy[ W2SD_Left ] = minposxy[ W2SD_Right ] = ( 0, 0 );
 
 		// Suggest potential excess sounds to stop:
 		//status = W2HS_StopSuggestion;
 	}
 
-	protected virtual double GetOppositeSoundDistMul( double ang ) {
+	protected virtual double GetSoundAngleDistMul( double ang ) {
 		double x = ( ang % 360.0 ) / 360.0;
 
 		if ( x < 0.25 )
@@ -180,17 +237,33 @@ class W2SoundKeeper play {
 			//if ( status == W2HS_Active ) {
 			//}
 
-			double anglediff = ( atan2( minposxy.y - plp.y, minposxy.x - plp.y ) - master.angle ) % 360.0;
+			// TODO: separate left/right lengths!!! Ears differentiating may 
+			//be checked on MAP03, MAP11, MAP12 or MAP13 of the Doom 2.
+			double anglediff[ W2SD_Quantity ];
+			double adjustedlen[ W2SD_Quantity ];
 
-			// TODO: separate left/right lengths!!!
-			double leftlen = minlength * GetOppositeSoundDistMul( anglediff );
-			double rightlen = minlength * GetOppositeSoundDistMul( anglediff + 180.0 );
+			for ( int dir = 0; dir < W2SD_Quantity; dir++ )
+				anglediff[ dir ] = ( atan2( minposxy[ dir ].y - plp.y, minposxy[ dir ].x - plp.x ) - master.angle ) % 360.0;
 
-			//console.printf( TEXTCOLOR_DARKGREEN .. "%4i grp %2i. SetLeft " .. leftlen .. " (mult %2.2f), SetRight " .. rightlen .. " (mult %2.2f).", level.maptime, loopdataindices[ i ], leftmul, rightmul );
+			adjustedlen[ W2SD_Left ] = minlength[ W2SD_Left ] * GetSoundAngleDistMul( anglediff[ W2SD_Left ] );
+			adjustedlen[ W2SD_Right ] = minlength[ W2SD_Right ] * GetSoundAngleDistMul( anglediff[ W2SD_Right ] + 180.0 );
+
+			//oppositelen[ W2SD_Left ] = adjustedlen[ W2SD_Right ] * 2.0; //GetOppositeSoundDistMul( anglediff[ W2SD_Right ] + 180.0 );
+			//oppositelen[ W2SD_Right ] = adjustedlen[ W2SD_Left ] * 2.0; //GetOppositeSoundDistMul( anglediff[ W2SD_Left ] );
+
+			for ( int dir = 0; dir < W2SD_Quantity; dir++ ) {
+				int oppositedir = dir ^ W2SD_Left ^ W2SD_Right;
+
+				minlength[ dir ] = min( adjustedlen[ dir ], adjustedlen[ oppositedir ] * 1.33 );
+
+				//Actor debugmarker = Actor.Spawn( "tempLeftRightMarker", ( minposxy[ dir ], master.pos.z ) );
+				//debugmarker.scale.x *= ( ( dir == W2SD_Left ) * 2 ) - 1;
+				//debugmarker.angle = ( 180.0 * ( dir == W2SD_Left ) );
+			}
 
 			// TODO: "pos.z" coordinate based on the closest (?) sector in current group.
-			sndorigin[ W2SD_Left ].SetOrigin( ( master.Vec2Angle( leftlen, master.angle + 90.0 ), master.pos.z ), true );
-			sndorigin[ W2SD_Right ].SetOrigin( ( master.Vec2Angle( rightlen, master.angle - 90.0 ), master.pos.z ), true );
+			sndorigin[ W2SD_Left ].SetOrigin( ( master.Vec2Angle( minlength[ W2SD_Left ], master.angle + 90.0 ), master.pos.z ), true );
+			sndorigin[ W2SD_Right ].SetOrigin( ( master.Vec2Angle( minlength[ W2SD_Right ], master.angle - 90.0 ), master.pos.z ), true );
 		}
 
 	} // of void PostTick( void ) {}

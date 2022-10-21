@@ -1,6 +1,6 @@
 // Weathremum handler for each player.
 
-/*class tempLeftRightMarker: Actor {
+class tempLeftRightMarker: Actor {
 	// Used for the stereo sound playing debug.
 	Default {
 		+NOINTERACTION;
@@ -14,7 +14,7 @@
 		SPKR A 2;
 		Stop;
 	}
-}*/
+}
 
 class W2PlayerHandler: Actor {
 	bool useMultiplayerPos;
@@ -25,7 +25,7 @@ class W2PlayerHandler: Actor {
 	Array<W2SoundKeeper> sndkeepers;
 	//Array<int> loopdataindices;		// Array storing currently playing sector groups.
 	//Array<int> newdataindices;		// Temporary array with group data updates.
-	Array<Line> corniceLines;		// Lines between outdoor and indoor areas.
+	Array<Line> corniceLines;			// Lines between outdoor and indoor areas.
 
 	// "target" is an actor to follow (updates every "Tick()").
 
@@ -48,8 +48,10 @@ class W2PlayerHandler: Actor {
 		if ( ceilingsector ) {
 			tCursector = w2level.allSectorsData[ ceilingsector.Index() ].w2type;
 
-			if ( tCursector != W2ST_None )
-				sndkeepers[ tCursector ].SuggestPos( pos.xy + ( 6.0, 0.0 ) );
+			if ( tCursector != W2ST_None ) {
+				sndkeepers[ tCursector ].SuggestPos( pos.xy + ( 6.0, 0.0 ), W2SD_Left );
+				sndkeepers[ tCursector ].SuggestPos( pos.xy + ( 6.0, 0.0 ), W2SD_Right );
+			}
 		}
 
 
@@ -58,6 +60,10 @@ class W2PlayerHandler: Actor {
 
 		while ( it.Next() ) {
 			Line l = it.curline;
+
+			//int a = 0.123456; // Last part of the next line is for debug:
+			if ( !l.frontsector /*|| ( l.frontsector.Index() != 11 )*/ )
+				continue;
 
 			EWeathremumSectorType tfront = ( l.frontsector? w2level.allSectorsData[ l.frontsector.Index() ].w2type : W2ST_None );
 			EWeathremumSectorType tback = ( l.backsector? w2level.allSectorsData[ l.backsector.Index() ].w2type : W2ST_None );
@@ -78,7 +84,7 @@ class W2PlayerHandler: Actor {
 				groupdata.lines.Clear();
 			}*/
 
-			// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to "validcount" variable.
+			// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to the "validcount" variable.
 			if ( w2level.corniceLinesFlags[ l.Index() ] == 1 )
 				corniceLines.Push( l );
 		} // of while ( it.Next() ) {}
@@ -156,15 +162,15 @@ class W2PlayerHandler: Actor {
 		for ( int i = 0; i < sndkeepers.Size(); i++ )
 			sndkeepers[ i ].PreTick();
 
-		// Sector sounds (rain, winds):
-		DoSectorEffects();
-
-		// Rain itself, raindrops from cornices:
-		DoRainEffects();
+		DoSectorEffects(); 	// Sector sounds (rain, winds);
+		DoRainEffects(); 	// Rain itself, raindrops from cornices.
 
 		// Sound keepers post-tick handling:
 		for ( int i = 0; i < sndkeepers.Size(); i++ )
 			sndkeepers[ i ].PostTick();
+
+		//int a = 0.123456; // Next line is for debug (uncomment lines above):
+		//sndkeepers[ W2ST_NormalSurface ].PostTick();
 
 		Super.Tick();
 	}

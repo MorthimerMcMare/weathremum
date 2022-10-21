@@ -131,10 +131,12 @@ class mcm_WeathremumHandler: EventHandler {
 
 
 	W2PlayerHandler curW2PlayerHandler;
+	int curW2SurfaceType;
 
 	private void pushSound( String sndname ) {
 		Actor plmo = players[ curW2PlayerHandler.FriendPlayer ].mo;
-		curW2PlayerHandler.sndkeepers.Push( W2SoundKeeper.Create( sndname, plmo ) );
+		curW2SurfaceType++;
+		curW2PlayerHandler.sndkeepers.Push( W2SoundKeeper.Create( sndname, curW2SurfaceType, plmo ) );
 	}
 
 	override void PlayerEntered( PlayerEvent e ) {
@@ -147,16 +149,17 @@ class mcm_WeathremumHandler: EventHandler {
 			curW2PlayerHandler = W2PlayerHandler( Actor.Spawn( "W2PlayerHandler", plmo.pos ) );
 			curW2PlayerHandler.FriendPlayer = e.PlayerNumber;
 			curW2PlayerHandler.w2level = w2level;
+			curW2SurfaceType = W2ST_None;
 
-			pushSound( "weather/windx" );
+			pushSound( "weather/wind(x)" );
 			pushSound( "weathremum/rain/default" );          // W2ST_NormalSurface, 
 			pushSound( "weathremum/rain/default" );          // W2ST_SoftSurface,	
-			pushSound( "weathremum/rainsurface/rock" );      // W2ST_RockSurface,	
 			pushSound( "weathremum/rain/heavy" );            // W2ST_Water,			
-			pushSound( "weathremum/rainsurface/rock" );      // W2ST_Nukage,		
+			pushSound( "weathremum/rain/default" );          // W2ST_Nukage,		
 			pushSound( "weathremum/rain/default" );          // W2ST_Incandecent,	
+			pushSound( "weathremum/rainsurface/rock" );      // W2ST_RockSurface,	
 			pushSound( "weathremum/rainsurface/metal" );     // W2ST_Metal,         
-			pushSound( "weathremum/rainsurface/plastic" );   // W2ST_Plastic,       
+			pushSound( "weathremum/rainsurface/plasticglass" );   // W2ST_Plastic,       
 
 			playerHandlers[ e.PlayerNumber ] = curW2PlayerHandler;
 
@@ -172,6 +175,8 @@ class mcm_WeathremumHandler: EventHandler {
 		}*/
 	}
 
+	int debugTraceLineIndex;
+
 	override void WorldTick() {
 		if ( players[ consoleplayer ].mo != players[ consoleplayer ].Camera ) {
 			vector3 camerapos = players[ consoleplayer ].Camera.pos;
@@ -181,6 +186,12 @@ class mcm_WeathremumHandler: EventHandler {
 			SendNetworkEvent( "mcm_weathremum_CancelCameraXYZ" );
 
 		}
+
+        FLineTraceData ptrace;
+		PlayerPawn pl = players[ 0 ].mo;
+
+		pl.LineTrace( pl.angle, 256, pl.pitch, data: ptrace );
+		debugTraceLineIndex = ( ptrace.hitLine? ptrace.hitLine.Index() : -1 );
 
 		Super.WorldTick();
 	}
@@ -205,75 +216,75 @@ class mcm_WeathremumHandler: EventHandler {
 	}
 
 
-	/*override void RenderOverlay( RenderEvent e ) {
+	override void RenderOverlay( RenderEvent e ) {
 		W2PlayerHandler playerhandler = playerHandlers[ consoleplayer ];
 
 		if ( !playerhandler ) {
 			Super.RenderOverlay( e );
 			return;
 		}
+
+		W2SectorData secdata = ( playerhandler.floorsector? w2level.allSectorsData[ playerhandler.floorsector.Index() ] : NULL );
+
+		String outStr = "Total sounds: " .. playerhandler.sndkeepers.Size() .. ".\n";
 
 		for ( int i = 0; i < playerhandler.sndkeepers.Size(); i++ ) {
-			W2SoundKeeper sndkeeper = playerhandler.sndkeepers[ i ];
-		}
+			W2SoundKeeper curkeeper = playerhandler.sndkeepers[ i ];
 
-		Super.RenderOverlay( e );
-	}*/
-
-	/*override void RenderOverlay( RenderEvent e ) {
-		W2PlayerHandler playerhandler = playerHandlers[ consoleplayer ];
-
-		if ( !playerhandler ) {
-			Super.RenderOverlay( e );
-			return;
-		}
-
-		String outStr = "Total active sectors: " .. playerhandler.loopdataindices.Size() .. ".\n";
-
-		for ( int i = 0; i < playerhandler.sectorsdata.Size(); i++ ) {
-			W2SectorData cursecdata = playerhandler.sectorsdata[ i ];
-
-			if ( cursecdata.w2type == W2ST_None ) {
+			/*if ( curkeeper.w2type == W2ST_None ) {
 				outStr.AppendFormat( TEXTCOLOR_GRAY .. "#%i (g" .. TEXTCOLOR_DARKGRAY .. "%3i" .. TEXTCOLOR_GRAY .. "): ",
-									i, cursecdata.groupnum, cursecdata.w2type );
+									i, curkeeper.groupnum, curkeeper.w2type );
 			} else {
 				outStr.AppendFormat( TEXTCOLOR_GRAY .. "#%i (g" .. TEXTCOLOR_TEAL .. "%3i" .. TEXTCOLOR_GRAY .. ", t%i): ",
 									i, cursecdata.groupnum, cursecdata.w2type );
+			}*/
+
+			String debugstr = "";
+			String debugstr2 = curkeeper.sndname;
+
+			switch ( curkeeper.status ) {
+				case W2HS_Active: debugstr = TEXTCOLOR_GREEN .. "on" .. TEXTCOLOR_GRAY; break;
+				case W2HS_StopSuggestion: debugstr = TEXTCOLOR_YELLOW .. "stopping" .. TEXTCOLOR_GRAY; break;
+				case W2HS_Off: default: debugstr = TEXTCOLOR_RED .. "off" .. TEXTCOLOR_GRAY; break;
 			}
 
-			switch ( cursecdata.status ) {
-				case W2HS_Off:
-					outStr = outStr .. TEXTCOLOR_DARKGRAY .. "off\n";
-					break;
-				case W2HS_Active:
-					outStr = outStr .. TEXTCOLOR_GREEN .. "on. " .. TEXTCOLOR_DARKGREEN .. cursecdata.lines.Size() .. " lines ";
+			String maincolor = ( secdata && secdata.w2type == i? TEXTCOLOR_DARKGREEN : TEXTCOLOR_GRAY );
 
-					for ( int j = 0; j < cursecdata.lines.Size(); j++ )
-						outStr = outStr .. cursecdata.lineindices[ j ] .. " ";
+			debugstr2.Replace( "weathremum", TEXTCOLOR_BLUE .. "[w2]" .. maincolor );
+			outStr.AppendFormat( "%s#%i (stat %s%s, type %i%s, \"%s%s\").\n" .. TEXTCOLOR_GRAY,
+									maincolor, i, debugstr, maincolor, curkeeper.w2type, maincolor, debugstr2, maincolor );
 
-					outStr = outStr .. "\n";
-					break;
-				case W2HS_StopSuggestion:
-					outStr = outStr .. TEXTCOLOR_RED .. "stopping\n";
-					break;
-				default:
-					outStr = outStr .. TEXTCOLOR_FIRE .. "<UNKNOWN>\n";
-					console.printf( GetClassName() .. "::RenderOverlay(). " .. TEXTCOLOR_FIRE .. "Unknown data for sector " .. i .. "." );
-					break;
-			}
+			debugstr = "      Left: ";
+
+			for ( int dir = 0; dir < W2SD_Quantity; dir++ ) {
+				if ( curkeeper.sndorigin[ dir ] ) {
+					if ( curkeeper.minlength[ dir ] < 9000.0 )
+						outStr.AppendFormat( debugstr .. TEXTCOLOR_TEAL .. "dist " .. curkeeper.minlength[ dir ] .. " at " .. curkeeper.minposxy[ dir ] );
+					else
+						outStr = outStr .. debugstr .. TEXTCOLOR_DARKGRAY .. "off (" .. curkeeper.minlength[ dir ] .. ")";
+				} else {
+					outStr = outStr .. TEXTCOLOR_DARKRED .. "absent." .. TEXTCOLOR_GRAY;
+				}
+
+				debugstr = TEXTCOLOR_GRAY .. "\n     Right: ";
+			} // of for ( int dir = 0; dir < W2SD_Quantity; dir++ ) {}
+
+			outStr = outStr .. "\n\n";
 		}
 
 		Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 30, 60, outStr,
 						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
-		W2SectorData secdata = ( playerhandler.floorsector? w2level.allSectorsData[ playerhandler.floorsector.Index() ] : NULL );
-
 		if ( secdata )
-			Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 1100, 100, "Current sector: " .. secdata.s.Index() .. "\nCurrent group: " .. secdata.groupnum,
+			Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 1100, 100, "Current sector: " .. secdata.s.Index(),
+							DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
+
+		if ( debugTraceLineIndex != -1 )
+			Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 1100, 120, "Line ID: " .. debugTraceLineIndex,
 							DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
 		Super.RenderOverlay( e );
-	} */
+	}/* */
 
 
 } // of class mcm_WeathremumHandler: EventHandler {}
