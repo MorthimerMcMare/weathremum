@@ -208,9 +208,9 @@ class W2PlayerHandler: Actor {
 
 		// Outdoor areas raindrop effect:
 		for ( int i = 0; i < 100; i++ ) {
-			double angletheta = FRandom[ consoleplayer ]( 0.0, 360.0 );
+			double angletheta = FRandom( 0.0, 360.0 );
 
-			vector2 raindropPos = pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom[ consoleplayer ]( 0.0, 1.0 ) ) * 764.0 );
+			vector2 raindropPos = pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom( 0.0, 1.0 ) ) * 764.0 );
 
 			Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_Raindrop", ( raindropPos, pos.z ) ) );
 			raindrop.target = target;
@@ -230,8 +230,8 @@ class W2PlayerHandler: Actor {
 			if ( l.backsector && ( l.backsector.ceilingplane.d < minspawnheight ) )
 				minspawnheight = l.backsector.ceilingplane.d;
 
-			if ( !Random[ consoleplayer ]( 0, 1 ) ) {
-				Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + l.delta / linelength * FRandom[ consoleplayer ]( 0.0, linelength ), minspawnheight ) );
+			if ( !Random( 0, 1 ) ) {
+				Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + l.delta / linelength * FRandom( 0.0, linelength ), minspawnheight ) );
 				raindrop.master = target;
 			}
 		}
@@ -248,10 +248,10 @@ class W2PlayerHandler: Actor {
 
 		vector3 newpos;
 
-		//if ( !multiplayer )
+		if ( !multiplayer )
 			newpos = ( pl.Camera? pl.Camera.pos : target.pos );
-		//else
-		//	newpos = ( useMultiplayerPos? multiplayerPos : target.pos );
+		else
+			newpos = ( useMultiplayerPos? multiplayerPos : target.pos );
 
 		//console.printf( "W2PlH <" .. self .. "> target: <" .. target .. "> (Frnd <" .. pl.mo .. ">), useMultipl " .. useMultiplayerPos .. "-> " .. newpos );
 

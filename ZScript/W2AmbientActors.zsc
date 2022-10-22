@@ -117,11 +117,11 @@ class Weathremum_Raindrop: Actor {
 
 		double minspawnheight = ( master? min( ceilingz, target.pos.z + target.height + 256.0 ) : ceilingz );
 
-		SetZ( minspawnheight - FRandom[ consoleplayer ]( 8.0, 25.0 ) );
+		SetZ( minspawnheight - FRandom( 8.0, 25.0 ) );
 
 		vel.z = -35.0;
-		scale = ( FRandom[ consoleplayer ]( 0.1, 0.3 ), FRandom[ consoleplayer ]( 0.75, 2 ) );
-		alpha = FRandom[ consoleplayer ]( 0.2, 0.7 );
+		scale = ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
+		alpha = FRandom( 0.2, 0.7 );
 
 		ClearInterpolation();
 	}
@@ -141,11 +141,11 @@ class Weathremum_Raindrop: Actor {
 			if ( w2sector.w2floor == W2FT_Water ) {
 				if ( target && Distance2D( target ) <= 512.0 ) {
 					for ( int i = 0; i < 3; i++ )
-						Actor.Spawn( "Weathremum_WaterRipple", pos + ( FRandom[ consoleplayer ]( -4.0, 4.0 ), FRandom[ consoleplayer ]( -4.0, 4.0 ), 0.0 ) );
+						Actor.Spawn( "Weathremum_WaterRipple", pos + ( FRandom( -4.0, 4.0 ), FRandom( -4.0, 4.0 ), 0.0 ) );
 				}
 
-			} else if ( !Random[ consoleplayer ]( 0, 7 ) ) {
-				if ( w2sector.w2floor == W2FT_Incandecent || ( w2sector.w2floor == W2FT_Nukage && !Random[ consoleplayer ]( 0, 3 ) ) )
+			} else if ( !Random( 0, 7 ) ) {
+				if ( w2sector.w2floor == W2FT_Incandecent || ( w2sector.w2floor == W2FT_Nukage && !Random( 0, 3 ) ) )
 					Actor.Spawn( "Weathremum_NukageVapor", pos + ( 0.0, 0.0, 5.0 ) );
 			}
 
@@ -157,8 +157,8 @@ class Weathremum_Raindrop: Actor {
 		scale.y = 0.75;
 		alpha *= 0.4;
 
-		frame = Random[ consoleplayer ]( 1, 2 );
-		tics = 3 - frame; //Random[ consoleplayer ]( 2, 3 );
+		frame = Random( 1, 2 );
+		tics = 3 - frame; //Random( 2, 3 );
 
 		SetZ( floorz );
 		ClearInterpolation();
@@ -170,7 +170,7 @@ class Weathremum_Raindrop: Actor {
 
 	void RaindropSplash( void ) {
 		if ( w2sector && w2sector.w2floor == W2FT_HardSurface ) {
-			Actor.Spawn( "Weathremum_HardSurfaceRaindropBreak", pos + ( FRandom[ consoleplayer ]( -4.0, 4.0 ), FRandom[ consoleplayer ]( -4.0, 4.0 ), 0.0 ) );
+			Actor.Spawn( "Weathremum_HardSurfaceRaindropBreak", pos + ( FRandom( -4.0, 4.0 ), FRandom( -4.0, 4.0 ), 0.0 ) );
 
 			Destroy();
 			return;
@@ -181,8 +181,8 @@ class Weathremum_Raindrop: Actor {
 		// General visual tweaks:
 		ClearInterpolation();
 		A_SetRenderStyle( 0.1, STYLE_Add );
-		scale = ( 1, 1 ) * FRandom[ consoleplayer ]( 0.1, 0.25 );
-		frame = Random[ consoleplayer ]( 0, 4 );
+		scale = ( 1, 1 ) * FRandom( 0.1, 0.25 );
+		frame = Random( 0, 4 );
 
 		// Setting the position on a slopes:
 		vector3 norm = cursector.floorplane.normal;
@@ -191,7 +191,7 @@ class Weathremum_Raindrop: Actor {
 
 		angle = atan2( norm_p1.y, norm_p1.x );
 		pitch = atan2( norm_p2.x, norm_p2.y );
-		roll = FRandom[ consoleplayer ]( 0.0, 360.0 );
+		roll = FRandom( 0.0, 360.0 );
 	}
 
 	States {
@@ -215,8 +215,8 @@ class Weathremum_Raindrop: Actor {
 class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 	override void PostBeginPlay() {
 		vel.z = 0.0;
-		scale = ( FRandom[ consoleplayer ]( 0.1, 0.5 ), FRandom[ consoleplayer ]( 0.2, 0.5 ) );
-		alpha = FRandom[ consoleplayer ]( 0.3, 0.7 );
+		scale = ( FRandom( 0.1, 0.5 ), FRandom( 0.2, 0.5 ) );
+		alpha = FRandom( 0.3, 0.7 );
 	}
 
 	override void Tick() {
@@ -263,9 +263,9 @@ class Weathremum_WaterRipple: Actor {
 	}
 
 	override void PostBeginPlay() {
-		frame = Random[ consoleplayer ]( 0, 3 );
-		alpha = FRandom[ consoleplayer ]( 0.095, 0.333 );
-		scale.x = scale.y = FRandom[ consoleplayer ]( 0.1, 0.25 );
+		frame = Random( 0, 3 );
+		alpha = FRandom( 0.095, 0.333 );
+		scale.x = scale.y = FRandom( 0.1, 0.25 );
 	}
 
 	override void Tick() {
@@ -301,9 +301,9 @@ class Weathremum_HardSurfaceRaindropBreak: Actor {
 	}
 
 	override void PostBeginPlay() {
-		frame = Random[ consoleplayer ]( 0, 3 );
-		alpha = FRandom[ consoleplayer ]( 0.5, 1.0 );
-		scale.x = scale.y = FRandom[ consoleplayer ]( 0.175, 0.45 );
+		frame = Random( 0, 3 );
+		alpha = FRandom( 0.5, 1.0 );
+		scale.x = scale.y = FRandom( 0.175, 0.45 );
 	}
 
 	override void Tick() {
@@ -334,9 +334,9 @@ class Weathremum_NukageVapor: Actor {
 	}
 
 	override void PostBeginPlay() {
-		vel.z = FRandom[ consoleplayer ]( 0.0, 5.0 );
-		alpha = FRandom[ consoleplayer ]( 0.075, 0.33 );
-		scale.x = scale.y = FRandom[ consoleplayer ]( 0.25, 0.75 ) * FRandomPick[ consoleplayer ]( -1.0, 1.0 );
+		vel.z = FRandom( 0.0, 5.0 );
+		alpha = FRandom( 0.075, 0.33 );
+		scale.x = scale.y = FRandom( 0.25, 0.75 ) * FRandomPick( -1.0, 1.0 );
 	}
 
 	States {
