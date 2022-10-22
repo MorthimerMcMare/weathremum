@@ -70,7 +70,7 @@ class W2PlayerHandler: Actor {
 		//thanks to https://habr.com/ru/post/583838/.
 
 		// Outdoor areas raindrop effect:
-		for ( int i = 0; i < 200; i++ ) {
+		for ( int i = 0; i < 250; i++ ) {
 			double angletheta = FRandom( 0.0, 360.0 );
 
 			vector2 raindropPos = pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom( 0.0, 1.0 ) ) * 764.0 );
@@ -112,7 +112,7 @@ class W2PlayerHandler: Actor {
 	override void Tick() {
 		PlayerInfo pl = players[ FriendPlayer ];
 
-		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo || globalfreeze || level.frozen )
+		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo || FriendPlayer != consoleplayer || globalfreeze || level.frozen )
 			return;
 
 		target = pl.mo;
