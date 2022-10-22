@@ -1,5 +1,5 @@
 //
 
 GameInfo {
-	AddEventHandlers = "mcm_WeathremumHandler"
+	AddEventHandlers = "WeathremumHandler"
 }

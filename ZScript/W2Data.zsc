@@ -68,9 +68,22 @@ class W2SectorData {
 class W2SoundKeeper play {
 	EWeathremumHandleStatus status;
 	EWeathremumSectorType w2type;
+	String w2typename;
 
 	String sndname;
 	W2SoundOrigin sndorigin[ W2SD_Quantity ];
+
+	static const String WeathremumSectorTypeNames[] = {
+		"Cornice",
+		"Default",
+		"Soft",
+		"Water",
+		"Nukage",
+		"Incandecent",
+		"Rocks surface",
+		"Metal surface",
+		"Plastic surface"
+	};
 
 	Actor master;
 	double minlength[ W2SD_Quantity ];
@@ -86,6 +99,8 @@ class W2SoundKeeper play {
 		if ( testlength < minlength[ direction ] ) {
 			minlength[ direction ] = testlength;
 			minposxy[ direction ] = testpos;
+
+			status = W2HS_Active;
 		}
 	}
 
@@ -127,6 +142,7 @@ class W2SoundKeeper play {
 		}
 
 		// Belonging of the sound origin (to left/to right from current player):
+		// TODO: use linedef half planes clipping on found point, not on vertices!!
 		if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {
 			vector2 vec2plleft = master.AngleToVector( master.angle - 90.0, 1.0 );
 
@@ -144,10 +160,12 @@ class W2SoundKeeper play {
 				minlength[ W2SD_Right ] = curminlength;
 				minposxy[ W2SD_Right ] = curposxy;
 			}
+
+			status = W2HS_Active;
 		} // of if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {}
 
 		/*
-		//atan2( curposxy.y - plp.y, minposxy[ dir ].x - plp.y ) - master.angle
+		//atan2( curposxy.y - plp.y, minposxy[ dir ].x - plp.x ) - master.angle
 		GetSoundAngleDistMul(  );
 
 		bool isLeftHalfplane = false;
@@ -182,18 +200,18 @@ class W2SoundKeeper play {
 
 	} // of void SuggestLine( Line curline ) {}
 
-	static W2SoundKeeper Create( Sound initsnd, EWeathremumSectorType inittype, Actor initmaster ) {
+	static W2SoundKeeper Create( Sound initsnd, EWeathremumSectorType inittype, Actor initmaster, String inittypename = "" ) {
 		W2SoundKeeper newkeeper = new( 'W2SoundKeeper' );
 
+		newkeeper.status = W2HS_Off;
 		newkeeper.sndname = initsnd;
 		newkeeper.master = initmaster;
 		newkeeper.w2type = inittype;
 
-		for ( int j = 0; j < W2SD_Quantity; j++ ) {
-			W2SoundOrigin sndactor = newkeeper.sndorigin[ j ] = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( 0.0, 0.0, 0.0 ) ) );
-			sndactor.target = newkeeper.master; // Player or his camera.
-			sndactor.seq = sndactor.StartSoundSequence( newkeeper.sndname, SeqNode.ENVIRONMENT );
-		} // of for ( int j = 0; j < W2SoundKeeper.W2SD_Quantity; j++ ) {}
+		if ( inittypename == "" && inittype < W2ST_User )
+			newkeeper.w2typename = W2SoundKeeper.WeathremumSectorTypeNames[ inittype ];
+		else
+			newkeeper.w2typename = inittypename;
 
 		return newkeeper;
 	} // of static W2SoundKeeper Create( Sound initsnd, EWeathremumSectorType inittype, Actor initmaster ) {}
@@ -206,7 +224,8 @@ class W2SoundKeeper play {
 		minposxy[ W2SD_Left ] = minposxy[ W2SD_Right ] = ( 0, 0 );
 
 		// Suggest potential excess sounds to stop:
-		//status = W2HS_StopSuggestion;
+		if ( status == W2HS_Active )
+			status = W2HS_StopSuggestion;
 	}
 
 	protected virtual double GetSoundAngleDistMul( double ang ) {
@@ -225,17 +244,19 @@ class W2SoundKeeper play {
 	}
 
 	void PostTick( void ) {
-		if ( status == W2HS_StopSuggestion ) {
-			// Wiping out too far sounds:
-			status = W2HS_Off;
+		if ( status == W2HS_Active ) {
 
-			//console.printf( TEXTCOLOR_DARKRED .. "-Stopped\c- sound for sector " .. loopdataindices[ i ] .. "." );
+			// Creating new sound origins if they are not spawned yet:
+			if ( !sndorigin[ W2SD_Left ] ) {
+				for ( int j = 0; j < W2SD_Quantity; j++ ) {
+					W2SoundOrigin sndactor = sndorigin[ j ] = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( 0.0, 0.0, 0.0 ) ) );
+					sndactor.target = master; // Player or his camera.
+					sndactor.seq = sndactor.StartSoundSequence( sndname, SeqNode.ENVIRONMENT );
+				} // of for ( int j = 0; j < W2SoundKeeper.W2SD_Quantity; j++ ) {}
 
-			//for ( int i = 0; i < W2SD_Quantity; i++ ) {
-			//	sndorigin[ i ].Destroy();
-		} else {
-			//if ( status == W2HS_Active ) {
-			//}
+				W2Global.Log( LL_Debug, TEXTCOLOR_DARKGREEN .. "+Started" .. W2Global.LLCOLOR_DEBUG .. " sound of type " .. w2type .. "." );
+			}
+
 
 			// TODO: separate left/right lengths!!! Ears differentiating may 
 			//be checked on MAP03, MAP11, MAP12 or MAP13 of the Doom 2.
@@ -264,6 +285,18 @@ class W2SoundKeeper play {
 			// TODO: "pos.z" coordinate based on the closest (?) sector in current group.
 			sndorigin[ W2SD_Left ].SetOrigin( ( master.Vec2Angle( minlength[ W2SD_Left ], master.angle + 90.0 ), master.pos.z ), true );
 			sndorigin[ W2SD_Right ].SetOrigin( ( master.Vec2Angle( minlength[ W2SD_Right ], master.angle - 90.0 ), master.pos.z ), true );
+		} else if ( status == W2HS_StopSuggestion ) {
+			// Wiping out too far sounds:
+			status = W2HS_Off;
+
+			W2Global.Log( LL_Debug, TEXTCOLOR_DARKRED .. "-Stopped" .. W2Global.LLCOLOR_DEBUG .. " sound of type " .. w2type .. "." );
+
+			for ( int i = 0; i < W2SD_Quantity; i++ ) {
+				if ( sndorigin[ i ] ) {
+					sndorigin[ i ].StopSoundSequence();
+					sndorigin[ i ].Destroy();
+				}
+			}
 		}
 
 	} // of void PostTick( void ) {}

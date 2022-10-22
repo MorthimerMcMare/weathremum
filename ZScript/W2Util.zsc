@@ -1,0 +1,107 @@
+//
+//  Weathremum general (in most cases just a logger or class with auxiliary methods) and temporal objects.
+//
+
+enum EWeathremumLogLevels {
+	LL_Emergency = 0,
+	LL_Main,
+	LL_Detailed,
+	LL_Debug,
+
+	LL_Extended = LL_Detailed,
+	LL_Extra = LL_Detailed,
+	LL_Critical = LL_Emergency,
+
+	LL_FlagsMask	= 0xFFF0,
+	LL_NoDot		= 0x4000,
+	LL_NoPrefix		= 0x8000
+};
+
+
+class W2Global: Thinker {
+	const LLCOLOR_MAIN = "\c-";
+	const LLCOLOR_DEBUG = TEXTCOLOR_DARKGRAY;
+	const LLCOLOR_EMERGENCY = TEXTCOLOR_FIRE;
+
+	int curloglevel;
+
+
+	void UpdateLoglevel( void ) {
+		curloglevel = CVar.FindCVar( "mcm_weathremum_loglevel" ).GetInt();
+	}
+
+	static play W2Global Get( void ) {
+		W2Global it = W2Global( ThinkerIterator.Create( "W2Global", STAT_SCRIPTS ).Next() );
+
+		if ( !it ) {
+			it = new( "W2Global" );
+			it.ChangeStatNum( STAT_SCRIPTS );
+			it.UpdateLoglevel();
+		}
+
+		return it;
+	} // of static play W2Global Get( void ) {}
+
+	override void Tick() {
+		if ( !( level.maptime % 3 ) )
+			UpdateLoglevel();
+	}
+
+
+	// Prints well-decorated information string:
+	static clearscope void ClearscopeLog( EWeathremumLogLevels loglevel, String text ) {
+		String logPrefix = "";
+
+		if ( !( loglevel & LL_NoPrefix ) ) {
+			switch ( loglevel & ~LL_FlagsMask ) {
+				case LL_Debug:
+					logPrefix = LLCOLOR_DEBUG .. "[W2 Debug] ";
+					break;
+				case LL_Emergency:
+					logPrefix = TEXTCOLOR_RED .. "[Weathremum emergency] " .. LLCOLOR_EMERGENCY;
+					break;
+				default:
+					logPrefix = TEXTCOLOR_GRAY .. "[W2] " .. LLCOLOR_MAIN;
+					break;
+			} // of switch ( loglevel & ~LL_NoPrefix ) {
+		} // of if ( !( loglevel & LL_NoPrefix ) ) {
+
+		if ( !( loglevel & LL_NoDot ) ) {
+			String lastch = text.Mid( text.Length() - 1 );
+
+			if ( !( lastch == "." || lastch == "!" || lastch == "?" || lastch == ":" || lastch == ";" ) )
+				text = text .. ".";
+		}
+
+		console.printf( logPrefix .. text );
+	} // of static clearscope void ClearscopeLog( EWeathremumLogLevels loglevel, String text ) {}
+
+	static int GetLoglevel( void ) {
+		return W2Global.Get().curloglevel;
+	}
+
+	// A play-scope wrapper around a data-scope method (mostly used):
+	static play void Log( EWeathremumLogLevels loglevel, String text ) {
+		if ( W2Global.GetLoglevel() >= ( loglevel & ~LL_FlagsMask ) )
+			ClearscopeLog( loglevel, text );
+	}
+
+} // of class W2Global: Thinker {}
+
+
+class tempLeftRightMarker: Actor {
+	// Used for the stereo sound playing debug.
+	Default {
+		+NOINTERACTION;
+		+DONTSPLASH;
+		RenderStyle "Translucent";
+		Alpha 0.44;
+	}
+
+	States {
+	Spawn:
+		SPKR A 2;
+		Stop;
+	}
+}
+

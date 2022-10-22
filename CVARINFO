@@ -1,14 +1,19 @@
-// Weather control CVars.
+// Weathremum control CVars:
 
-server bool		weather_lightning_enabled = true;
-server int		weather_lightning_mindelay = 200;
-server int		weather_lightning_maxdelay = 5000;
+user int		mcm_weathremum_loglevel = 1;
 
-server bool		weather_rain_enabled = true; // 0 -- off, 1 -- on, 2 -- periodical
-server int		weather_rain_spawnrange = 256;
-server int		weather_rain_intensity = 50;
-server float	weather_rain_fallspeed = 30;
 
-server float	weather_init_storm_strength = 0.5;
-server float	weather_change_chance = 0.01;
-server float	weather_init_storm_strength_randomize = 1.0;
+// [Legacy/deprecated] Weather control CVars:
+
+//server bool		weather_lightning_enabled = true;
+//server int		weather_lightning_mindelay = 200;
+//server int		weather_lightning_maxdelay = 5000;
+
+//server bool		weather_rain_enabled = true; // 0 -- off, 1 -- on, 2 -- periodical
+//server int		weather_rain_spawnrange = 256;
+//server int		weather_rain_intensity = 50;
+//server float		weather_rain_fallspeed = 30;
+
+//server float		weather_init_storm_strength = 0.5;
+//server float		weather_change_chance = 0.01;
+//server float		weather_init_storm_strength_randomize = 1.0;

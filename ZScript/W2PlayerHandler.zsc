@@ -1,21 +1,5 @@
 // Weathremum handler for each player.
 
-class tempLeftRightMarker: Actor {
-	// Used for the stereo sound playing debug.
-	Default {
-		+NOINTERACTION;
-		+DONTSPLASH;
-		RenderStyle "Translucent";
-		Alpha 0.44;
-	}
-
-	States {
-	Spawn:
-		SPKR A 2;
-		Stop;
-	}
-}
-
 class W2PlayerHandler: Actor {
 	bool useMultiplayerPos;
 	vector3 multiplayerPos;
@@ -23,8 +7,6 @@ class W2PlayerHandler: Actor {
 	W2LevelGeneralData w2level;
 
 	Array<W2SoundKeeper> sndkeepers;
-	//Array<int> loopdataindices;		// Array storing currently playing sector groups.
-	//Array<int> newdataindices;		// Temporary array with group data updates.
 	Array<Line> corniceLines;			// Lines between outdoor and indoor areas.
 
 	// "target" is an actor to follow (updates every "Tick()").
@@ -74,15 +56,6 @@ class W2PlayerHandler: Actor {
 
 			if ( tback != W2ST_None && tback != tfront && tback != tCursector )
 				sndkeepers[ tback ].SuggestLine( l );
-
-			// Starts sector sound or continues it (by stop preventing) if it is still needed.
-			/*if ( groupdata.status == W2HS_Off )
-				newdataindices.Push( groupnum );
-
-			if ( groupdata.status != W2HS_Active ) {
-				groupdata.status = W2HS_Active;
-				groupdata.lines.Clear();
-			}*/
 
 			// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to the "validcount" variable.
 			if ( w2level.corniceLinesFlags[ l.Index() ] == 1 )
@@ -144,6 +117,12 @@ class W2PlayerHandler: Actor {
 
 		target = pl.mo;
 
+		if ( !target ) {
+			W2Global.Log( LL_Main, GetClassName() .. "::Tick(). Target player " .. FriendPlayer .. " disappeared, destroying self." );
+			Destroy();
+			Super.Tick();
+		}
+
 		vector3 newpos;
 
 		if ( !multiplayer )
@@ -176,4 +155,3 @@ class W2PlayerHandler: Actor {
 	}
 
 } // of class W2PlayerHandler: Actor {}
-

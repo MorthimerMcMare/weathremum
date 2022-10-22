@@ -1,29 +1,18 @@
 //
 
 OptionMenu "mcm_WeathremumControl" {
-    Title "Weathremum (Weather II) control"
-    /*
+    Title "Weathremum control"
 	StaticText " "
-    StaticText "Weather changing control:"
-    StaticText "Storm strength will be \"clamped\" in range [-1.0; 2.0].", 1
-    Slider "Initial storm strength", "mcm_weathremum_init_storm_strength", -1.0, 2.0, 0.1, 1
-    Slider "Initial storm randomization (+/-)", "mcm_weathremum_init_storm_strength_randomize", 0.0, 2.0, 0.1, 1
-    Slider "Storm change chance", "mcm_weathremum_change_chance", 0.0, 0.25, 0.01, 2
-    StaticText " "
-    StaticText "Lightning control:"
-    Option "Enabled", "mcm_weathremum_lightning_enabled", "OnOff"
-    Slider "Minimal delay (ticks)", "mcm_weathremum_lightning_mindelay", 50, 1000, 50, 0
-    Slider "Maximal delay (ticks)", "mcm_weathremum_lightning_maxdelay", 500, 10000, 500, 0
-    StaticText " "
-    StaticText "Rain control:"
-	Option "Enabled", "mcm_weathremum_rain_enabled", "OnOff"
-    Slider "Spawn range (in mappixels)", "mcm_weathremum_rain_spawnrange", 256, 2048, 128, 0
-    Slider "Intensity", "mcm_weathremum_rain_intensity", 1, 99, 5, 0
-    Slider "Fall speed", "mcm_weathremum_rain_fallspeed", 20, 50, 5, 0
-	*/
+	Option "Log level", "mcm_weathremum_loglevel", "mcm_weathremum_LogLevels"
 }
 
 AddOptionMenu "OptionsMenu" {
-	StaticText  " "
-	Submenu     "Weather II control", "mcm_WeathremumControl"
+	StaticText " "
+	Submenu "Weathremum control", "mcm_WeathremumControl"
+}
+
+OptionValue "mcm_weathremum_LogLevels" {
+	1, "Main (default)"
+	2, "Detailed"
+	3, "Debug mode"
 }
