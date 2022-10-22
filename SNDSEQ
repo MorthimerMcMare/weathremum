@@ -13,6 +13,7 @@ end
 	playrepeat weathremum/rain/heavy
 end
 
+
 // Different rain surfaces.
 :weathremum/rainsurface/metal
 	volumerel 1
@@ -26,16 +27,16 @@ end
 	playrepeat weathremum/rainsurface/tin
 end
 
-:weathremum/rainsurface/rocks
+:weathremum/rainsurface/rock
 	volumerel 1
 	attenuation 2.5
-	playrepeat weathremum/rainsurface/rocks
+	playrepeat weathremum/rainsurface/rock
 end
 
-:weathremum/rainsurface/plastic
+:weathremum/rainsurface/plasticglass
 	volumerel 1
 	attenuation 2.5
-	playrepeat weathremum/rainsurface/plastic
+	playrepeat weathremum/rainsurface/plasticglass
 end
 
 

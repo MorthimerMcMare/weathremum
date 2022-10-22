@@ -168,6 +168,7 @@ class WeathremumHandler: EventHandler {
 			initCurW2PlayerHandler.w2level = w2level;
 			initCurW2SurfaceType = W2ST_None;
 
+			// Based on the both of SNDINFO and SNDSEQ.
 			pushSound( "weather/wind(x)" );
 			pushSound( "weathremum/rain/default" );          // W2ST_NormalSurface, 
 			pushSound( "weathremum/rain/default" );          // W2ST_SoftSurface,	
@@ -252,7 +253,7 @@ class WeathremumHandler: EventHandler {
 			W2SoundKeeper curkeeper = playerhandler.sndkeepers[ i ];
 
 			String debugstr = "";
-			String debugstr2 = curkeeper.w2typename;
+			String debugstr2 = curkeeper.w2typename .. "; " .. curkeeper.sndname;
 
 			switch ( curkeeper.status ) {
 				case W2HS_Active: debugstr = TEXTCOLOR_GREEN .. "on"; break;
@@ -263,7 +264,7 @@ class WeathremumHandler: EventHandler {
 
 			String maincolor = ( secdata && secdata.w2type == i? TEXTCOLOR_DARKGREEN : TEXTCOLOR_GRAY );
 
-			//debugstr2.Replace( "weathremum", TEXTCOLOR_BLUE .. "[w2]" .. maincolor );
+			debugstr2.Replace( "weathremum", TEXTCOLOR_BLUE .. "[w2]" .. maincolor );
 			outStr.AppendFormat( "%s#%i (stat %s%s, type %i%s, \"%s%s\").\n" .. TEXTCOLOR_GRAY,
 									maincolor, i, debugstr, maincolor, curkeeper.w2type, maincolor, debugstr2, maincolor );
 

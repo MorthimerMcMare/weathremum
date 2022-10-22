@@ -74,7 +74,7 @@ class W2SoundKeeper play {
 	W2SoundOrigin sndorigin[ W2SD_Quantity ];
 
 	static const String WeathremumSectorTypeNames[] = {
-		"Cornice",
+		"(Cornice/Sill)",
 		"Default",
 		"Soft",
 		"Water",

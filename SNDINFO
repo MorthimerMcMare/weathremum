@@ -1,4 +1,10 @@
-weathremum/rain/default			"Sounds/Rain/Rain_default.mp3"
+//
+// Weathremum sound info.
+//
+// [McM]: Do not forget to update a SNDSEQ data when changing names here!
+//
+
+weathremum/rain/default			"Sounds/Rain/rain_default.mp3"
 weathremum/rain/heavy			"Sounds/Rain/rain_heavy1.mp3"
 weathremum/rainsurface/tin		"Sounds/Rain/rain_surface_tin.wav"
 weathremum/rainsurface/rock		"Sounds/Rain/rain_surface_rocks.mp3"
