@@ -85,8 +85,53 @@ class W2Global: Thinker {
 		if ( W2Global.GetLoglevel() >= ( loglevel & ~LL_FlagsMask ) )
 			ClearscopeLog( loglevel, text );
 	}
-
 } // of class W2Global: Thinker {}
+
+class WeathremumUnsyncRandom {
+	int unsyncseed;
+
+	static WeathremumUnsyncRandom Create( int initseed = 0 ) {
+		WeathremumUnsyncRandom newrnd = new( 'WeathremumUnsyncRandom' );
+		newrnd.unsyncseed = ( initseed == 0? int( MSTime() ) : initseed );
+
+		return newrnd;
+	}
+
+	void SetUnsyncRandSeed( int newseed ) {
+		unsyncseed = newseed;
+	}
+
+	int UnsyncRand( void ) {
+		// See https://en.wikipedia.org/wiki/Linear_congruential_generator#Parameters_in_common_use for glibc.
+		unsyncseed = ( 1103515245 * unsyncseed + 12345 ) % ( 1 << 31 );
+
+		return unsyncseed;
+	}
+
+	int UnsyncRandom( int minv, int maxv ) {
+		if ( minv > maxv ) {
+			int tmp = maxv;
+			maxv = minv;
+			minv = tmp;
+		}
+
+		uint outrnd = ( uint( UnsyncRand() ) % ( uint( maxv ) - uint( minv ) + 1 ) );
+
+		return int( outrnd ) + minv;
+	}
+
+	double UnsyncFRandom( double minv, double maxv ) {
+		if ( minv > maxv ) {
+			double tmp = maxv;
+			maxv = minv;
+			minv = tmp;
+		}
+
+		double outrnd_0to1 = uint( UnsyncRand() ) / 4294967295.0;
+
+		return ( outrnd_0to1 * ( maxv - minv ) + minv );
+	}
+} // of class WeathremumUnsyncRandom {}
 
 
 class tempLeftRightMarker: Actor {
