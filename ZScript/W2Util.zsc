@@ -96,38 +96,46 @@ class WeathremumUnsyncRandom {
 
 		return newrnd;
 	}
+	static WeathremumUnsyncRandom Get( int initseed = 0 ) {
+		return WeathremumUnsyncRandom.Create( initseed );
+	}
 
-	void SetUnsyncRandSeed( int newseed ) {
+
+	void SetRandSeed( int newseed ) {
 		unsyncseed = newseed;
 	}
 
-	int UnsyncRand( void ) {
+	int RawRand( void ) {
 		// See https://en.wikipedia.org/wiki/Linear_congruential_generator#Parameters_in_common_use for glibc.
 		unsyncseed = ( 1103515245 * unsyncseed + 12345 ) % ( 1 << 31 );
 
 		return unsyncseed;
 	}
 
-	int UnsyncRandom( int minv, int maxv ) {
+	int Random( int minv, int maxv ) {
 		if ( minv > maxv ) {
 			int tmp = maxv;
 			maxv = minv;
 			minv = tmp;
 		}
 
-		uint outrnd = ( uint( UnsyncRand() ) % ( uint( maxv ) - uint( minv ) + 1 ) );
+		uint outrnd = ( uint( RawRand() ) % ( uint( maxv ) - uint( minv ) + 1 ) );
 
 		return int( outrnd ) + minv;
 	}
 
-	double UnsyncFRandom( double minv, double maxv ) {
+	bool Chance( int divisioner ) {
+		return !( RawRand() % divisioner );
+	}
+
+	double FRandom( double minv, double maxv ) {
 		if ( minv > maxv ) {
 			double tmp = maxv;
 			maxv = minv;
 			minv = tmp;
 		}
 
-		double outrnd_0to1 = uint( UnsyncRand() ) / 4294967295.0;
+		double outrnd_0to1 = uint( RawRand() ) / 4294967295.0;
 
 		return ( outrnd_0to1 * ( maxv - minv ) + minv );
 	}

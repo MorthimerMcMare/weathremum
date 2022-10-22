@@ -24,6 +24,7 @@ class W2SoundOrigin: Actor {
 
 class Weathremum_Raindrop: Actor {
 	W2SectorData w2sector;
+	WeathremumUnsyncRandom rnd;
 
 	Default {
 		+MISSILE;
@@ -53,11 +54,11 @@ class Weathremum_Raindrop: Actor {
 
 		double minspawnheight = ( master? min( ceilingz, target.pos.z + target.height + 256.0 ) : ceilingz );
 
-		SetZ( minspawnheight - FRandom( 8.0, 25.0 ) );
+		SetZ( minspawnheight - rnd.FRandom( 8.0, 25.0 ) );
 
 		vel.z = -35.0;
-		scale = ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
-		alpha = FRandom( 0.2, 0.7 );
+		scale = ( rnd.FRandom( 0.1, 0.3 ), rnd.FRandom( 0.75, 2.0 ) );
+		alpha = rnd.FRandom( 0.2, 0.7 );
 
 		ClearInterpolation();
 	}
@@ -72,29 +73,31 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	void RaindropPreSplash( void ) {
-		if ( w2sector && w2sector.w2type >= W2ST_Water ) {
-
+		if ( w2sector ) {
 			if ( w2sector.w2type == W2ST_Water ) {
 				if ( target && Distance2D( target ) <= 512.0 ) {
 					for ( int i = 0; i < 3; i++ )
-						Actor.Spawn( "Weathremum_WaterRipple", pos + ( FRandom( -4.0, 4.0 ), FRandom( -4.0, 4.0 ), 0.0 ) );
+						Actor.Spawn( "Weathremum_WaterRipple", pos + ( rnd.FRandom( -4.0, 4.0 ), rnd.FRandom( -4.0, 4.0 ), 0.0 ) );
 				}
 
-			} else if ( !Random( 0, 7 ) ) {
-				if ( w2sector.w2type == W2ST_Incandecent || ( w2sector.w2type == W2ST_Nukage && !Random( 0, 3 ) ) )
-					Actor.Spawn( "Weathremum_NukageVapor", pos + ( 0.0, 0.0, 5.0 ) );
-			}
+				Destroy();
+				return;
 
-			Destroy();
-			return;
+			} else if ( ( w2sector.w2type == W2ST_Incandecent || w2sector.w2type == W2ST_Nukage ) && rnd.Chance( 7 ) ) {
+				if ( w2sector.w2type == W2ST_Incandecent || rnd.Chance( 3 ) )
+					Actor.Spawn( "Weathremum_NukageVapor", pos + ( 0.0, 0.0, 5.0 ) );
+
+				Destroy();
+				return;
+			}
 		}
 
 		vel = (0, 0, 0);
 		scale.y = 0.75;
 		alpha *= 0.4;
 
-		frame = Random( 1, 2 );
-		//tics = frame; //Random( 2, 3 );
+		frame = rnd.Random( 1, 2 );
+		//tics = frame; //rnd.Random( 2, 3 );
 
 		SetZ( floorz );
 		ClearInterpolation();
@@ -105,8 +108,8 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	void RaindropSplash( void ) {
-		if ( w2sector && w2sector.w2type == W2ST_RockSurface ) {
-			Actor.Spawn( "Weathremum_HardSurfaceRaindropBreak", pos + ( FRandom( -4.0, 4.0 ), FRandom( -4.0, 4.0 ), 0.0 ) );
+		if ( w2sector && ( w2sector.w2type == W2ST_RockSurface || w2sector.w2type == W2ST_MetalSurface ) ) {
+			Actor.Spawn( "Weathremum_HardSurfaceRaindropBreak", pos + ( rnd.FRandom( -4.0, 4.0 ), rnd.FRandom( -4.0, 4.0 ), 0.0 ) );
 
 			Destroy();
 			return;
@@ -117,8 +120,8 @@ class Weathremum_Raindrop: Actor {
 		// General visual tweaks:
 		ClearInterpolation();
 		A_SetRenderStyle( 0.1, STYLE_Add );
-		scale = ( 1, 1 ) * FRandom( 0.1, 0.25 );
-		frame = Random( 0, 4 );
+		scale = ( 1, 1 ) * rnd.FRandom( 0.1, 0.25 );
+		frame = rnd.Random( 0, 4 );
 
 		// Setting the position on a slopes:
 		vector3 norm = cursector.floorplane.normal;
@@ -127,7 +130,7 @@ class Weathremum_Raindrop: Actor {
 
 		angle = atan2( norm_p1.y, norm_p1.x );
 		pitch = atan2( norm_p2.x, norm_p2.y );
-		roll = FRandom( 0.0, 360.0 );
+		roll = rnd.FRandom( 0.0, 360.0 );
 	}
 
 	States {
@@ -152,8 +155,8 @@ class Weathremum_Raindrop: Actor {
 class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 	override void PostBeginPlay() {
 		vel.z = 0.0;
-		scale = ( FRandom( 0.1, 0.5 ), FRandom( 0.2, 0.5 ) );
-		alpha = FRandom( 0.3, 0.7 );
+		scale = ( rnd.FRandom( 0.1, 0.5 ), rnd.FRandom( 0.2, 0.5 ) );
+		alpha = rnd.FRandom( 0.3, 0.7 );
 	}
 
 	override void Tick() {
@@ -185,7 +188,10 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 	}
 }
 
-class Weathremum_WaterRipple: Actor {
+
+class Weathremum_ExtraDecoration: Actor {
+	WeathremumUnsyncRandom rnd;
+
 	Default {
 		+NOTONAUTOMAP;
 		+NOINTERACTION;
@@ -196,13 +202,16 @@ class Weathremum_WaterRipple: Actor {
 
 	override void BeginPlay() {
 		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
+		rnd = WeathremumUnsyncRandom.Get();
 		Super.BeginPlay();
 	}
+}
 
+class Weathremum_WaterRipple: Weathremum_ExtraDecoration {
 	override void PostBeginPlay() {
-		frame = Random( 0, 3 );
-		alpha = FRandom( 0.095, 0.333 );
-		scale.x = scale.y = FRandom( 0.1, 0.25 );
+		frame = rnd.Random( 0, 3 );
+		alpha = rnd.FRandom( 0.095, 0.333 );
+		scale.x = scale.y = rnd.FRandom( 0.1, 0.25 );
 	}
 
 	override void Tick() {
@@ -223,24 +232,11 @@ class Weathremum_WaterRipple: Actor {
 	}
 }
 
-class Weathremum_HardSurfaceRaindropBreak: Actor {
-	Default {
-		+NOTONAUTOMAP;
-		+NOINTERACTION;
-		+FLATSPRITE;
-		+FLOORCLIP;
-		RenderStyle "Translucent";
-	}
-
-	override void BeginPlay() {
-		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
-		Super.BeginPlay();
-	}
-
+class Weathremum_HardSurfaceRaindropBreak: Weathremum_ExtraDecoration {
 	override void PostBeginPlay() {
-		frame = Random( 0, 3 );
-		alpha = FRandom( 0.5, 1.0 );
-		scale.x = scale.y = FRandom( 0.175, 0.45 );
+		frame = rnd.Random( 0, 3 );
+		alpha = rnd.FRandom( 0.5, 1.0 );
+		scale.x = scale.y = rnd.FRandom( 0.175, 0.45 );
 	}
 
 	override void Tick() {
@@ -257,23 +253,21 @@ class Weathremum_HardSurfaceRaindropBreak: Actor {
 	}	
 }
 
-class Weathremum_NukageVapor: Actor {
+class Weathremum_NukageVapor: Weathremum_ExtraDecoration {
 	Default {
-		+NOTONAUTOMAP;
-		+NOINTERACTION;
-		+FLATSPRITE;
+		-FLOORCLIP;
 		RenderStyle "Add";
 	}
 
-	override void BeginPlay() {
-		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
-		Super.BeginPlay();
-	}
-
 	override void PostBeginPlay() {
-		vel.z = FRandom( 0.0, 5.0 );
-		alpha = FRandom( 0.075, 0.33 );
-		scale.x = scale.y = FRandom( 0.25, 0.75 ) * FRandomPick( -1.0, 1.0 );
+		vel.z = rnd.FRandom( 0.0, 5.0 );
+		alpha = rnd.FRandom( 0.075, 0.33 );
+
+		scale.x = rnd.FRandom( 0.25, 0.75 );
+		if ( rnd.Chance( 1 ) )
+			scale.x = -scale.x;
+
+		scale.y = scale.x;
 	}
 
 	States {
