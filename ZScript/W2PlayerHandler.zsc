@@ -31,8 +31,10 @@ class W2PlayerHandler: Actor {
 			tCursector = w2level.allSectorsData[ ceilingsector.Index() ].w2type;
 
 			if ( tCursector != W2ST_None ) {
-				sndkeepers[ tCursector ].SuggestPos( pos.xy + ( 6.0, 0.0 ), W2SD_Left );
-				sndkeepers[ tCursector ].SuggestPos( pos.xy + ( 6.0, 0.0 ), W2SD_Right );
+				vector3 newpos = ( pos.xy + (6.0, 0.0), floorz );
+
+				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Left );
+				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Right );
 			}
 		}
 
@@ -51,11 +53,11 @@ class W2PlayerHandler: Actor {
 			EWeathremumSectorType tback = ( l.backsector? w2level.allSectorsData[ l.backsector.Index() ].w2type : W2ST_None );
 
 			// Try to find a minimal length for the current sound:
-			if ( tfront != W2ST_None && tfront != tCursector )
-				sndkeepers[ tfront ].SuggestLine( l );
+			if ( tfront != W2ST_None /*&& tfront != tCursector*/ )
+				sndkeepers[ tfront ].SuggestLine( l, l.frontsector );
 
-			if ( tback != W2ST_None && tback != tfront && tback != tCursector )
-				sndkeepers[ tback ].SuggestLine( l );
+			if ( tback != W2ST_None && tback != tfront /*&& tback != tCursector*/ )
+				sndkeepers[ tback ].SuggestLine( l, l.backsector );
 
 			// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to the "validcount" variable.
 			if ( w2level.corniceLinesFlags[ l.Index() ] == 1 )

@@ -253,7 +253,7 @@ class WeathremumHandler: EventHandler {
 			W2SoundKeeper curkeeper = playerhandler.sndkeepers[ i ];
 
 			String debugstr = "";
-			String debugstr2 = curkeeper.w2typename .. "; " .. curkeeper.sndname;
+			String debugstr2 = curkeeper.w2typename;// .. "; " .. curkeeper.sndname;
 
 			switch ( curkeeper.status ) {
 				case W2HS_Active: debugstr = TEXTCOLOR_GREEN .. "on"; break;
@@ -264,21 +264,17 @@ class WeathremumHandler: EventHandler {
 
 			String maincolor = ( secdata && secdata.w2type == i? TEXTCOLOR_DARKGREEN : TEXTCOLOR_GRAY );
 
-			debugstr2.Replace( "weathremum", TEXTCOLOR_BLUE .. "[w2]" .. maincolor );
-			outStr.AppendFormat( "%s#%i (stat %s%s, type %i%s, \"%s%s\").\n" .. TEXTCOLOR_GRAY,
+			//debugstr2.Replace( "weathremum", TEXTCOLOR_BLUE .. "[w2]" .. maincolor );
+			outStr.AppendFormat( "%s#%i (%s%s, type %i%s, \"%s%s\").\n" .. TEXTCOLOR_GRAY,
 									maincolor, i, debugstr, maincolor, curkeeper.w2type, maincolor, debugstr2, maincolor );
 
 			debugstr = "      Left: ";
 
 			for ( int dir = 0; dir < W2SD_Quantity; dir++ ) {
-				if ( curkeeper.sndorigin[ dir ] ) {
-					if ( curkeeper.minlength[ dir ] < 9000.0 )
-						outStr.AppendFormat( debugstr .. TEXTCOLOR_TEAL .. "dist " .. curkeeper.minlength[ dir ] .. " at " .. curkeeper.minposxy[ dir ] );
-					else
-						outStr = outStr .. debugstr .. TEXTCOLOR_DARKGRAY .. "off (" .. curkeeper.minlength[ dir ] .. ")";
-				} else {
-					outStr = outStr .. debugstr .. TEXTCOLOR_DARKGRAY .. "absent." .. TEXTCOLOR_GRAY;
-				}
+				if ( curkeeper.sndorigin[ dir ] )
+					outStr.AppendFormat( debugstr .. TEXTCOLOR_TEAL .. "dist " .. curkeeper.minlength[ dir ] .. " at " .. curkeeper.minposxyz[ dir ].xy .. TEXTCOLOR_GRAY .. ". ZDiff " .. curkeeper.minposxyz[ dir ].z );
+				else
+					outStr = outStr .. debugstr .. TEXTCOLOR_DARKGRAY .. "off (" .. curkeeper.minlength[ dir ] .. ")";
 
 				debugstr = TEXTCOLOR_GRAY .. "\n     Right: ";
 			} // of for ( int dir = 0; dir < W2SD_Quantity; dir++ ) {}
