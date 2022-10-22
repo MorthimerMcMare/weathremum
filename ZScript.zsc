@@ -5,6 +5,8 @@ version "3.3.0"
 #include "ZScript/W2PlayerHandler.zsc"
 #include "ZScript/W2AmbientActors.zsc"
 
+#include "ZScript/W2ExtraAPI.zsc"
+
 const WeathremumVersion = "0.3a";
 
 

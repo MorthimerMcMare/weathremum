@@ -1,0 +1,77 @@
+// Extra (unused in the project core) API.
+
+class WeathremumRainEvaporator: Actor {
+	double evaporateRadius;
+	double evaporateHeight;
+
+	Property EvaporateSize: evaporateRadius, evaporateHeight;
+
+	Default {
+		+NOINTERACTION;
+		+DONTSPLASH;
+		Radius 1;
+		Height 1;
+		WeathremumRainEvaporator.EvaporateSize 12.0, 32.0;
+	}
+
+	static WeathremumRainEvaporator CreateAndLink( Actor initmaster, class<WeathremumRainEvaporator> evaporType = "WeathremumRainEvaporator" ) {
+		WeathremumRainEvaporator newEvaporator = NULL;
+
+		if ( initmaster ) {
+			newEvaporator = WeathremumRainEvaporator( Actor.Spawn( evaporType, initmaster.pos ) );
+			newEvaporator.master = initmaster;
+		}
+
+		return newEvaporator;
+	}
+
+	virtual void DoEffect( Actor thing ) {
+		Actor.Spawn( "Weathremum_NukageVapor", thing.pos );
+
+		thing.Destroy();
+	}
+
+	override void Tick() {
+		if ( !master ) {
+			Destroy();
+			return;
+		}
+
+		SetOrigin( master.pos, false );
+
+		// Iterate over all actors suitable for handling:
+		BlockThingsIterator it = BlockThingsIterator.Create( self, evaporateRadius, true );
+
+		while ( it.Next() ) {
+			Actor thing = it.thing;
+
+			if ( thing is "Weathremum_Raindrop"
+					&& Distance2D( thing ) - thing.radius < evaporateRadius
+					&& thing.pos.z <= pos.z + evaporateHeight
+					&& thing.pos.z + thing.height >= pos.z ) {
+				DoEffect( thing );
+			}
+		}
+
+
+		Super.Tick();
+	}
+} // of class WeathremumRainEvaporator: Actor {}
+
+class WeathremumRainEvaporatorBig: WeathremumRainEvaporator {
+	Default {
+		WeathremumRainEvaporator.EvaporateSize 32.0, 64.0;
+	}
+}
+
+
+extend class WeathremumHandler {
+	override void WorldThingSpawned( WorldEvent e ) {
+		if ( e.thing is "PlasmaBall" || e.thing is "BFGExtra" )
+			WeathremumRainEvaporator.CreateAndLink( e.thing );
+		else if ( e.thing is "BFGBall" )
+			WeathremumRainEvaporator.CreateAndLink( e.thing, 'WeathremumRainEvaporatorBig' );
+
+		Super.WorldThingSpawned( e );
+	}
+}
