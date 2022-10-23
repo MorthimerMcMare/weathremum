@@ -13,6 +13,7 @@ enum EWeathremumHandleStatus {
 	W2HS_StopSuggestion	// Pre-stop (must be changed to something else every "WorldTick()").
 }
 
+// Sector type changing may be checked in Doom 2 MAP20 or in Doom 1 E3M1.
 enum EWeathremumSectorType {
 	W2ST_None = -1,
 

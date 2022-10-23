@@ -6,10 +6,13 @@
 
 weathremum/rain/default			"Sounds/Rain/rain_default.mp3"
 weathremum/rain/heavy			"Sounds/Rain/rain_heavy1.mp3"
-weathremum/rainsurface/tin		"Sounds/Rain/rain_surface_tin.wav"
+weathremum/rainsurface/soft		"Sounds/Rain/rain_surface_soft.wav"
+weathremum/rainsurface/incandescent		"Sounds/Rain/rain_surface_incandescent.mp3"
 weathremum/rainsurface/rock		"Sounds/Rain/rain_surface_rocks.mp3"
 weathremum/rainsurface/metal	"Sounds/Rain/rain_surface_metal.mp3"
 weathremum/rainsurface/plasticglass		"Sounds/Rain/rain_surface_plasticglass.wav"
+
+weathremum/rainsurface/tin		"Sounds/Rain/rain_surface_tin.wav"
 
 
 

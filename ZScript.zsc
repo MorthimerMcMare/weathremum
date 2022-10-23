@@ -90,18 +90,6 @@ class WeathremumHandler: EventHandler {
 				if ( floorTexNameLeft6 == "FWATER" || ( isSlime00Slime08 && s.damageamount ) ) {
 					curOutdoorSectorData.w2type = W2ST_Water;
 
-				} else if ( floorTexNameLeft5 == "SLIME" || floorTexNameLeft5 == "RROCK" ) {
-					int texSubindex = floorTexName.Mid( 5, 2 ).ToInt();
-
-					if (     isSlime00Slime08
-						|| ( floorTexNameLeft5 == "SLIME" && texSubindex >= 9 && texSubindex <= 12 )
-						|| ( floorTexNameLeft5 == "RROCK" && texSubindex <= 8 && texSubindex != 3 && texSubindex != 4 ) ) {
-						curOutdoorSectorData.w2type = W2ST_Incandecent;
-
-					} else if ( floorTexNameLeft5 == "RROCK" ) {
-						curOutdoorSectorData.w2type = W2ST_RockSurface;
-					}
-
 				} else if ( floorTexNameLeft5 == "METAL" ) {
 					curOutdoorSectorData.w2type = W2ST_MetalSurface;
 
@@ -124,12 +112,46 @@ class WeathremumHandler: EventHandler {
 						curOutdoorSectorData.w2type = W2ST_MetalSurface;
 					else if ( postfix == "1" || postfix == "17" || postfix == "18" || postfix == "19" || postfix == "2" || postfix == "9" )
 						curOutdoorSectorData.w2type = W2ST_PlasticSurface;
+					else if ( postfix == "10" || postfix == "14" || postfix == "5_5" || postfix == "8" )
+						curOutdoorSectorData.w2type = W2ST_SoftSurface;
+
+				} else if ( floorTexNameLeft5 == "GRASS" ) {
+					curOutdoorSectorData.w2type = W2ST_SoftSurface;
+
+				} else if ( floorTexNameLeft5 == "SLIME" || floorTexNameLeft5 == "RROCK" ) {
+					int texSubindex = floorTexName.Mid( 5, 2 ).ToInt();
+
+					if (     isSlime00Slime08
+						|| ( floorTexNameLeft5 == "SLIME" && texSubindex >= 9 && texSubindex <= 12 )
+						|| ( floorTexNameLeft5 == "RROCK" && texSubindex <= 8 && texSubindex != 3 && texSubindex != 4 ) ) {
+						curOutdoorSectorData.w2type = W2ST_Incandecent;
+
+					} else if ( floorTexNameLeft5 == "RROCK" ) {
+						curOutdoorSectorData.w2type = W2ST_RockSurface;
+					}
+
+				} else if ( floorTexName == "GRNROCK" ) {
+					curOutdoorSectorData.w2type = W2ST_RockSurface;
+
+				} else if ( floorTexNameLeft6 == "MFLR8_" ) {
+					String postfix = floorTexName.Mid( 6, 1 );
+
+					if ( postfix == "1" || postfix == "3" )
+						curOutdoorSectorData.w2type = W2ST_RockSurface;
+					else
+						curOutdoorSectorData.w2type = W2ST_SoftSurface;
+
+				} else if ( floorTexNameLeft4 == "SFLR" ) {
+					curOutdoorSectorData.w2type = W2ST_SoftSurface;
 
 				} else if ( floorTexNameLeft4 == "LAVA" ) {
 					curOutdoorSectorData.w2type = W2ST_Incandecent;
 
 				} else if ( floorTexNameLeft5 == "BLOOD" || floorTexNameLeft6 == "NUKAGE" ) {
 					curOutdoorSectorData.w2type = W2ST_Nukage;
+
+				} else if ( floorTexNameLeft6 == "F_SKY1" ) {
+					curOutdoorSectorData.w2type = W2ST_None;
 
 				}
 			} // of if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {}
@@ -170,14 +192,14 @@ class WeathremumHandler: EventHandler {
 
 			// Based on the both of SNDINFO and SNDSEQ.
 			pushSound( "weather/wind(x)" );
-			pushSound( "weathremum/rain/default" );          // W2ST_NormalSurface, 
-			pushSound( "weathremum/rain/default" );          // W2ST_SoftSurface,	
-			pushSound( "weathremum/rain/heavy" );            // W2ST_Water,			
-			pushSound( "weathremum/rain/default" );          // W2ST_Nukage,		
-			pushSound( "weathremum/rain/default" );          // W2ST_Incandecent,	
-			pushSound( "weathremum/rainsurface/rock" );      // W2ST_RockSurface,	
-			pushSound( "weathremum/rainsurface/metal" );     // W2ST_Metal,         
-			pushSound( "weathremum/rainsurface/plasticglass" );   // W2ST_Plastic,       
+			pushSound( "weathremum/rain/default" );             // W2ST_NormalSurface,  
+			pushSound( "weathremum/rainsurface/soft" );         // W2ST_SoftSurface,	
+			pushSound( "weathremum/rain/heavy" );               // W2ST_Water,			
+			pushSound( "weathremum/rain/default" );             // W2ST_Nukage,		    
+			pushSound( "weathremum/rainsurface/incandescent" ); // W2ST_Incandecent,	
+			pushSound( "weathremum/rainsurface/rock" );         // W2ST_RockSurface,	
+			pushSound( "weathremum/rainsurface/metal" );        // W2ST_MetalSurface,   
+			pushSound( "weathremum/rainsurface/plasticglass" ); // W2ST_PlasticSurface, 
 
 			playerHandlers[ e.PlayerNumber ] = initCurW2PlayerHandler;
 
