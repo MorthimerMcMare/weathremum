@@ -58,6 +58,9 @@ class W2SectorData {
 
 	EWeathremumSectorType w2type;
 
+	TextureID lastFloorTexture;
+	//TextureID lastCeilingTexture;
+
 	static W2SectorData Create( Sector initSector ) {
 		W2SectorData newdata = new( 'W2SectorData' );
 		newdata.s = initSector;
