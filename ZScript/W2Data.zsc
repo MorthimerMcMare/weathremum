@@ -275,7 +275,8 @@ class W2SoundKeeper play {
 					sndactor.seq = sndactor.StartSoundSequence( sndname, SeqNode.ENVIRONMENT );
 				} // of for ( int j = 0; j < W2SoundKeeper.W2SD_Quantity; j++ ) {}
 
-				W2Global.Log( LL_Debug, TEXTCOLOR_DARKGREEN .. "+Started" .. LLCOLOR_DEBUG .. " sound of type " .. w2type .. "." );
+				String w2sectypeName = ( w2type != W2ST_None? WeathremumSectorTypeNames[ w2type ] : TEXTCOLOR_RED .. "<None>" .. LLCOLOR_DEBUG );
+				W2Global.Log( LL_Debug, GetClassName() .. "::PostTick(). " .. TEXTCOLOR_DARKGREEN .. "+Started" .. LLCOLOR_DEBUG .. " sound of type \"" .. w2sectypeName .. "\" (".. w2type .. ")." );
 			}
 
 
@@ -311,7 +312,8 @@ class W2SoundKeeper play {
 			// Wiping out too far sounds:
 			status = W2HS_Off;
 
-			W2Global.Log( LL_Debug, TEXTCOLOR_DARKRED .. "-Stopped" .. LLCOLOR_DEBUG .. " sound of type " .. w2type .. "." );
+			String w2sectypeName = ( w2type != W2ST_None? WeathremumSectorTypeNames[ w2type ] : TEXTCOLOR_RED .. "<None>" .. LLCOLOR_DEBUG );
+			W2Global.Log( LL_Debug, GetClassName() .. "::PostTick(). " .. TEXTCOLOR_DARKRED .. "-Stopped" .. LLCOLOR_DEBUG .. " sound of type \"" .. w2sectypeName .. "\" (".. w2type .. ")." );
 
 			for ( int i = 0; i < W2SD_Quantity; i++ ) {
 				if ( sndorigin[ i ] ) {
