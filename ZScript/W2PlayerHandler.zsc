@@ -153,7 +153,7 @@ class W2PlayerHandler: Actor {
 			//DoRainEffects(); 	// Rain itself, raindrops from cornices.
 
 			for ( int i = 0; i < 50; i++ ) {
-				double angletheta = ( level.maptime * 2.0 + consoleplayer * 16.0 ) % 360.0;
+				double angletheta = ( level.maptime * 2.0 ) % 360.0;
 				double spawndist = ( double( level.maptime + 345.0 ) % 250.0 ) / 250.0;
 
 				vector2 raindropPos = pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( spawndist ) * 764.0 );
