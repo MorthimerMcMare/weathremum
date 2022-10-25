@@ -17,6 +17,10 @@ class W2PlayerHandler: Actor {
 
 	override void BeginPlay() {
 		rnd = WeathremumUnsyncRandom.Create();
+
+		if ( consoleplayer == 0 )
+			for ( int i = 0; i < 10; i++ )
+				console.printf( TEXTCOLOR_BRICK .. GetClassName() .. "::BeginPlay(). Player 0's rnd.Random( 1, 10 ) shift #%i: %i.", i, rnd.Random( 1, 10 ) );
 	}
 
 
@@ -138,11 +142,12 @@ class W2PlayerHandler: Actor {
 		for ( int i = 0; i < sndkeepers.Size(); i++ )
 			sndkeepers[ i ].PreTick();
 
+		console.printf( GetClassName() .. "::Tick(). Maptime " .. level.maptime .. ", rnd.Random( 1, 10 ): " .. rnd.Random( 1, 10 ) .. "." );
 
-		DoSectorEffects(); 	// Sector sounds (rain, winds);
+		//DoSectorEffects(); 	// Sector sounds (rain, winds);
 
-		if ( !( level.frozen || globalfreeze ) )
-			DoRainEffects(); 	// Rain itself, raindrops from cornices.
+		//if ( !( level.frozen || globalfreeze ) )
+		//	DoRainEffects(); 	// Rain itself, raindrops from cornices.
 
 
 		// Sound keepers post-tick handling:
