@@ -95,6 +95,8 @@ class WeathremumUnsyncRandom {
 		WeathremumUnsyncRandom newrnd = new( 'WeathremumUnsyncRandom' );
 		newrnd.unsyncseed = ( initseed == 0? int( MSTime() ) : initseed );
 
+		console.printf( newrnd.GetClassName() .. "::Create(). New unsync random " .. newrnd .. ", seed " .. newrnd.unsyncseed .. "." );
+
 		return newrnd;
 	}
 	static WeathremumUnsyncRandom Get( int initseed = 0 ) {
