@@ -17,12 +17,13 @@ enum EWeathremumLogLevels {
 	LL_NoPrefix		= 0x8000
 };
 
+const LLCOLOR_MAIN = "\c-";
+const LLCOLOR_DEBUG = TEXTCOLOR_DARKGRAY;
+const LLCOLOR_EMERGENCY = TEXTCOLOR_FIRE;
+
+
 
 class W2Global: Thinker {
-	const LLCOLOR_MAIN = "\c-";
-	const LLCOLOR_DEBUG = TEXTCOLOR_DARKGRAY;
-	const LLCOLOR_EMERGENCY = TEXTCOLOR_FIRE;
-
 	int curloglevel;
 
 
