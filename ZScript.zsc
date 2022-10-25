@@ -235,6 +235,11 @@ class WeathremumHandler: EventHandler {
 	int debugTraceLineIndex;
 
 	override void WorldTick() {
+		if ( w2level.allSectorsData.Size() != totalLevelSectors ) {
+			W2Global.Log( LL_Debug, GetClassName() .. "::WorldLoaded(). False sectors size: now " .. w2level.allSectorsData.Size() .. ", saved " .. totalLevelSectors .. ", really " .. level.sectors.Size() .. ". Recreating Weathremum level data..." );
+			CreateGeneralSectorsData();
+		}
+
 		if ( players[ consoleplayer ].mo != players[ consoleplayer ].Camera ) {
 			vector3 camerapos = players[ consoleplayer ].Camera.pos;
 			SendNetworkEvent( "mcm_weathremum_SetCameraXYZ", int( camerapos.x ), int( camerapos.y ), int( camerapos.z ) );
