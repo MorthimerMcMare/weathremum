@@ -197,7 +197,7 @@ class WeathremumHandler: EventHandler {
 		initCurW2SurfaceType++;
 		initCurW2PlayerHandler.sndkeepers.Push( W2SoundKeeper.Create( sndname, initCurW2SurfaceType, plmo, w2typename ) );
 
-		W2Global.Log( LL_Detailed, String.Format( TEXTCOLOR_DARKGRAY .. "pushSound(). Player %i, " .. W2Global.LLCOLOR_MAIN .. "w2type %2i \"%s\", sound \"%s\".",
+		W2Global.Log( LL_Detailed, String.Format( TEXTCOLOR_DARKGRAY .. "pushSound(). Player %i, " .. LLCOLOR_MAIN .. "w2type %2i \"%s\", sound \"%s\".",
 									initCurW2PlayerHandler.FriendPlayer, initCurW2SurfaceType, initCurW2PlayerHandler.sndkeepers[ initCurW2SurfaceType ].w2typename, sndname ) );
 	}
 
