@@ -69,25 +69,22 @@ class Weathremum_Raindrop: Actor {
 
 	void RaindropPreSplash( void ) {
 		if ( w2sector ) {
-			Destroy();
-			return;
-
-			/*if ( w2sector.w2type == W2ST_Water ) {
-				if ( target && Distance2D( target ) <= 512.0 ) {
-					for ( int i = 0; i < 3; i++ )
-						Actor.Spawn( "Weathremum_WaterRipple", pos + ( rnd.FRandom( -4.0, 4.0 ), rnd.FRandom( -4.0, 4.0 ), 0.0 ) );
-				}
+			if ( w2sector.w2type == W2ST_Water ) {
+				//if ( target && Distance2D( target ) <= 512.0 ) {
+				//	for ( int i = 0; i < 3; i++ )
+				//		Actor.Spawn( "Weathremum_WaterRipple", pos + ( rnd.FRandom( -4.0, 4.0 ), rnd.FRandom( -4.0, 4.0 ), 0.0 ) );
+				//}
 
 				Destroy();
 				return;
 
 			} else if ( ( w2sector.w2type == W2ST_Incandecent || w2sector.w2type == W2ST_Nukage ) && rnd.Chance( 7 ) ) {
-				if ( w2sector.w2type == W2ST_Incandecent || rnd.Chance( 3 ) )
-					Actor.Spawn( "Weathremum_NukageVapor", pos + ( 0.0, 0.0, 5.0 ) );
+				//if ( w2sector.w2type == W2ST_Incandecent || rnd.Chance( 3 ) )
+				//	Actor.Spawn( "Weathremum_NukageVapor", pos + ( 0.0, 0.0, 5.0 ) );
 
 				Destroy();
 				return;
-			}*/
+			}
 		}
 
 		vel = (0, 0, 0);
