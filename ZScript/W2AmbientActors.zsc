@@ -52,7 +52,7 @@ class Weathremum_Raindrop: Actor {
 		if ( master.FriendPlayer != consoleplayer )
 			bINVISIBLE = true;
 
-		double minspawnheight = ( master? min( ceilingz, target.pos.z + target.height + 256.0 ) : ceilingz );
+		double minspawnheight = ( master? min( ceilingz, target.pos.z + target.height + 192.0 ) : ceilingz );
 
 		SetZ( minspawnheight - rnd.FRandom( 8.0, 25.0 ) );
 
