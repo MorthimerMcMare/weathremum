@@ -116,10 +116,8 @@ class W2PlayerHandler: Actor {
 	override void Tick() {
 		PlayerInfo pl = players[ FriendPlayer ];
 
-		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo || FriendPlayer != consoleplayer )
+		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo /*|| FriendPlayer != consoleplayer*/ )
 			return;
-
-		console.printf( "Time " .. level.maptime .. ". Random( 1, 100 ): " .. Random( 1, 100 ) .. "." );
 
 		target = pl.mo;
 
