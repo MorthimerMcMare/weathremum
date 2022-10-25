@@ -1,9 +1,6 @@
 // Weathremum handler for each player.
 
 class W2PlayerHandler: Actor {
-	bool useMultiplayerPos;
-	vector3 multiplayerPos;
-
 	W2LevelGeneralData w2level;
 
 	Array<W2SoundKeeper> sndkeepers;
@@ -19,7 +16,6 @@ class W2PlayerHandler: Actor {
 	}
 
 	override void BeginPlay() {
-		useMultiplayerPos = false;
 		rnd = WeathremumUnsyncRandom.Create();
 	}
 
@@ -115,10 +111,12 @@ class W2PlayerHandler: Actor {
 	} // of void DoRainEffects( void ) {}
 
 
+	// WARNING: clients-unsynchronized execution.
+	//Do not use builtin "Random()" or something similar!
 	override void Tick() {
 		PlayerInfo pl = players[ FriendPlayer ];
 
-		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo || FriendPlayer != consoleplayer || globalfreeze || level.frozen )
+		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo || FriendPlayer != consoleplayer )
 			return;
 
 		target = pl.mo;
@@ -126,29 +124,26 @@ class W2PlayerHandler: Actor {
 		if ( !target ) {
 			W2Global.Log( LL_Main, GetClassName() .. "::Tick(). Target player " .. FriendPlayer .. " disappeared, destroying self." );
 			Destroy();
-			Super.Tick();
+			return;
 		}
-
-		vector3 newpos;
-
-		if ( !multiplayer )
-			newpos = ( pl.Camera? pl.Camera.pos : target.pos );
-		else
-			newpos = ( useMultiplayerPos? multiplayerPos : target.pos );
 
 		//console.printf( "W2PlH <" .. self .. "> target: <" .. target .. "> (Frnd <" .. pl.mo .. ">), useMultipl " .. useMultiplayerPos .. "-> " .. newpos );
 
 		// Move the handler actor to the camera position:
-		SetOrigin( newpos, true );
-		angle = target.angle; // Singleplayer-aware!!
+		SetOrigin( ( pl.Camera? pl.Camera.pos : target.pos ), true );
+		angle = target.angle;
 
 
 		// Sound keepers pre-tick handling:
 		for ( int i = 0; i < sndkeepers.Size(); i++ )
 			sndkeepers[ i ].PreTick();
 
+
 		DoSectorEffects(); 	// Sector sounds (rain, winds);
-		DoRainEffects(); 	// Rain itself, raindrops from cornices.
+
+		if ( !( level.frozen || globalfreeze ) )
+			DoRainEffects(); 	// Rain itself, raindrops from cornices.
+
 
 		// Sound keepers post-tick handling:
 		for ( int i = 0; i < sndkeepers.Size(); i++ )
@@ -158,6 +153,6 @@ class W2PlayerHandler: Actor {
 		//sndkeepers[ W2ST_NormalSurface ].PostTick();
 
 		Super.Tick();
-	}
+	} // of override void Tick() {}
 
 } // of class W2PlayerHandler: Actor {}

@@ -242,15 +242,6 @@ class WeathremumHandler: EventHandler {
 	int debugTraceLineIndex;
 
 	override void WorldTick() {
-		if ( players[ consoleplayer ].mo != players[ consoleplayer ].Camera ) {
-			vector3 camerapos = players[ consoleplayer ].Camera.pos;
-			SendNetworkEvent( "mcm_weathremum_SetCameraXYZ", int( camerapos.x ), int( camerapos.y ), int( camerapos.z ) );
-
-		} else if ( playerHandlers[ consoleplayer ].useMultiplayerPos ) {
-			SendNetworkEvent( "mcm_weathremum_CancelCameraXYZ" );
-
-		}
-
 		if ( W2Global.GetLoglevel() >= LL_Debug ) {
 	        FLineTraceData ptrace;
 			PlayerPawn pl = players[ 0 ].mo;
@@ -275,24 +266,15 @@ class WeathremumHandler: EventHandler {
 		Super.WorldTick();
 	}
 
-	override void NetworkProcess( ConsoleEvent e ) {
-		if ( !e.IsManual && multiplayer ) {
-			if ( e.Name == "mcm_weathremum_SetCameraXYZ" ) {
-				playerHandlers[ e.Player ].useMultiplayerPos = true;
-				playerHandlers[ e.Player ].multiplayerPos = ( e.args[ 0 ], e.args[ 1 ], e.args[ 2 ] );
-			} else if ( e.Name == "mcm_weathremum_CancelCameraXYZ" ) {
-				playerHandlers[ e.Player ].useMultiplayerPos = false;
-			}
-		}
-
-		/*if ( e.Name ~== "test_turn180" ) {
+	/*override void NetworkProcess( ConsoleEvent e ) {
+		if ( e.Name ~== "test_turn180" ) {
 			players[ e.Player ].mo.angle = ( players[ e.Player ].mo.angle + 180.0 ) % 360.0;
 		} else if ( e.Name ~== "test_turnto" ) {
 			players[ e.Player ].mo.angle = e.args[ 0 ] % 360.0;
-		}*/
+		}
 
 		Super.NetworkProcess( e );
-	}
+	}*/
 
 
 	/*override void RenderOverlay( RenderEvent e ) {
