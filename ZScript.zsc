@@ -177,13 +177,6 @@ class WeathremumHandler: EventHandler {
 
 		} // of for ( int i = 0; i < level.Sectors.Size(); i++ ) {}
 
-		if ( W2Global.GetLoglevel() >= LL_Debug ) {
-			for ( int i = 0; i < w2level.allSectorsData.Size(); i++ ) {
-				W2SectorData secdata = w2level.allSectorsData[ i ];
-				W2Global.ClearscopeLog( LL_Debug, String.Format( "Sector #%-2i type recognized as %i.", i, secdata.w2type ) );
-			}
-		}
-
 		totalLevelSectors = level.sectors.Size();
 		updateSectorCurIndex = 0;
 		updateSectorsMaxTickAmount = int( ceil( totalLevelSectors / 10.0 ) );
@@ -242,6 +235,11 @@ class WeathremumHandler: EventHandler {
 	int debugTraceLineIndex;
 
 	override void WorldTick() {
+		if ( w2level.allSectorsData.Size() != totalLevelSectors ) {
+			W2Global.Log( LL_Debug, GetClassName() .. "::WorldLoaded(). False sectors size: now " .. w2level.allSectorsData.Size() .. ", saved " .. totalLevelSectors .. ", really " .. level.sectors.Size() .. ". Recreating Weathremum level data..." );
+			CreateGeneralSectorsData();
+		}
+
 		if ( W2Global.GetLoglevel() >= LL_Debug ) {
 	        FLineTraceData ptrace;
 			PlayerPawn pl = players[ 0 ].mo;
