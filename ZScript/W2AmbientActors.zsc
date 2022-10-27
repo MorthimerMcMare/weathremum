@@ -43,8 +43,8 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	override void PostBeginPlay() {
-		if ( !cursector || ( ceilingpic != skyflatnum ) )
-			Destroy();
+		//if ( !cursector || ( ceilingpic != skyflatnum ) )
+		//	Destroy();
 
 		//console.printf( self .. ". master.FriendPlayer != consoleplayer: "  .. master.FriendPlayer .. "!=" .. consoleplayer );
 

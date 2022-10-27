@@ -48,6 +48,10 @@ class W2LevelGeneralData {
 
 	// TODO: remove??
 	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
+
+	W2SectorData GetSectorData( Sector s ) {
+		return allSectorsData[ s.Index() ];
+	}
 }
 
 
@@ -67,6 +71,10 @@ class W2SectorData {
 		newdata.w2type = W2ST_None;
 
 		return newdata;
+	}
+
+	double GetHeight( void ) {
+		return ( s.ceilingplane.d * s.ceilingplane.negiC - s.floorplane.d * s.floorplane.negiC );
 	}
 }
 

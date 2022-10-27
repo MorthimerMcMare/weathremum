@@ -45,19 +45,33 @@ class W2PlayerHandler: Actor {
 		while ( it.Next() ) {
 			Line l = it.curline;
 
+			Sector frontsec = l.frontsector;
+			Sector backsec = l.backsector;
+
 			//int a = 0.123456; // Last part of the next line is for debug:
-			if ( !l.frontsector /*|| ( l.frontsector.Index() != 11 )*/ )
+			if ( !frontsec /*|| ( l.frontsector.Index() != 11 )*/ )
 				continue;
 
-			EWeathremumSectorType tfront = ( l.frontsector? w2level.allSectorsData[ l.frontsector.Index() ].w2type : W2ST_None );
-			EWeathremumSectorType tback = ( l.backsector? w2level.allSectorsData[ l.backsector.Index() ].w2type : W2ST_None );
+			W2SectorData frontsecdata = NULL;
+			W2SectorData backsecdata = NULL;
+			EWeathremumSectorType tfront = W2ST_None;
+			EWeathremumSectorType tback = W2ST_None;
+
+			if ( frontsec ) {
+				frontsecdata = w2level.GetSectorData( frontsec );
+				tfront = frontsecdata.w2type;
+			}
+			if ( backsec ) {
+				backsecdata = w2level.GetSectorData( backsec );
+				tback = backsecdata.w2type;
+			}
 
 			// Try to find a minimal length for the current sound:
-			if ( tfront != W2ST_None /*&& tfront != tCursector*/ )
-				sndkeepers[ tfront ].SuggestLine( l, l.frontsector );
+			if ( tfront != W2ST_None && frontsecdata.GetHeight() > 1.0 /*&& tfront != tCursector*/ )
+				sndkeepers[ tfront ].SuggestLine( l, frontsec );
 
-			if ( tback != W2ST_None && tback != tfront /*&& tback != tCursector*/ )
-				sndkeepers[ tback ].SuggestLine( l, l.backsector );
+			if ( tback != W2ST_None && tback != tfront && backsecdata.GetHeight() > 1.0 /*&& tback != tCursector*/ )
+				sndkeepers[ tback ].SuggestLine( l, backsec );
 
 			// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to the "validcount" variable.
 			if ( w2level.corniceLinesFlags[ l.Index() ] == 1 )
@@ -77,12 +91,20 @@ class W2PlayerHandler: Actor {
 
 			vector2 raindropPos = pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom( 0.0, 1.0 ) ) * 764.0 );
 
-			Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_Raindrop", ( raindropPos, pos.z ) ) );
-			raindrop.target = target;
-			raindrop.master = self;
-			raindrop.w2sector = w2level.allSectorsData[ raindrop.cursector.Index() ];
+			Sector raindropSector = Sector.PointInSector( raindropPos );
 
-			//raindrop.vel.xy = ( 10.0, 10.0 ) * ( sin( rainwaveOffset ) + 1.0 );
+			if ( raindropSector && raindropSector.GetTexture( Sector.CEILING ) == skyflatnum ) {
+				W2SectorData secdata = w2level.GetSectorData( raindropSector );
+
+				if ( secdata.GetHeight() > 8.0 ) {
+					Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_Raindrop", ( raindropPos, pos.z ) ) );
+					raindrop.target = target;
+					raindrop.master = self;
+					raindrop.w2sector = secdata;
+
+					//raindrop.vel.xy = ( 10.0, 10.0 ) * ( sin( rainwaveOffset ) + 1.0 );
+				}
+			} // of if ( raindropSector && raindropSector.GetTexture( Sector.CEILING ) == skyflatnum ) {}
 		}
 
 		// Cornice raindrops effect:
