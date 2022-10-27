@@ -1,0 +1,19 @@
+// 
+
+// Weathremum fog box:
+Model W2SkyboxFog {
+	Path "Models/"
+	Model 0 "W2FogBox.md3"
+	Scale 2.0 2.0 2.0
+
+	DONTCULLBACKFACES
+
+	Skin 0 "W2FogBox_Mist.png"
+	FrameIndex	TROO	A	0	0
+	Skin 0 "W2FogBox_Light.png"
+	FrameIndex	TROO	B	0	0
+	Skin 0 "W2FogBox_Dark.png"
+	FrameIndex	TROO	C	0	0
+	Skin 0 "W2FogBox_Sun.png"
+	FrameIndex	TROO	D	0	0
+}

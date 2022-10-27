@@ -1,0 +1,110 @@
+// All of the Weathremum skybox stuff.
+
+class W2BaseSkyboxActor: Actor {
+	W2SkyboxViewpoint skycam;
+	vector3 sphericaloffset; //double ra, decl, dist;
+
+	Default {
+		+NOINTERACTION;
+		+NOTONAUTOMAP;
+		+BRIGHT;
+	}
+
+	static clearscope vector3 vector3ToSpherical( vector3 vec ) {
+		return (atan2( vec.y, vec.x ), -90.0 * sin( vec.z ), vec.length());
+	}
+
+	static clearscope vector3 sphericalToVector3( vector3 spherical ) {
+		double cosangle = cos( spherical.x );
+		double cospitch = cos( spherical.y );
+
+		return (cosangle * cospitch, sin( spherical.x ) * cospitch, sin( spherical.y )) * spherical.z;
+	}
+
+	void AddVec3Pos( vector3 vec3pos ) {
+		sphericaloffset = vector3ToSpherical( sphericalToVector3( sphericaloffset ) + vec3pos );
+	}
+
+	/*static double, double vector3ToAnglePitch( vector3 vec ) {
+		return atan2( vec.y, vec.x ), -90.0 * sin( vec.z );
+	}
+
+	static vector3 anglePitchToVector3( double angle, double pitch ) {
+		double cosangle = cos( angle );
+		double cospitch = cos( pitch );
+
+		return (cosangle * cospitch, sin( angle ) * cospitch, sin( pitch ));
+	}*/
+
+} // of class W2BaseSkyboxActor: Actor {}
+
+class W2SkyboxViewpoint: SkyViewpoint {
+	Array<W2BaseSkyboxActor> skyboxActors;
+
+	static W2SkyboxViewpoint Create( int playernum ) {
+		W2SkyboxViewpoint newskies = W2SkyboxViewpoint( Actor.Spawn( "W2SkyboxViewpoint", (0, 0, 0) ) );
+
+		newskies.FriendPlayer = clamp( playernum, 0, MAXPLAYERS );
+		newskies.master = ( playeringame[ playernum ] && players[ playernum ].mo )? players[ playernum ].mo : NULL;
+
+		return newskies;
+	}
+
+	override void Tick() {
+		if ( !master ) {
+			W2Global.Log( LL_Detailed, GetClassName() .. "::Tick(). No master, destroying self." );
+			Destroy();
+		} else {
+			//vector2 newposxy = AngleToVector( master.angle, 10000.0 );
+			//SetOrigin( ( -newposxy, 0.0 ), false );
+			//angle = ( master.angle ) % 180.0 + 270.0;
+			//console.printf( "angle " .. angle .. ", newposxy " .. newposxy );
+
+			SetOrigin( (master.Vec2Angle( -100000.0, 0.0 ), 0.0), false );
+			angle = -master.angle;
+
+			for ( int i = 0; i < skyboxActors.Size(); i++ ) {
+				W2BaseSkyboxActor curactor = skyboxActors[ i ];
+
+				curactor.SetOrigin( pos + W2BaseSkyboxActor.sphericalToVector3( curactor.sphericaloffset ), false );
+			}
+		}
+	} // of override void Tick() {}
+
+	uint CreateActor( class<W2BaseSkyboxActor> cls, vector3 thingSphericalOffset ) {
+		vector3 casterianOffset = W2BaseSkyboxActor.sphericalToVector3( thingSphericalOffset );
+
+		W2BaseSkyboxActor skyactor = W2BaseSkyboxActor( Actor.Spawn( cls, pos + casterianOffset ) );
+		skyactor.sphericaloffset = thingSphericalOffset;
+
+		return skyboxActors.Push( skyactor );
+	}
+
+	override void OnDestroy() {
+		for ( int i = 0; i < skyboxActors.Size(); i++ )
+			skyboxActors[ i ].Destroy();
+
+		Super.OnDestroy();
+	}
+} // of class W2SkyboxViewpoint: SkyViewpoint {}
+
+
+class W2SkyboxFog: W2BaseSkyboxActor {
+	Default {
+		RenderStyle "Translucent";
+		Alpha 0.25;
+	}
+
+	override void Tick() {
+		//sphericaloffset.x += 1.0;
+		//sphericaloffset.y += sin( level.maptime / 70.0 );
+		//AddVec3Pos( ( sin( level.maptime / 1000.0 ) * 20.0, 0, 0 ) );
+		Super.Tick();
+	}
+
+	States {
+	Spawn:
+		TROO A -1;
+		Stop;
+	}
+} // of class W2SkyboxFog: Actor {}

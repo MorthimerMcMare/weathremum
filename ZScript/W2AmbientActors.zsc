@@ -7,7 +7,6 @@ class W2SoundOrigin: Actor {
 
 	Default {
 		+NOINTERACTION; // Implies +NOGRAVITY and +NOBLOCKMAP.
-		+DONTSPLASH;
 		//+NOTONAUTOMAP;
 	}
 
