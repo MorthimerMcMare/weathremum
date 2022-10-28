@@ -114,6 +114,9 @@ class Weathremum_Raindrop: Actor {
 			return;
 		}
 
+		//ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR ); // Not works.
+		vel = (0.0, 0.0, 0.0);
+
 		bFLATSPRITE = bROLLSPRITE = bFLOORCLIP = bCORPSE = true;
 
 		// General visual tweaks:
@@ -281,7 +284,7 @@ class Weathremum_NukageVapor: Actor {
 	}
 
 	override void BeginPlay() {
-		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
+		ChangeStatNum( STAT_WEATHREMUM_MAINDECOR );
 		Super.BeginPlay();
 	}
 

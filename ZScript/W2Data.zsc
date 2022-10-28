@@ -45,8 +45,6 @@ enum EWeathremumSoundDirection {
 
 class W2LevelGeneralData {
 	Array<W2SectorData> allSectorsData;		// All of the sectors.
-
-	// TODO: remove??
 	Array<W2LinedefData> allLinedefsData;	// All of the linedefs, mainly for the raindrops effect from a canopy.
 
 	play W2SectorData GetSectorData( Sector s ) {
@@ -56,6 +54,8 @@ class W2LevelGeneralData {
 	play W2LinedefData GetLinedefData( Line l ) {
 		return allLinedefsData[ l.Index() ];
 	}
+
+	vector2 globalWindVector, blowWindVector;
 }
 
 

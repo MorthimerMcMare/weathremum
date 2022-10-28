@@ -89,6 +89,15 @@ class W2Global: Thinker {
 
 } // of class W2Global: Thinker {}
 
+class W2GlobalMath {
+	static double Power( double digit, double power ) {
+		if ( power == 0.0 || digit == 1 )
+			return 1.0;
+
+		return exp( power * log( digit ) );
+	}
+} // of class W2GlobalMath {}
+
 
 class tempLeftRightMarker: Actor {
 	// Used for the stereo sound playing debug.

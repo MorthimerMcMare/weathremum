@@ -107,6 +107,9 @@ class W2PlayerHandler: Actor {
 			} // of if ( raindropSector && raindropSector.GetTexture( Sector.CEILING ) == skyflatnum ) {}
 		}
 
+		vector2 windDir = ( w2level.globalWindVector + 3.0 * w2level.blowWindVector );
+		windDir /= windDir.Length();
+
 		// Cornice raindrops effect:
 		for ( int i = 0; i < corniceLines.Size(); i++ ) {
 			Line l = corniceLines[ i ];
@@ -117,20 +120,31 @@ class W2PlayerHandler: Actor {
 			if ( l.backsector && ( l.backsector.ceilingplane.d < minspawnheight ) )
 				minspawnheight = l.backsector.ceilingplane.d;
 
-			double spawnCoef = ldata.linelen / 128.0;
+			// Cornice raindrops amount relates to the linedef length and 
+			//global wind direction.
 
-			int spawnAmount = int( floor( spawnCoef ) );
-			double extraSpawnChange = spawnCoef - spawnAmount;
+			// Scalar product here will be in range [-1.0; 1.0].
+			double windProjection = ldata.corniceDir dot windDir;
 
-			if ( extraSpawnChange > 0.0 && FRandom( 0.0, 1.0 ) < extraSpawnChange )
-				spawnAmount++;
+			if ( windProjection > -0.4 ) {
+				//double spawnCoef = 31705.0 * W2GlobalMath.Power( windProjection + 2.134, -2.095 );
+				double spawnCoef = 156.2 * W2GlobalMath.Power( windProjection + 0.5, -1.2 );
 
-			for ( int i = 0; i < spawnAmount; i++ ) {
-				Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + ldata.deltadir * FRandom( 0.0, ldata.linelen ), minspawnheight ) );
-				raindrop.vel.xy = ldata.corniceDir * FRandom( 0.0, 3.0 );
-				raindrop.master = target;
+				double spawnChange = ldata.linelen / spawnCoef;
+				int spawnAmount = int( floor( spawnChange ) );
+
+				if ( spawnChange - spawnAmount > 0.5 )
+					spawnAmount++;
+
+				for ( int i = 0; i < spawnAmount; i++ ) {
+					Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + ldata.deltadir * FRandom( 0.0, ldata.linelen ), minspawnheight ) );
+
+					raindrop.vel.xy = ldata.corniceDir * FRandom( 0.0, windProjection * 3.5 ); // Yes, "windProjection" may be less than zero.
+					raindrop.master = target;
+				}
 			}
-		}
+		} // of for ( int i = 0; i < corniceLines.Size(); i++ ) {}
+
 	} // of void DoRainEffects( void ) {}
 
 
