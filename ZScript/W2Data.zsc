@@ -47,18 +47,21 @@ class W2LevelGeneralData {
 	Array<W2SectorData> allSectorsData;		// All of the sectors.
 
 	// TODO: remove??
-	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
+	Array<W2LinedefData> allLinedefsData;	// All of the linedefs, mainly for the raindrops effect from a canopy.
 
-	W2SectorData GetSectorData( Sector s ) {
+	play W2SectorData GetSectorData( Sector s ) {
 		return allSectorsData[ s.Index() ];
+	}
+
+	play W2LinedefData GetLinedefData( Line l ) {
+		return allLinedefsData[ l.Index() ];
 	}
 }
 
 
 class W2SectorData {
 	Sector s;
-	Array<Line> lines;
-	//Array<int> lineindices; // Temporary, for the UI-scoped "RenderOverlay()".
+	//Array<Line> lines;
 
 	EWeathremumSectorType w2type;
 
@@ -77,6 +80,22 @@ class W2SectorData {
 		return ( s.ceilingplane.d * s.ceilingplane.negiC - s.floorplane.d * s.floorplane.negiC );
 	}
 }
+
+class W2LinedefData {
+	Line l;
+
+	bool isCornice;
+	vector2 corniceDir;
+
+	static W2LinedefData Create( Line initLinedef ) {
+		W2LinedefData newdata = new( 'W2LinedefData' );
+		newdata.l = initLinedef;
+
+		return newdata;
+	}
+}
+
+
 
 class W2SoundKeeper play {
 	EWeathremumHandleStatus status;

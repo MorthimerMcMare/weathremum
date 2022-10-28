@@ -36,7 +36,7 @@ class WeathremumHandler: EventHandler {
 
 		if ( ls.GetTexture( Sector.ceiling ) != skyflatnum ) {
 			closeSectorData.w2type = W2ST_NextToOutdoor;
-			w2level.corniceLinesFlags[ curline.Index() ] = 1;
+			w2level.GetLinedefData( curline ).isCornice = true;
 		}
 	}
 
@@ -134,18 +134,18 @@ class WeathremumHandler: EventHandler {
 		W2Global.Log( LL_Debug, GetClassName() .. "::CreateGeneralSectorsData(). Initialization..." );
 
 		w2level.allSectorsData.Clear();
-		w2level.corniceLinesFlags.Clear();
+		w2level.allLinedefsData.Clear();
 
 		// Save all of the level lines and sectors for the quick index-based
 		//access. Filled up before any other operations because the next ones
 		//may (and will) get any element, not only less than their "Index()".
 		for ( int i = 0; i < level.lines.Size(); i++ )
-			w2level.corniceLinesFlags.Push( 0 );
+			w2level.allLinedefsData.Push( W2LinedefData.Create( level.lines[ i ] ) );
 
 		for ( int i = 0; i < level.sectors.Size(); i++ )
-			w2level.allSectorsData.Push( W2SectorData.Create( level.Sectors[ i ] ) );
+			w2level.allSectorsData.Push( W2SectorData.Create( level.sectors[ i ] ) );
 
-		W2Global.Log( LL_Debug, GetClassName() .. "::CreateGeneralSectorsData(). " .. w2level.corniceLinesFlags.Size() .. " lines, " .. w2level.allSectorsData.Size() .. " sectors." );
+		W2Global.Log( LL_Debug, GetClassName() .. "::CreateGeneralSectorsData(). " .. w2level.allLinedefsData.Size() .. " lines, " .. w2level.allSectorsData.Size() .. " sectors." );
 
 		// Understand its data such as "w2type" and "groupnum" for sectors under sky:
 		for ( int i = 0; i < level.sectors.Size(); i++ ) {

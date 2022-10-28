@@ -74,7 +74,7 @@ class W2PlayerHandler: Actor {
 				sndkeepers[ tback ].SuggestLine( l, backsec );
 
 			// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to the "validcount" variable.
-			if ( w2level.corniceLinesFlags[ l.Index() ] == 1 )
+			if ( w2level.GetLinedefData( l ).isCornice )
 				corniceLines.Push( l );
 		} // of while ( it.Next() ) {}
 
