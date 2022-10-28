@@ -36,7 +36,15 @@ class WeathremumHandler: EventHandler {
 
 		if ( ls.GetTexture( Sector.ceiling ) != skyflatnum ) {
 			closeSectorData.w2type = W2ST_NextToOutdoor;
-			w2level.GetLinedefData( curline ).isCornice = true;
+
+			W2LinedefData ldata = w2level.GetLinedefData( curline );
+			ldata.isCornice = true;
+			//W2Global.Log( LL_Debug, GetClassName() .. "::SetNextToOutdoor(). Line " .. curline.Index() .. ", len " .. ldata.linelen .. ", dir " .. ldata.deltadir );
+
+			if ( curline.frontsector == ls )
+				ldata.corniceDir = Actor.RotateVector( ldata.deltadir, -90.0 );
+			else
+				ldata.corniceDir = Actor.RotateVector( ldata.deltadir, 90.0 );
 		}
 	}
 
@@ -190,7 +198,7 @@ class WeathremumHandler: EventHandler {
 		initCurW2SurfaceType++;
 		initCurW2PlayerHandler.sndkeepers.Push( W2SoundKeeper.Create( sndname, initCurW2SurfaceType, plmo, w2typename ) );
 
-		W2Global.Log( LL_Detailed, String.Format( TEXTCOLOR_DARKGRAY .. "pushSound(). Player %i, " .. LLCOLOR_MAIN .. "w2type %2i \"%s\", sound \"%s\".",
+		W2Global.Log( LL_Detailed, String.Format( "Sound keeper. Player %i, w2type %2i \"%s\", sound \"%s\".",
 									initCurW2PlayerHandler.FriendPlayer, initCurW2SurfaceType, initCurW2PlayerHandler.sndkeepers[ initCurW2SurfaceType ].w2typename, sndname ) );
 	}
 

@@ -119,16 +119,19 @@ class Weathremum_Raindrop: Actor {
 		// General visual tweaks:
 		ClearInterpolation();
 		A_SetRenderStyle( 0.1, STYLE_Add );
-		scale = ( 1, 1 ) * FRandom( 0.1, 0.25 );
+		scale = ( 1.0, 1.0 ) * FRandom( 0.1, 0.25 );
 		frame = Random( 0, 4 );
 
 		// Setting the position on a slopes:
-		vector3 norm = cursector.floorplane.normal;
-		vector2 norm_p1 = ( norm.x != 0 || norm.y != 0 )? (norm.x, norm.y).Unit() : (0, 0);
-		vector2 norm_p2 = ((norm.x, norm.y).Length(), norm.z );
+		if ( cursector.floorplane.isSlope() ) {
+			vector3 norm = cursector.floorplane.normal;
+			vector2 norm_p1 = ( norm.x != 0 || norm.y != 0 )? (norm.x, norm.y).Unit() : (0, 0);
+			vector2 norm_p2 = ((norm.x, norm.y).Length(), norm.z);
 
-		angle = atan2( norm_p1.y, norm_p1.x );
-		pitch = atan2( norm_p2.x, norm_p2.y );
+			angle = atan2( norm_p1.y, norm_p1.x );
+			pitch = atan2( norm_p2.x, norm_p2.y );
+		}
+
 		roll = FRandom( 0.0, 360.0 );
 	}
 
@@ -152,18 +155,28 @@ class Weathremum_Raindrop: Actor {
 } // of class Weathremum_Raindrop: Actor {}
 
 class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
+	int dropCountdown;
+
 	override void PostBeginPlay() {
 		vel.z = 0.0;
 		scale = ( FRandom( 0.1, 0.5 ), FRandom( 0.2, 0.5 ) );
 		alpha = FRandom( 0.3, 0.7 );
+		dropCountdown = Random( 1, 3 );
 	}
 
 	override void Tick() {
 		if ( !bCORPSE && !globalfreeze && !level.frozen ) {
-			if ( vel.z > -35.0 )
-				vel.z -= 1.5;
+			if ( dropCountdown > 0 ) {
+				dropCountdown--;
 
-			scale.y *= 1.1;
+				scale.y *= 1.02;
+			} else {
+				if ( vel.z > -35.0 )
+					vel.z -= 1.5;
+
+				scale.y *= 1.1;
+				vel.xy *= 0.9;
+			}
 
 			if ( scale.x > 0.2 )
 				scale.x *= 0.95;

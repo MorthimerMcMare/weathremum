@@ -87,9 +87,15 @@ class W2LinedefData {
 	bool isCornice;
 	vector2 corniceDir;
 
+	vector2 deltadir;
+	double linelen;
+
 	static W2LinedefData Create( Line initLinedef ) {
 		W2LinedefData newdata = new( 'W2LinedefData' );
 		newdata.l = initLinedef;
+		newdata.linelen = initLinedef.delta.Length();
+		newdata.deltadir = initLinedef.delta / newdata.linelen;
+		newdata.isCornice = false;
 
 		return newdata;
 	}

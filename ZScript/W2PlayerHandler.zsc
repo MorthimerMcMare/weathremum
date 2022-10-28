@@ -110,14 +110,14 @@ class W2PlayerHandler: Actor {
 		// Cornice raindrops effect:
 		for ( int i = 0; i < corniceLines.Size(); i++ ) {
 			Line l = corniceLines[ i ];
-			double linelength = l.delta.Length();
+			W2LinedefData ldata = w2level.GetLinedefData( l );
 
 			double minspawnheight = ( l.frontsector? l.frontsector.ceilingplane.d : 1e300 );
 
 			if ( l.backsector && ( l.backsector.ceilingplane.d < minspawnheight ) )
 				minspawnheight = l.backsector.ceilingplane.d;
 
-			double spawnCoef = linelength / 96.0;
+			double spawnCoef = ldata.linelen / 128.0;
 
 			int spawnAmount = int( floor( spawnCoef ) );
 			double extraSpawnChange = spawnCoef - spawnAmount;
@@ -126,7 +126,8 @@ class W2PlayerHandler: Actor {
 				spawnAmount++;
 
 			for ( int i = 0; i < spawnAmount; i++ ) {
-				Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + l.delta / linelength * FRandom( 0.0, linelength ), minspawnheight ) );
+				Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + ldata.deltadir * FRandom( 0.0, ldata.linelen ), minspawnheight ) );
+				raindrop.vel.xy = ldata.corniceDir * FRandom( 0.0, 3.0 );
 				raindrop.master = target;
 			}
 		}
