@@ -225,10 +225,10 @@ class WeathremumHandler: EventHandler {
 
 			W2SkyboxViewpoint sky = W2SkyboxViewpoint.Create( e.PlayerNumber );
 
-			sky.CreateActor( "W2SkyboxFog", (0, 90.0, 16.0) );
+			//sky.CreateActor( "W2SkyboxFog", (0, 90.0, 16.0) );
 
-			//for ( int i = 0; i < 24; i++ )
-			//	sky.CreateActor( "W2SkyboxFog", (FRandom( 0.0, 360.0 ), FRandom( -30.0, 45.0 ), FRandom( 256.0, 768.0 )) );
+			for ( int i = 0; i < 24; i++ )
+				sky.CreateActor( "W2SkyboxFog", (FRandom( 0.0, 360.0 ), FRandom( -30.0, 45.0 ), FRandom( 256.0, 768.0 )) );
 		}
 		
 		Super.PlayerEntered( e );

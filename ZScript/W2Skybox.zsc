@@ -41,11 +41,23 @@ class W2BaseSkyboxActor: Actor {
 class W2SkyboxViewpoint: SkyViewpoint {
 	Array<W2BaseSkyboxActor> skyboxActors;
 
+	Sector skyflatSector;
+
 	static W2SkyboxViewpoint Create( int playernum ) {
 		W2SkyboxViewpoint newskies = W2SkyboxViewpoint( Actor.Spawn( "W2SkyboxViewpoint", (0, 0, 0) ) );
 
 		newskies.FriendPlayer = clamp( playernum, 0, MAXPLAYERS );
 		newskies.master = ( playeringame[ playernum ] && players[ playernum ].mo )? players[ playernum ].mo : NULL;
+		//newskies.args[ 0 ] = 32; // Mystical "Visibility".
+		newskies.UnlinkFromWorld();
+		newskies.bNOINTERACTION = true;
+
+		/*for ( int i = 0; i < level.sectors.Size(); i++ ) {
+			if ( level.sectors[ i ].GetTexture( Sector.CEILING ) == skyflatnum ) {
+				newskies.skyflatSector = level.sectors[ i ];
+				break;
+			}
+		}*/
 
 		return newskies;
 	}
@@ -55,13 +67,55 @@ class W2SkyboxViewpoint: SkyViewpoint {
 			W2Global.Log( LL_Detailed, GetClassName() .. "::Tick(). No master, destroying self." );
 			Destroy();
 		} else {
-			//vector2 newposxy = AngleToVector( master.angle, 10000.0 );
-			//SetOrigin( ( -newposxy, 0.0 ), false );
+			// === Less or greater universal variant, but not really good.
+			//Only one side visible. Sometimes skybox turns to void:
+			//SetOrigin( (master.Vec2Angle( -100000.0, 0.0 ), 0.0), false );
+			//angle = -master.angle;
+
+			// === Second less or greater universal variant (with the same 
+			//comment). Sky objects occasionally disappears:
+			vector2 newposxy = -AngleToVector( master.angle, 100000.0 );
+			SetOrigin( ( newposxy, 0.0 ), false );
+			SetZ( ceilingz );
+			ClearInterpolation();
+
+			// === For Doom 2, this works fine for all levels with skies, 
+			//except MAP23 and MAP29. Only one side visible:
+			//SetOrigin( (-100000, 0, 0), false );
+			//angle = -master.angle;
+
+
+			// === Other experiments:
+			/*if ( master.player ) {
+				console.printf( "Yaw: " .. master.player.cmd.yaw * ( 360.0 / 65536.0 ) );
+				angle = -master.angle - master.player.cmd.yaw * ( 360.0 / 65536.0 );
+			}*/
+
+			//SetXYZ( pos + (0, 0, -2.0) );
+			//level.sectorPortals[ 0 ].mDestination = level.sectors[ 0 ];
+			//level.sectorPortals[ 0 ].mType = SectorPortal.TYPE_PLANE;
+			//level.sectorPortals[ 0 ].mFlags |= SectorPortal.FLAG_INSKYBOX; // Will just set a default skies.
+
 			//angle = ( master.angle ) % 180.0 + 270.0;
 			//console.printf( "angle " .. angle .. ", newposxy " .. newposxy );
 
-			SetOrigin( (master.Vec2Angle( -100000.0, 0.0 ), 0.0), false );
-			angle = -master.angle;
+			/*double ang = ( master.angle - 135.0 ) % 360.0;
+			vector3 newpos = (0.0, 0.0, 0.0);
+
+			if ( ang < 90.0 )
+				newpos.xy = (10000.0, 0.0);
+			else if ( ang < 180.0 )
+				newpos.xy = (0.0, 10000.0);
+			else if ( ang < 270.0 )
+				newpos.xy = (-10000.0, 0.0);
+			else
+				newpos.xy = (0.0, -10000.0);
+
+			console.printf( "ang: " .. ang .. ", newpos: " .. newpos );
+
+			//angle = AngleTo( master, false );
+			SetOrigin( newpos, false );*/
+
 
 			for ( int i = 0; i < skyboxActors.Size(); i++ ) {
 				W2BaseSkyboxActor curactor = skyboxActors[ i ];
@@ -81,6 +135,8 @@ class W2SkyboxViewpoint: SkyViewpoint {
 	}
 
 	override void OnDestroy() {
+		LinkToWorld();
+
 		for ( int i = 0; i < skyboxActors.Size(); i++ )
 			skyboxActors[ i ].Destroy();
 
