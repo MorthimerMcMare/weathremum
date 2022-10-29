@@ -293,7 +293,7 @@ class WeathremumHandler: EventHandler {
 			w2level.globalWindVector.x = clamp( w2level.globalWindVector.x + FRandom( -1.0, 1.0 ), -5.0, 5.0 );
 			w2level.globalWindVector.y = clamp( w2level.globalWindVector.y + FRandom( -1.0, 1.0 ), -5.0, 5.0 );
 			globalWindVectorChangeCountdown = Random( 35 * 5, 35 * 100 );
-			console.printf( LLCOLOR_DEBUG .. GetClassName() .. "::WorldTick(). " .. TEXTCOLOR_CYAN .. "Global wind " .. LLCOLOR_DEBUG .. "changed to " .. w2level.globalWindVector .. ", left " .. globalWindVectorChangeCountdown .. " tics." );
+			//console.printf( LLCOLOR_DEBUG .. GetClassName() .. "::WorldTick(). " .. TEXTCOLOR_CYAN .. "Global wind " .. LLCOLOR_DEBUG .. "changed to " .. w2level.globalWindVector .. ", left " .. globalWindVectorChangeCountdown .. " tics." );
 		}
 
 		w2level.blowWindVector *= 0.975;
@@ -301,7 +301,7 @@ class WeathremumHandler: EventHandler {
 		if ( --blowWindVectorChangeCountdown <= 0 ) {
 			w2level.blowWindVector = ( FRandom( -5.0, 5.0 ), FRandom( -5.0, 5.0 ) );
 			blowWindVectorChangeCountdown = Random( 2, 35 * 20 );
-			console.printf( LLCOLOR_DEBUG .. GetClassName() .. "::WorldTick(). " .. TEXTCOLOR_BROWN .. "Blow wind " .. LLCOLOR_DEBUG .. "changed to " .. w2level.blowWindVector .. ", left " .. blowWindVectorChangeCountdown .. " tics." );
+			//console.printf( LLCOLOR_DEBUG .. GetClassName() .. "::WorldTick(). " .. TEXTCOLOR_BROWN .. "Blow wind " .. LLCOLOR_DEBUG .. "changed to " .. w2level.blowWindVector .. ", left " .. blowWindVectorChangeCountdown .. " tics." );
 		}
 
 		Actor thrustee = NULL;

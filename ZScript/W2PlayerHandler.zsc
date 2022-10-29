@@ -139,7 +139,7 @@ class W2PlayerHandler: Actor {
 				for ( int i = 0; i < spawnAmount; i++ ) {
 					Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + ldata.deltadir * FRandom( 0.0, ldata.linelen ), minspawnheight ) );
 
-					raindrop.vel.xy = ldata.corniceDir * FRandom( 0.0, windProjection * 3.5 ); // Yes, "windProjection" may be less than zero.
+					raindrop.vel.xy = ldata.corniceDir * FRandom( 0.0, ( windProjection + 0.3 ) * 3.0 ); // Yes, "windProjection" may be less than zero.
 					raindrop.master = target;
 				}
 			}
