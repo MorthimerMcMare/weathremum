@@ -7,7 +7,10 @@ class W2PlayerHandler: Actor {
 	W2LevelGeneralData w2level;
 
 	Array<W2SoundKeeper> sndkeepers;
+
+	// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to the "validcount" variable.
 	Array<Line> corniceLines;			// Lines between outdoor and indoor areas.
+	Array<Line> cliffLines;
 
 	// "target" is an actor to follow (updates every "Tick()").
 
@@ -24,6 +27,7 @@ class W2PlayerHandler: Actor {
 
 	void DoSectorEffects( void ) {
 		corniceLines.Clear();
+		cliffLines.Clear();
 
 		EWeathremumSectorType tCursector = W2ST_None;
 
@@ -73,9 +77,30 @@ class W2PlayerHandler: Actor {
 			if ( tback != W2ST_None && tback != tfront && backsecdata.GetHeight() > 1.0 /*&& tback != tCursector*/ )
 				sndkeepers[ tback ].SuggestLine( l, backsec );
 
-			// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to the "validcount" variable.
-			if ( w2level.GetLinedefData( l ).isCornice )
-				corniceLines.Push( l );
+			// Cliffs and cornices rain effect:
+			W2LinedefData ldata = w2level.GetLinedefData( l );
+
+			ldata.UpdateSectorPlanesZ();
+
+			if ( ldata.IsSectorsSpacesJointed() ) {
+				double cliffdelta = ldata.floorsdiffz;
+
+				if ( ldata.isCornice ) {
+					corniceLines.Push( l );
+
+					if (   ( tfront > W2ST_NextToOutdoor && cliffdelta > 16.0 )
+						|| ( tback > W2ST_NextToOutdoor && cliffdelta < -16.0 ) ) {
+						ldata.cliffDir = ( cliffdelta > 0.0? ldata.frontdir : -ldata.frontdir );
+
+						cliffLines.Push( l );
+					}
+
+				} else if ( tfront > W2ST_NextToOutdoor && tback > W2ST_NextToOutdoor && abs( cliffdelta ) > 16.0 ) {
+					ldata.cliffDir = ( cliffdelta > 0.0? ldata.frontdir : -ldata.frontdir );
+
+					cliffLines.Push( l );
+				}
+			} // of if ( !ldata.IsSectorsSpacesJointed() ) {}
 		} // of while ( it.Next() ) {}
 
 	} // of void DoSectorEffects( void ) {}
@@ -115,10 +140,7 @@ class W2PlayerHandler: Actor {
 			Line l = corniceLines[ i ];
 			W2LinedefData ldata = w2level.GetLinedefData( l );
 
-			double minspawnheight = ( l.frontsector? l.frontsector.ceilingplane.d : 1e300 );
-
-			if ( l.backsector && ( l.backsector.ceilingplane.d < minspawnheight ) )
-				minspawnheight = l.backsector.ceilingplane.d;
+			double minspawnheight = min( ldata.fceilz, ldata.bceilz );
 
 			// Cornice raindrops amount relates to the linedef length and 
 			//global wind direction.
@@ -127,7 +149,6 @@ class W2PlayerHandler: Actor {
 			double windProjection = ldata.corniceDir dot windDir;
 
 			if ( windProjection > -0.4 ) {
-				//double spawnCoef = 31705.0 * W2GlobalMath.Power( windProjection + 2.134, -2.095 );
 				double spawnCoef = 156.2 * W2GlobalMath.Power( windProjection + 0.5, -1.2 );
 
 				double spawnChange = ldata.linelen / spawnCoef;
@@ -144,6 +165,36 @@ class W2PlayerHandler: Actor {
 				}
 			}
 		} // of for ( int i = 0; i < corniceLines.Size(); i++ ) {}
+
+		//console.printf( "cliffLines.Size(): " .. cliffLines.Size() );
+		// Raindrops from cliffs:
+		for ( int i = 0; i < cliffLines.Size(); i++ ) {
+			Line l = cliffLines[ i ];
+			W2LinedefData ldata = w2level.GetLinedefData( l );
+
+			double maxspawnheight = max( ldata.ffloorz, ldata.bfloorz ) - 3.0;
+
+			// Scalar product here will be in range [-1.0; 1.0].
+			double windProjection = ldata.cliffDir dot windDir;
+
+			//double spawnCoef = 625.0 * W2GlobalMath.Power( windProjection + 1.05, -0.8 ) - 254.2;
+			double spawnCoef = 137.0 * W2GlobalMath.Power( windProjection + 1.05, -0.5 );
+
+			double spawnChange = ldata.linelen / spawnCoef;
+			int spawnAmount = int( floor( spawnChange ) );
+
+			if ( spawnChange - spawnAmount > FRandom( 0.0, 2.0 ) )
+				spawnAmount++;
+
+			//console.printf( level.maptime .. ". Line #" .. l.Index() .. ", cliffs.spawnAmount " .. spawnAmount );
+
+			for ( int i = 0; i < spawnAmount; i++ ) {
+				Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + ldata.deltadir * FRandom( 0.0, ldata.linelen ) + ldata.cliffDir, maxspawnheight ) );
+
+				raindrop.vel.xy = ldata.cliffDir * FRandom( 0.0, ( ( windProjection + 0.8 ) * 2.0 ) );
+				raindrop.master = target;
+			}
+		} // of for ( int i = 0; i < cliffLines.Size(); i++ ) {}
 
 	} // of void DoRainEffects( void ) {}
 

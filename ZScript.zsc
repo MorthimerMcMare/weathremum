@@ -306,7 +306,7 @@ class WeathremumHandler: EventHandler {
 
 		Actor thrustee = NULL;
 
-		for ( int i = 100; i && ( thrustee = Actor( lastHandledActorIter.Next() ) ); i-- ) {
+		for ( int i = 500; i && ( thrustee = Actor( lastHandledActorIter.Next() ) ); i-- ) {
 			if ( !thrustee.bCORPSE )
 				thrustee.vel.xy += w2level.globalWindVector + w2level.blowWindVector;
 		}
@@ -382,16 +382,23 @@ class WeathremumHandler: EventHandler {
 			outStr = outStr .. "\n\n";
 		}
 
-		Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 30, 60, outStr,
+		Screen.DrawText( smallfont, Font.CR_GRAY, 30, 60, outStr,
 						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
 		if ( secdata )
-			Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 1100, 100, "Current sector: " .. secdata.s.Index(),
+			Screen.DrawText( smallfont, Font.CR_GRAY, 1100, 100, "Current sector: " .. secdata.s.Index(),
 							DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
 		if ( debugTraceLineIndex != -1 )
-			Screen.DrawText( Font.FindFont( "smallfont" ), Font.CR_GRAY, 1100, 120, "Line ID: " .. debugTraceLineIndex,
+			Screen.DrawText( smallfont, Font.CR_GRAY, 1100, 120, "Line ID: " .. debugTraceLineIndex,
 							DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
+
+		vector2 playerDir = Actor.AngleToVector( players[ consoleplayer ].mo.angle, 1.0 );
+
+		Screen.DrawText( smallfont, Font.CR_CYAN, 1100, 140, "Global wind: " .. ( playerDir dot ( w2level.globalWindVector / w2level.globalWindVector.Length() ) ) .. ", " .. TEXTCOLOR_GRAY .. "len " .. w2level.globalWindVector.Length(),
+						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
+		Screen.DrawText( smallfont, Font.CR_DARKBROWN, 1100, 150, "Blow wind: " .. ( playerDir dot ( w2level.blowWindVector / w2level.blowWindVector.Length() ) ) .. ", " .. TEXTCOLOR_DARKGRAY .. "len " .. w2level.blowWindVector.Length(),
+						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
 		Super.RenderOverlay( e );
 	}/* */

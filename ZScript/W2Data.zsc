@@ -85,19 +85,56 @@ class W2LinedefData {
 	Line l;
 
 	bool isCornice;
-	vector2 corniceDir;
+	vector2 corniceDir; // Really a cornice direction normal pointing indoor.
+	vector2 cliffDir; // Really a cliff direction normal pointing outdoor (tic-temporal field). Z is a spawn height.
 
 	vector2 deltadir;
+	vector2 frontdir; // Normal to frontsector.
 	double linelen;
+
+	// Updates every tic (if necessary):
+	double ffloorz, fceilz;
+	double bfloorz, bceilz;
+	double floorsdiffz, ceilsdiffz;
 
 	static W2LinedefData Create( Line initLinedef ) {
 		W2LinedefData newdata = new( 'W2LinedefData' );
 		newdata.l = initLinedef;
 		newdata.linelen = initLinedef.delta.Length();
 		newdata.deltadir = initLinedef.delta / newdata.linelen;
+		newdata.frontdir = Actor.RotateVector( newdata.deltadir, 90.0 );
 		newdata.isCornice = false;
 
 		return newdata;
+	}
+
+	// Delta "front - back" floors. Both sectors treated as existing (no NULL check here).
+	double SectorFloorsZDiff( void ) {
+		Sector fsec = l.frontsector;
+		Sector bsec = l.backsector;
+
+		return fsec.floorplane.d * fsec.floorplane.negiC - bsec.floorplane.d * bsec.floorplane.negiC;
+	}
+
+	void UpdateSectorPlanesZ( void ) {
+		Sector sec = l.frontsector;
+
+		if ( sec ) {
+			ffloorz = sec.floorplane.d * sec.floorplane.negiC;
+			fceilz = sec.ceilingplane.d * sec.ceilingplane.negiC;
+		}
+
+		if ( sec = l.backsector ) {
+			bfloorz = sec.floorplane.d * sec.floorplane.negiC;
+			bceilz = sec.ceilingplane.d * sec.ceilingplane.negiC;
+
+			floorsdiffz = ffloorz - bfloorz;
+			ceilsdiffz = fceilz - bceilz;
+		}
+	}
+
+	bool IsSectorsSpacesJointed( void ) {
+		return ( ffloorz < bceilz && bfloorz < fceilz );
 	}
 }
 
