@@ -304,7 +304,9 @@ class WeathremumHandler: EventHandler {
 			//console.printf( LLCOLOR_DEBUG .. GetClassName() .. "::WorldTick(). " .. TEXTCOLOR_BROWN .. "Blow wind " .. LLCOLOR_DEBUG .. "changed to " .. w2level.blowWindVector .. ", left " .. blowWindVectorChangeCountdown .. " tics." );
 		}
 
-		Actor thrustee = NULL;
+		// Thrust actors exposed to the wind direction.
+		// [McM]: actually not visible in-action...
+		/*Actor thrustee = NULL;
 
 		for ( int i = 500; i && ( thrustee = Actor( lastHandledActorIter.Next() ) ); i-- ) {
 			if ( !thrustee.bCORPSE )
@@ -313,6 +315,7 @@ class WeathremumHandler: EventHandler {
 
 		if ( !thrustee )
 			lastHandledActorIter.Reinit();
+		*/
 
 		Super.WorldTick();
 	}

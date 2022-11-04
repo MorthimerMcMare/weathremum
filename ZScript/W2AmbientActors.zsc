@@ -23,6 +23,7 @@ class W2SoundOrigin: Actor {
 
 
 class Weathremum_Raindrop: Actor {
+	W2LevelGeneralData w2level;
 	W2SectorData w2sector;
 
 	Default {
@@ -73,6 +74,7 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	void RaindropPreSplash( void ) {
+		w2sector = w2level.GetSectorData( Sector.PointInSector( pos.xy ) );
 		EWeathremumSectorType w2type = ( w2sector? w2sector.w2type : W2ST_None );
 
 		if ( w2type == W2ST_Water || w2type == W2ST_Nukage || w2type == W2ST_Incandecent ) {
