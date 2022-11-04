@@ -57,6 +57,8 @@ class WeathremumHandler: EventHandler {
 
 		EWeathremumSectorType w2oldSectype = w2secdata.w2type;
 
+		w2secdata.w2type = W2ST_Default;
+
 		// Understanding the sector floor terrain Weathremum type:
 		String floorTexName = TexMan.GetName( w2secdata.lastFloorTexture );
 		String floorTexNameLeft4 = floorTexName.Left( 4 );
