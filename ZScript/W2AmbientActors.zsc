@@ -23,6 +23,7 @@ class W2SoundOrigin: Actor {
 
 
 class Weathremum_Raindrop: Actor {
+	W2LevelGeneralData w2level;
 	W2SectorData w2sector;
 	WeathremumUnsyncRandom rnd;
 
@@ -32,6 +33,7 @@ class Weathremum_Raindrop: Actor {
 		+NOBLOCKMAP;
 		+NOTONAUTOMAP;
 		+DONTSPLASH;
+		+NOTELEPORT;
 		Height 0;
 		Radius 1;
 		Mass 3;
@@ -44,8 +46,8 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	override void PostBeginPlay() {
-		if ( !cursector || ( ceilingpic != skyflatnum ) )
-			Destroy();
+		//if ( !cursector || ( ceilingpic != skyflatnum ) )
+		//	Destroy();
 
 		double minspawnheight = ( master? min( ceilingz, target.pos.z + target.height + 192.0 ) : ceilingz );
 
@@ -68,13 +70,15 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	void RaindropPreSplash( void ) {
+		w2sector = w2level.GetSectorData( Sector.PointInSector( pos.xy ) );
+		EWeathremumSectorType w2type = ( w2sector? w2sector.w2type : W2ST_None );
+
 		if ( w2sector ) {
 			if ( w2sector.w2type == W2ST_Water ) {
 				//if ( target && Distance2D( target ) <= 512.0 ) {
 				//	for ( int i = 0; i < 3; i++ )
 				//		Actor.Spawn( "Weathremum_WaterRipple", pos + ( rnd.FRandom( -4.0, 4.0 ), rnd.FRandom( -4.0, 4.0 ), 0.0 ) );
 				//}
-
 				Destroy();
 				return;
 
@@ -97,6 +101,8 @@ class Weathremum_Raindrop: Actor {
 		SetZ( floorz );
 		ClearInterpolation();
 
+		bCORPSE = true;
+
 		// Optimizing out raindrop splashes on the static surfaces:
 		if ( ( cursector.floordata is 'Mover' ) )
 			bMOVEWITHSECTOR = true;
@@ -105,12 +111,16 @@ class Weathremum_Raindrop: Actor {
 	void RaindropSplash( void ) {
 		if ( w2sector && ( w2sector.w2type == W2ST_RockSurface || w2sector.w2type == W2ST_MetalSurface ) ) {
 			//Actor.Spawn( "Weathremum_HardSurfaceRaindropBreak", pos + ( rnd.FRandom( -4.0, 4.0 ), rnd.FRandom( -4.0, 4.0 ), 0.0 ) );
+			//newdecor.rnd = rnd;
 
 			Destroy();
 			return;
 		}
 
-		bFLATSPRITE = bROLLSPRITE = bFLOORCLIP = bCORPSE = true;
+		//ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR ); // Not works.
+		vel = (0.0, 0.0, 0.0);
+
+		bFLATSPRITE = bROLLSPRITE = bFLOORCLIP = true;
 
 		// General visual tweaks:
 		ClearInterpolation();
@@ -119,12 +129,15 @@ class Weathremum_Raindrop: Actor {
 		frame = rnd.Random( 0, 4 );
 
 		// Setting the position on a slopes:
-		vector3 norm = cursector.floorplane.normal;
-		vector2 norm_p1 = ( norm.x != 0 || norm.y != 0 )? (norm.x, norm.y).Unit() : (0, 0);
-		vector2 norm_p2 = ((norm.x, norm.y).Length(), norm.z );
+		if ( cursector.floorplane.isSlope() ) {
+			vector3 norm = cursector.floorplane.normal;
+			vector2 norm_p1 = ( norm.x != 0 || norm.y != 0 )? (norm.x, norm.y).Unit() : (0, 0);
+			vector2 norm_p2 = ((norm.x, norm.y).Length(), norm.z);
 
-		angle = atan2( norm_p1.y, norm_p1.x );
-		pitch = atan2( norm_p2.x, norm_p2.y );
+			angle = atan2( norm_p1.y, norm_p1.x );
+			pitch = atan2( norm_p2.x, norm_p2.y );
+		}
+
 		roll = rnd.FRandom( 0.0, 360.0 );
 	}
 
@@ -136,6 +149,7 @@ class Weathremum_Raindrop: Actor {
 		RAIN "#" 0 RaindropPreSplash();
 		RAIN "#" 2 { frame++; tics = 5 - frame; }
 		RAIN "#" 2 { frame++; }
+		Stop;
 		RWIN "#" 0 {
 			if ( ( level.maptime & 1 ) || ( target && Distance2D( target ) > 512.0 ) )
 				Destroy();
@@ -148,18 +162,29 @@ class Weathremum_Raindrop: Actor {
 } // of class Weathremum_Raindrop: Actor {}
 
 class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
+	int dropCountdown;
+
 	override void PostBeginPlay() {
 		vel.z = 0.0;
+
 		scale = ( rnd.FRandom( 0.1, 0.5 ), rnd.FRandom( 0.2, 0.5 ) );
 		alpha = rnd.FRandom( 0.3, 0.7 );
+		dropCountdown = rnd.Random( 1, 3 );
 	}
 
 	override void Tick() {
 		if ( !bCORPSE && !globalfreeze && !level.frozen ) {
-			if ( vel.z > -35.0 )
-				vel.z -= 1.5;
+			if ( dropCountdown > 0 ) {
+				dropCountdown--;
 
-			scale.y *= 1.1;
+				scale.y *= 1.02;
+			} else {
+				if ( vel.z > -35.0 )
+					vel.z -= 1.5;
+
+				scale.y *= 1.1;
+				vel.xy *= 0.9;
+			}
 
 			if ( scale.x > 0.2 )
 				scale.x *= 0.95;
@@ -172,6 +197,7 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 	Death:
 		RAIN "#" 1 RaindropPreSplash();
 		RAIN "##" 1 { frame++; }
+		Stop;
 		RWIN "#" 0 {
 			if ( target && Distance2D( target ) > 512.0 )
 				Destroy();
@@ -197,7 +223,8 @@ class Weathremum_ExtraDecoration: Actor {
 
 	override void BeginPlay() {
 		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
-		rnd = WeathremumUnsyncRandom.Get();
+		ThrowAbortException( GetClassName() .. " tried to spawn." );
+		//rnd = WeathremumUnsyncRandom.Get();
 		Super.BeginPlay();
 	}
 }

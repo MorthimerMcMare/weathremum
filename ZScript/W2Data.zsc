@@ -45,16 +45,23 @@ enum EWeathremumSoundDirection {
 
 class W2LevelGeneralData {
 	Array<W2SectorData> allSectorsData;		// All of the sectors.
+	Array<W2LinedefData> allLinedefsData;	// All of the linedefs, mainly for the raindrops effect from a canopy.
 
-	// TODO: remove??
-	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
+	play W2SectorData GetSectorData( Sector s ) {
+		return allSectorsData[ s.Index() ];
+	}
+
+	play W2LinedefData GetLinedefData( Line l ) {
+		return allLinedefsData[ l.Index() ];
+	}
+
+	vector2 globalWindVector, blowWindVector;
 }
 
 
 class W2SectorData {
 	Sector s;
-	Array<Line> lines;
-	//Array<int> lineindices; // Temporary, for the UI-scoped "RenderOverlay()".
+	//Array<Line> lines;
 
 	EWeathremumSectorType w2type;
 
@@ -68,7 +75,65 @@ class W2SectorData {
 
 		return newdata;
 	}
+
+	clearscope double GetHeight( void ) {
+		return ( s.ceilingplane.d * s.ceilingplane.negiC - s.floorplane.d * s.floorplane.negiC );
+	}
 }
+
+class W2LinedefData {
+	Line l;
+
+	vector2 deltadir;
+	vector2 frontdir; // Normal to frontsector.
+	double linelen;
+	vector2 midpoint;
+
+	bool isCornice;
+	vector2 corniceDir; // Really a cornice direction normal pointing indoor.
+	vector2 cliffDir; // Really a cliff direction normal pointing outdoor (tic-temporal field). Z is a spawn height.
+
+	// Updates every tic (if necessary):
+	double ffloorz, fceilz;
+	double bfloorz, bceilz;
+	double floorsdiffz, ceilsdiffz;
+	vector2 closestXYPointToPlayer;
+
+	static W2LinedefData Create( Line initLinedef ) {
+		W2LinedefData newdata = new( 'W2LinedefData' );
+		newdata.l = initLinedef;
+		newdata.linelen = initLinedef.delta.Length();
+		newdata.deltadir = initLinedef.delta / newdata.linelen;
+		newdata.frontdir = Actor.RotateVector( newdata.deltadir, 90.0 );
+		newdata.midpoint = ( initLinedef.v1.p + initLinedef.v2.p ) / 2.0;
+		newdata.isCornice = false;
+
+		return newdata;
+	}
+
+	void UpdateSectorPlanesZ( void ) {
+		Sector sec = l.frontsector;
+
+		if ( sec ) {
+			ffloorz = sec.floorplane.d * sec.floorplane.negiC;
+			fceilz = sec.ceilingplane.d * sec.ceilingplane.negiC;
+		}
+
+		if ( sec = l.backsector ) {
+			bfloorz = sec.floorplane.d * sec.floorplane.negiC;
+			bceilz = sec.ceilingplane.d * sec.ceilingplane.negiC;
+
+			floorsdiffz = ffloorz - bfloorz;
+			ceilsdiffz = fceilz - bceilz;
+		}
+	}
+
+	bool IsSectorsSpacesJointed( void ) {
+		return ( ffloorz < bceilz && bfloorz < fceilz );
+	}
+}
+
+
 
 class W2SoundKeeper play {
 	EWeathremumHandleStatus status;
@@ -112,10 +177,11 @@ class W2SoundKeeper play {
 		}
 	}
 
-	void SuggestLine( Line curline, Sector lsec ) {
+	void SuggestLine( W2LinedefData curlinedata, Sector lsec ) {
 		double curminlength;
 		vector2 curposxy;
 
+		Line curline = curlinedata.l;
 		vector2 v1p = curline.v1.p;
 		vector2 v2p = curline.v2.p;
 		vector2 plp = ppos.xy;
@@ -136,10 +202,10 @@ class W2SoundKeeper play {
 			double dlx = curline.delta.x;
 			double dly = curline.delta.y;
 
-			if ( dlx == 0 ) {
+			if ( dlx == 0.0 ) {
 				curposxy = (v1p.x, plp.y);
 
-			} else if ( dly == 0 ) {
+			} else if ( dly == 0.0 ) {
 				curposxy = (plp.x, v1p.y);
 
 			} else {
@@ -150,8 +216,9 @@ class W2SoundKeeper play {
 			curminlength = ( curposxy - plp ).Length();
 		}
 
-		double floorzdiff = abs( lsec.floorplane.d * lsec.floorplane.negiC - ppos.z );
+		curlinedata.closestXYPointToPlayer = curposxy;
 
+		double floorzdiff = abs( lsec.floorplane.d * lsec.floorplane.negiC - ppos.z );
 		curminlength = sqrt( curminlength * curminlength + floorzdiff * floorzdiff );
 
 		//if ( w2type == W2ST_Default )
