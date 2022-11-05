@@ -90,11 +90,11 @@ class W2Global: Thinker {
 } // of class W2Global: Thinker {}
 
 class W2GlobalMath {
-	static double Power( double digit, double power ) {
-		if ( power == 0.0 || digit == 1 )
+	static double Power( double value, double power ) {
+		if ( power == 0.0 || value == 1 )
 			return 1.0;
 
-		return exp( power * log( digit ) );
+		return exp( power * log( value ) );
 	}
 } // of class W2GlobalMath {}
 

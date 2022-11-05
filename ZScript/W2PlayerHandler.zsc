@@ -29,6 +29,7 @@ class W2PlayerHandler: Actor {
 		corniceLines.Clear();
 		cliffLines.Clear();
 
+		// Picking up and applying a current player sector sound type:
 		EWeathremumSectorType tCursector = W2ST_None;
 
 		if ( ceilingsector ) {
@@ -42,6 +43,8 @@ class W2PlayerHandler: Actor {
 			}
 		}
 
+
+		// Searching for all types of the defined surfaces around player:
 
 		// Second argument is an environment test radius.
 		BlockLinesIterator it = BlockLinesIterator.Create( self, 768 );
@@ -78,6 +81,7 @@ class W2PlayerHandler: Actor {
 
 			if ( tback != W2ST_None && tback != tfront && backsecdata.GetHeight() > 1.0 /*&& tback != tCursector*/ )
 				sndkeepers[ tback ].SuggestLine( ldata, backsec );
+
 
 			// Cliffs and cornices rain effect:
 			ldata.UpdateSectorPlanesZ();
@@ -122,7 +126,6 @@ class W2PlayerHandler: Actor {
 		// Outdoor areas raindrop effect:
 		for ( int i = 0; i < 250; i++ ) {
 			double angletheta = FRandom( 0.0, 360.0 );
-
 			vector2 raindropPos = pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom( 0.0, 1.0 ) ) * 764.0 );
 
 			Sector raindropSector = Sector.PointInSector( raindropPos );
@@ -135,9 +138,6 @@ class W2PlayerHandler: Actor {
 					raindrop.target = target;
 					raindrop.master = self;
 					raindrop.w2level = w2level;
-					//raindrop.w2sector = secdata;
-
-					//raindrop.vel.xy = ( 10.0, 10.0 ) * ( sin( rainwaveOffset ) + 1.0 );
 				}
 			} // of if ( raindropSector && raindropSector.GetTexture( Sector.CEILING ) == skyflatnum ) {}
 		}
@@ -152,8 +152,8 @@ class W2PlayerHandler: Actor {
 
 			double minspawnheight = min( ldata.fceilz, ldata.bceilz );
 
-			// Cornice raindrops amount relates to the linedef length and 
-			//global wind direction.
+			// Cornice raindrops amount relates to the linedef length and to 
+			//the global wind direction.
 
 			// Scalar product here will be in range [-1.0; 1.0].
 			double windProjection = ldata.corniceDir dot windDir;
@@ -177,7 +177,6 @@ class W2PlayerHandler: Actor {
 			}
 		} // of for ( int i = 0; i < corniceLines.Size(); i++ ) {}
 
-		//console.printf( "cliffLines.Size(): " .. cliffLines.Size() );
 		// Raindrops from cliffs:
 		for ( int i = 0; i < cliffLines.Size(); i++ ) {
 			Line l = cliffLines[ i ];
@@ -185,10 +184,12 @@ class W2PlayerHandler: Actor {
 
 			double maxspawnheight = max( ldata.ffloorz, ldata.bfloorz ) - 3.0;
 
+			// Cliff raindrops amount relates to the linedef length and to the 
+			//global wind direction.
+
 			// Scalar product here will be in range [-1.0; 1.0].
 			double windProjection = ldata.cliffDir dot windDir;
 
-			//double spawnCoef = 625.0 * W2GlobalMath.Power( windProjection + 1.05, -0.8 ) - 254.2;
 			double spawnCoef = 137.0 * W2GlobalMath.Power( windProjection + 1.05, -0.5 );
 
 			double spawnChange = ldata.linelen / spawnCoef;
@@ -196,8 +197,6 @@ class W2PlayerHandler: Actor {
 
 			if ( spawnChange - spawnAmount > FRandom( 0.0, 2.0 ) )
 				spawnAmount++;
-
-			//console.printf( level.maptime .. ". Line #" .. l.Index() .. ", cliffs.spawnAmount " .. spawnAmount );
 
 			for ( int i = 0; i < spawnAmount; i++ ) {
 				Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + ldata.deltadir * FRandom( 0.0, ldata.linelen ) + ldata.cliffDir, maxspawnheight ) ) );
