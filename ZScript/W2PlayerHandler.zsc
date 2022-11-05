@@ -230,9 +230,9 @@ pos.Z == FLOATRANDZ
 				spawnAmount++;
 
 			for ( int i = 0; i < spawnAmount; i++ ) {
-				Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + ldata.deltadir * FRandom( 0.0, ldata.linelen ) + ldata.cliffDir, maxspawnheight ) ) );
+				Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + ldata.deltadir * rnd.FRandom( 0.0, ldata.linelen ) + ldata.cliffDir, maxspawnheight ) ) );
 
-				raindrop.vel.xy = ldata.cliffDir * FRandom( 0.0, ( ( windProjection + 0.8 ) * 2.0 ) );
+				raindrop.vel.xy = ldata.cliffDir * rnd.FRandom( 0.0, ( ( windProjection + 0.8 ) * 2.0 ) );
 				raindrop.master = target;
 				raindrop.rnd = rnd;
 				raindrop.w2level = w2level;

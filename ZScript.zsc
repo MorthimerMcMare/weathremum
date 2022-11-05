@@ -202,6 +202,8 @@ class WeathremumHandler: EventHandler {
 		blowWindVectorChangeCountdown = Random( 0, 175 );
 		w2level.globalWindVector = (FRandom( -2.0, 2.0 ), FRandom( -2.0, 2.0 ));
 		w2level.blowWindVector = (0.0, 0.0);
+		W2Global.Log( LL_Debug, GetClassName() .. "::CreateGeneralSectorsData(). " .. TEXTCOLOR_CYAN .. "Global wind " .. LLCOLOR_DEBUG .. "set to " .. w2level.globalWindVector .. ", left " .. globalWindVectorChangeCountdown .. " tics." );
+		W2Global.Log( LL_Debug, GetClassName() .. "::CreateGeneralSectorsData(). " .. TEXTCOLOR_BROWN .. "Blow wind " .. LLCOLOR_DEBUG .. "set to " .. w2level.blowWindVector .. ", left " .. blowWindVectorChangeCountdown .. " tics." );
 
 		mustCreateGeneralSectorsData = false;
 	} // of void CreateGeneralSectorsData( void ) {}
@@ -212,7 +214,7 @@ class WeathremumHandler: EventHandler {
 		initCurW2SurfaceType++;
 		initCurW2PlayerHandler.sndkeepers.Push( W2SoundKeeper.Create( sndname, initCurW2SurfaceType, plmo, w2typename ) );
 
-		W2Global.Log( LL_Detailed, String.Format( "Sound keeper for player %i, w2type %2i \"%s\", sound \"%s\".",
+		W2Global.Log( LL_Debug, String.Format( "Sound keeper for player %i, w2type %2i \"%s\", sound \"%s\".",
 									initCurW2PlayerHandler.FriendPlayer, initCurW2SurfaceType, initCurW2PlayerHandler.sndkeepers[ initCurW2SurfaceType ].w2typename, sndname ) );
 	}
 
@@ -252,7 +254,7 @@ class WeathremumHandler: EventHandler {
 
 	override void WorldTick() {
 		if ( w2level.allSectorsData.Size() != totalLevelSectors ) {
-			W2Global.Log( LL_Debug, GetClassName() .. "::WorldLoaded(). False sectors size: now " .. w2level.allSectorsData.Size() .. ", saved " .. totalLevelSectors .. ", really " .. level.sectors.Size() .. ". Recreating Weathremum level data..." );
+			W2Global.Log( LL_Debug, GetClassName() .. "::WorldLoaded(). " .. TEXTCOLOR_DARKRED .. "False sectors size" .. LLCOLOR_DEBUG .. ": now " .. w2level.allSectorsData.Size() .. ", saved " .. totalLevelSectors .. ", really " .. level.sectors.Size() .. ". Recreating Weathremum level data..." );
 			CreateGeneralSectorsData();
 		}
 

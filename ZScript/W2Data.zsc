@@ -302,7 +302,7 @@ class W2SoundKeeper play {
 			if ( !sndorigin[ W2SD_Left ] ) {
 
 				for ( int j = 0; j < W2SD_Quantity; j++ ) {
-					W2SoundOrigin sndactor = sndorigin[ j ] = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( 0.0, 0.0, 0.0 ) ) );
+					W2SoundOrigin sndactor = sndorigin[ j ] = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", (0.0, 0.0, 0.0) ) );
 					sndactor.target = master; // Player.
 					sndactor.seq = sndactor.StartSoundSequence( sndname, SeqNode.ENVIRONMENT );
 				}
