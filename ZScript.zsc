@@ -10,15 +10,13 @@ const WeathremumVersion = "0.3a";
 
 class WeathremumHandler: EventHandler {
 	W2LevelGeneralData w2level;
-	WeathremumUnsyncRandom rnd;
-
 	bool mustCreateGeneralSectorsData;		// "PlayerEntered()" is called before "WorldLoaded()".
 
 	W2PlayerHandler playerHandlers[ MAXPLAYERS ], initCurW2PlayerHandler;
 	int initCurW2SurfaceType;
 
 	uint updateSectorCurIndex, updateSectorsMaxTickAmount, totalLevelSectors;
-	ThinkerIterator lastHandledActorIter;
+	//transient ThinkerIterator lastHandledActorIter; // Causes savegame to crush.
 
 	int globalWindVectorChangeCountdown, blowWindVectorChangeCountdown;
 
@@ -31,7 +29,6 @@ class WeathremumHandler: EventHandler {
 
 		mustCreateGeneralSectorsData = true;
 		w2level = new( 'W2LevelGeneralData' );
-		rnd = WeathremumUnsyncRandom.Create();
 
 		W2Global.Log( LL_Detailed, "Weathremum v" .. WeathremumVersion .. " handler initialized." );
 
@@ -199,11 +196,11 @@ class WeathremumHandler: EventHandler {
 		updateSectorCurIndex = 0;
 		updateSectorsMaxTickAmount = int( ceil( totalLevelSectors / 10.0 ) );
 
-		lastHandledActorIter = ThinkerIterator.Create( "Actor", STAT_WEATHREMUM_MAINDECOR );
+		//lastHandledActorIter = ThinkerIterator.Create( "Actor", STAT_WEATHREMUM_MAINDECOR );
 
-		globalWindVectorChangeCountdown = rnd.Random( 35, 3500 );
-		blowWindVectorChangeCountdown = rnd.Random( 0, 175 );
-		w2level.globalWindVector = (rnd.FRandom( -2.0, 2.0 ), rnd.FRandom( -2.0, 2.0 ));
+		globalWindVectorChangeCountdown = Random( 35, 3500 );
+		blowWindVectorChangeCountdown = Random( 0, 175 );
+		w2level.globalWindVector = (FRandom( -2.0, 2.0 ), FRandom( -2.0, 2.0 ));
 		w2level.blowWindVector = (0.0, 0.0);
 
 		mustCreateGeneralSectorsData = false;
@@ -215,7 +212,7 @@ class WeathremumHandler: EventHandler {
 		initCurW2SurfaceType++;
 		initCurW2PlayerHandler.sndkeepers.Push( W2SoundKeeper.Create( sndname, initCurW2SurfaceType, plmo, w2typename ) );
 
-		W2Global.Log( LL_Detailed, String.Format( "Sound keeper. Player %i, w2type %2i \"%s\", sound \"%s\".",
+		W2Global.Log( LL_Detailed, String.Format( "Sound keeper for player %i, w2type %2i \"%s\", sound \"%s\".",
 									initCurW2PlayerHandler.FriendPlayer, initCurW2SurfaceType, initCurW2PlayerHandler.sndkeepers[ initCurW2SurfaceType ].w2typename, sndname ) );
 	}
 
@@ -248,13 +245,7 @@ class WeathremumHandler: EventHandler {
 		}
 		
 		Super.PlayerEntered( e );
-
-		/*if ( e.PlayerNumber == consoleplayer && gl_texture_format == "5" ) {
-			console.printf( TEXTCOLOR_DARKGRAY .. GetClassName() .. "::PlayerEntered(). " .. TEXTCOLOR_YELLOW
-							.. "Your OpenGL texture format seems to be set to \"" .. TEXTCOLOR_CYAN .. "S3TC_DXT3" .. TEXTCOLOR_YELLOW .."\", so translucent raindrops might look weird. " .. TEXTCOLOR_GRAY
-							.. "Change it in the \"Display options\"->\"OpenGL renderer\"->\"Texture options\" or alter the \"gl_texture_format\" variable." );
-		}*/
-	}
+	} // of override void PlayerEntered( PlayerEvent e ) {}
 
 
 	int debugTraceLineIndex;
@@ -287,18 +278,18 @@ class WeathremumHandler: EventHandler {
 		}
 
 		if ( --globalWindVectorChangeCountdown <= 0 ) {
-			w2level.globalWindVector.x = clamp( w2level.globalWindVector.x + rnd.FRandom( -1.0, 1.0 ), -5.0, 5.0 );
-			w2level.globalWindVector.y = clamp( w2level.globalWindVector.y + rnd.FRandom( -1.0, 1.0 ), -5.0, 5.0 );
-			globalWindVectorChangeCountdown = rnd.Random( 35 * 5, 35 * 100 );
-			//console.printf( LLCOLOR_DEBUG .. GetClassName() .. "::WorldTick(). " .. TEXTCOLOR_CYAN .. "Global wind " .. LLCOLOR_DEBUG .. "changed to " .. w2level.globalWindVector .. ", left " .. globalWindVectorChangeCountdown .. " tics." );
+			w2level.globalWindVector.x = clamp( w2level.globalWindVector.x + FRandom( -1.0, 1.0 ), -5.0, 5.0 );
+			w2level.globalWindVector.y = clamp( w2level.globalWindVector.y + FRandom( -1.0, 1.0 ), -5.0, 5.0 );
+			globalWindVectorChangeCountdown = Random( 35 * 5, 35 * 100 );
+			W2Global.Log( LL_Debug, GetClassName() .. "::WorldTick(). " .. TEXTCOLOR_CYAN .. "Global wind " .. LLCOLOR_DEBUG .. "changed to " .. w2level.globalWindVector .. ", left " .. globalWindVectorChangeCountdown .. " tics." );
 		}
 
 		w2level.blowWindVector *= 0.975;
 
 		if ( --blowWindVectorChangeCountdown <= 0 ) {
-			w2level.blowWindVector = ( rnd.FRandom( -5.0, 5.0 ), rnd.FRandom( -5.0, 5.0 ) );
-			blowWindVectorChangeCountdown = rnd.Random( 2, 35 * 20 );
-			//console.printf( LLCOLOR_DEBUG .. GetClassName() .. "::WorldTick(). " .. TEXTCOLOR_BROWN .. "Blow wind " .. LLCOLOR_DEBUG .. "changed to " .. w2level.blowWindVector .. ", left " .. blowWindVectorChangeCountdown .. " tics." );
+			w2level.blowWindVector = ( FRandom( -5.0, 5.0 ), FRandom( -5.0, 5.0 ) );
+			blowWindVectorChangeCountdown = Random( 2, 35 * 20 );
+			W2Global.Log( LL_Debug, GetClassName() .. "::WorldTick(). " .. TEXTCOLOR_BROWN .. "Blow wind " .. LLCOLOR_DEBUG .. "changed to " .. w2level.blowWindVector .. ", left " .. blowWindVectorChangeCountdown .. " tics." );
 		}
 
 		// Thrust actors exposed to the wind direction.
