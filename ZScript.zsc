@@ -16,7 +16,7 @@ class WeathremumHandler: EventHandler {
 	int initCurW2SurfaceType;
 
 	uint updateSectorCurIndex, updateSectorsMaxTickAmount, totalLevelSectors;
-	ThinkerIterator lastHandledActorIter;
+	//transient ThinkerIterator lastHandledActorIter; // Causes savegame to crush.
 
 	int globalWindVectorChangeCountdown, blowWindVectorChangeCountdown;
 
@@ -195,7 +195,7 @@ class WeathremumHandler: EventHandler {
 		updateSectorCurIndex = 0;
 		updateSectorsMaxTickAmount = int( ceil( totalLevelSectors / 10.0 ) );
 
-		lastHandledActorIter = ThinkerIterator.Create( "Actor", STAT_WEATHREMUM_MAINDECOR );
+		//lastHandledActorIter = ThinkerIterator.Create( "Actor", STAT_WEATHREMUM_MAINDECOR );
 
 		globalWindVectorChangeCountdown = Random( 35, 3500 );
 		blowWindVectorChangeCountdown = Random( 0, 175 );
