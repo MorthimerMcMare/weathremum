@@ -9,6 +9,7 @@ class W2SoundOrigin: Actor {
 		+NOINTERACTION; // Implies +NOGRAVITY and +NOBLOCKMAP.
 		+DONTSPLASH;
 		//+NOTONAUTOMAP;
+		FloatBobPhase 0;
 	}
 
 	override void Tick() {
@@ -38,6 +39,7 @@ class Weathremum_Raindrop: Actor {
 		Radius 1;
 		Mass 3;
 		RenderStyle "Translucent";
+		FloatBobPhase 0;
 	}
 
 	override void BeginPlay() {
@@ -75,16 +77,20 @@ class Weathremum_Raindrop: Actor {
 
 		if ( w2sector ) {
 			if ( w2sector.w2type == W2ST_Water ) {
-				//if ( target && Distance2D( target ) <= 512.0 ) {
-				//	for ( int i = 0; i < 3; i++ )
-				//		Actor.Spawn( "Weathremum_WaterRipple", pos + ( rnd.FRandom( -4.0, 4.0 ), rnd.FRandom( -4.0, 4.0 ), 0.0 ) );
-				//}
+				if ( target && Distance2D( target ) <= 512.0 ) {
+					for ( int i = 0; i < 3; i++ ) {
+						Weathremum_ExtraDecoration newdecor = Weathremum_ExtraDecoration( Actor.Spawn( "Weathremum_WaterRipple", pos + ( rnd.FRandom( -4.0, 4.0 ), rnd.FRandom( -4.0, 4.0 ), 0.0 ) ) );
+						newdecor.rnd = rnd;
+					}
+				}
 				Destroy();
 				return;
 
 			} else if ( ( w2sector.w2type == W2ST_Incandecent || w2sector.w2type == W2ST_Nukage ) && rnd.Chance( 7 ) ) {
-				//if ( w2sector.w2type == W2ST_Incandecent || rnd.Chance( 3 ) )
-				//	Actor.Spawn( "Weathremum_NukageVapor", pos + ( 0.0, 0.0, 5.0 ) );
+				if ( w2sector.w2type == W2ST_Incandecent || rnd.Chance( 3 ) ) {
+					Weathremum_ExtraDecoration newdecor = Weathremum_ExtraDecoration( Actor.Spawn( "Weathremum_NukageVapor", pos + ( 0.0, 0.0, 5.0 ) ) );
+					newdecor.rnd = rnd;
+				}
 
 				Destroy();
 				return;
@@ -110,8 +116,8 @@ class Weathremum_Raindrop: Actor {
 
 	void RaindropSplash( void ) {
 		if ( w2sector && ( w2sector.w2type == W2ST_RockSurface || w2sector.w2type == W2ST_MetalSurface ) ) {
-			//Actor.Spawn( "Weathremum_HardSurfaceRaindropBreak", pos + ( rnd.FRandom( -4.0, 4.0 ), rnd.FRandom( -4.0, 4.0 ), 0.0 ) );
-			//newdecor.rnd = rnd;
+			Weathremum_ExtraDecoration newdecor = Weathremum_ExtraDecoration( Actor.Spawn( "Weathremum_HardSurfaceRaindropBreak", pos + ( rnd.FRandom( -4.0, 4.0 ), rnd.FRandom( -4.0, 4.0 ), 0.0 ) ) );
+			newdecor.rnd = rnd;
 
 			Destroy();
 			return;
@@ -149,7 +155,6 @@ class Weathremum_Raindrop: Actor {
 		RAIN "#" 0 RaindropPreSplash();
 		RAIN "#" 2 { frame++; tics = 5 - frame; }
 		RAIN "#" 2 { frame++; }
-		Stop;
 		RWIN "#" 0 {
 			if ( ( level.maptime & 1 ) || ( target && Distance2D( target ) > 512.0 ) )
 				Destroy();
@@ -197,7 +202,6 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 	Death:
 		RAIN "#" 1 RaindropPreSplash();
 		RAIN "##" 1 { frame++; }
-		Stop;
 		RWIN "#" 0 {
 			if ( target && Distance2D( target ) > 512.0 )
 				Destroy();
@@ -219,11 +223,11 @@ class Weathremum_ExtraDecoration: Actor {
 		+FLATSPRITE;
 		+FLOORCLIP;
 		RenderStyle "Translucent";
+		FloatBobPhase 0;
 	}
 
 	override void BeginPlay() {
 		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
-		ThrowAbortException( GetClassName() .. " tried to spawn." );
 		//rnd = WeathremumUnsyncRandom.Get();
 		Super.BeginPlay();
 	}

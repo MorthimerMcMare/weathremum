@@ -16,6 +16,7 @@ class W2PlayerHandler: Actor {
 		+NOINTERACTION; // Implies +NOGRAVITY and +NOBLOCKMAP.
 		+DONTSPLASH;
 		+NOTONAUTOMAP;
+		FloatBobPhase 0;
 	}
 
 	override void BeginPlay() {
@@ -136,6 +137,10 @@ DEFINE_ACTION_FUNCTION(AActor, Spawn)
 
 // Also see "/src/g_levellocals.h":
 DThinker *CreateThinker(PClass *cls, int statnum = STAT_DEFAULT)
+
+MF3_ISMONSTER
+pos.Z == FLOATRANDZ
+(actor->FloatBobPhase == (uint8_t)-1)
 */
 
 	void DoRainEffects( void ) {
@@ -143,7 +148,7 @@ DThinker *CreateThinker(PClass *cls, int statnum = STAT_DEFAULT)
 		//thanks to https://habr.com/ru/post/583838/.
 
 		// Outdoor areas raindrop effect:
-		for ( int i = 0; i < 5; i++ ) {
+		for ( int i = 0; i < 250; i++ ) {
 			double angletheta = rnd.FRandom( 0.0, 360.0 );
 
 			vector2 raindropPos = pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( rnd.FRandom( 0.0, 1.0 ) ) * 764.0 );
@@ -153,17 +158,17 @@ DThinker *CreateThinker(PClass *cls, int statnum = STAT_DEFAULT)
 				W2SectorData secdata = w2level.GetSectorData( raindropSector );
 
 				if ( secdata.GetHeight() > 8.0 ) {
-					/*Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_Raindrop", ( raindropPos, pos.z ) ) );
+					Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_Raindrop", ( raindropPos, pos.z ) ) );
 					//console.printf( level.maptime .. ": #" .. raindropSector.Index() .. ";  " .. TEXTCOLOR_DARKGRAY .. "tex " .. raindropSector.GetTexture( Sector.CEILING ) );
 					//Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_Raindrop", ( (randval, 0, 0) ) ) );
 					raindrop.target = target;
 					raindrop.master = self;
 					raindrop.rnd = rnd;
-					raindrop.w2level = w2level;*/
+					raindrop.w2level = w2level;
 					//console.printf( level.maptime .. ": #" .. raindropSector.Index() .. "." );
+					//Actor a = Actor.Spawn( "tempLeftRightMarker", ( 0, 0, 0 ) );
 
-					//Actor a = Actor.Spawn( "tempLeftRightMarker", ( raindropPos, pos.z ) );
-
+					//console.printf( a .. ": bISMONSTER " .. a.bISMONSTER .. "; pos.z/FLOATRANDZ " .. a.pos.z .. "/" .. a.FLOATRANDZ .. ", floatBobPhase " .. a.FloatBobPhase );
 					//target.bINVISIBLE = ( secdata.GetHeight() % 5 > 1 );
 
 					//raindrop.vel.xy = ( 10.0, 10.0 ) * ( sin( rainwaveOffset ) + 1.0 );
@@ -171,8 +176,6 @@ DThinker *CreateThinker(PClass *cls, int statnum = STAT_DEFAULT)
 
 			} // of if ( raindropSector && raindropSector.GetTexture( Sector.CEILING ) == skyflatnum ) {}
 		}
-
-		return;
 
 		vector2 windDir = ( w2level.globalWindVector + 3.0 * w2level.blowWindVector );
 		windDir /= windDir.Length();
@@ -204,6 +207,7 @@ DThinker *CreateThinker(PClass *cls, int statnum = STAT_DEFAULT)
 
 					raindrop.vel.xy = ldata.corniceDir * rnd.FRandom( 0.0, ( windProjection + 0.3 ) * 3.0 ); // Yes, "windProjection" may be less than zero.
 					raindrop.master = target;
+					raindrop.rnd = rnd;
 					raindrop.w2level = w2level;
 				}
 			}
@@ -272,9 +276,8 @@ DThinker *CreateThinker(PClass *cls, int statnum = STAT_DEFAULT)
 			sndkeepers[ i ].PreTick();
 
 		//console.printf( GetClassName() .. "::Tick(). Maptime " .. level.maptime .. ", rnd.Random( 1, 10 ): " .. rnd.Random( 1, 10 ) .. "." );
-		//Weathremum_Raindrop( Actor.Spawn( "Weathremum_Raindrop", target.pos + ( 0.0, 0.0, 96.0 ) ) ).rnd = rnd;
 
-		//DoSectorEffects(); 	// Sector sounds (rain, winds);
+		DoSectorEffects(); 	// Sector sounds (rain, winds);
 
 		if ( !( level.frozen || globalfreeze ) )
 			DoRainEffects(); 	// Rain itself, raindrops from cornices.

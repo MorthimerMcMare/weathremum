@@ -161,6 +161,7 @@ class tempLeftRightMarker: Actor {
 		+DONTSPLASH;
 		RenderStyle "Translucent";
 		Alpha 0.44;
+		FloatBobPhase 0;
 	}
 
 	States {
