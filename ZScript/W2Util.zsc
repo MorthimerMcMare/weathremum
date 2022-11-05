@@ -86,6 +86,11 @@ class W2Global: Thinker {
 		if ( W2Global.GetLoglevel() >= ( loglevel & ~LL_FlagsMask ) )
 			ClearscopeLog( loglevel, text );
 	}
+
+	static clearscope void DataLog( EWeathremumLogLevels loglevel, String text ) {
+		if ( CVar.FindCVar( "mcm_weathremum_loglevel" ).GetInt() >= ( loglevel & ~LL_FlagsMask ) )
+			ClearscopeLog( loglevel, text );
+	}
 } // of class W2Global: Thinker {}
 
 class WeathremumUnsyncRandom {
@@ -95,7 +100,7 @@ class WeathremumUnsyncRandom {
 		WeathremumUnsyncRandom newrnd = new( 'WeathremumUnsyncRandom' );
 		newrnd.unsyncseed = ( initseed == 0? int( MSTime() ) : initseed );
 
-		console.printf( newrnd.GetClassName() .. "::Create(). New unsync random " .. newrnd .. ", seed " .. newrnd.unsyncseed .. "." );
+		W2Global.DataLog( LL_Debug, newrnd.GetClassName() .. "::Create(). New unsync random " .. newrnd .. ", seed " .. newrnd.unsyncseed .. "." );
 
 		return newrnd;
 	}
