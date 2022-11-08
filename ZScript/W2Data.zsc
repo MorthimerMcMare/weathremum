@@ -104,7 +104,9 @@ class W2LinedefData {
 		newdata.l = initLinedef;
 		newdata.linelen = initLinedef.delta.Length();
 		newdata.deltadir = initLinedef.delta / newdata.linelen;
-		newdata.frontdir = Actor.RotateVector( newdata.deltadir, 90.0 );
+
+		newdata.frontdir = (-newdata.deltadir.y, newdata.deltadir.x); // +90 degrees rotation.
+
 		newdata.midpoint = ( initLinedef.v1.p + initLinedef.v2.p ) / 2.0;
 		newdata.isCornice = false;
 
