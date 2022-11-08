@@ -9,7 +9,7 @@ class W2SoundOrigin: Actor {
 		+NOINTERACTION; // Implies +NOGRAVITY and +NOBLOCKMAP.
 		+DONTSPLASH;
 		//+NOTONAUTOMAP;
-		FloatBobPhase 0;
+		FloatBobPhase 0; // No more "FRandom pr_spawnmobj" desynchronizations!
 	}
 
 	override void Tick() {
@@ -35,11 +35,13 @@ class Weathremum_Raindrop: Actor {
 		+NOTONAUTOMAP;
 		+DONTSPLASH;
 		+NOTELEPORT;
+		//+DONTOVERLAP;
 		Height 0;
 		Radius 1;
 		Mass 3;
 		RenderStyle "Translucent";
-		FloatBobPhase 0;
+		FloatBobPhase 0; // No more "FRandom pr_spawnmobj" desynchronizations!
+		DamageFunction 0; // No more "FRandom pr_damagemobj" desynchronizations!
 	}
 
 	override void BeginPlay() {
@@ -223,7 +225,7 @@ class Weathremum_ExtraDecoration: Actor {
 		+FLATSPRITE;
 		+FLOORCLIP;
 		RenderStyle "Translucent";
-		FloatBobPhase 0;
+		FloatBobPhase 0; // No more "FRandom pr_spawnmobj" desynchronizations!
 	}
 
 	override void BeginPlay() {
