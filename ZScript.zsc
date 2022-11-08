@@ -207,12 +207,12 @@ class WeathremumHandler: EventHandler {
 
 
 	private void pushSound( String sndname, String w2typename = "" ) {
-		Actor plmo = players[ initCurW2PlayerHandler.FriendPlayer ].mo;
+		Actor plmo = players[ initCurW2PlayerHandler.targetPlayerNum ].mo;
 		initCurW2SurfaceType++;
 		initCurW2PlayerHandler.sndkeepers.Push( W2SoundKeeper.Create( sndname, initCurW2SurfaceType, plmo, w2typename ) );
 
 		W2Global.Log( LL_Detailed, String.Format( "Sound keeper for player %i, w2type %2i \"%s\", sound \"%s\".",
-									initCurW2PlayerHandler.FriendPlayer, initCurW2SurfaceType, initCurW2PlayerHandler.sndkeepers[ initCurW2SurfaceType ].w2typename, sndname ) );
+									initCurW2PlayerHandler.targetPlayerNum, initCurW2SurfaceType, initCurW2PlayerHandler.sndkeepers[ initCurW2SurfaceType ].w2typename, sndname ) );
 	}
 
 	override void PlayerEntered( PlayerEvent e ) {
@@ -222,9 +222,10 @@ class WeathremumHandler: EventHandler {
 		if ( players[ e.PlayerNumber ].mo ) {
 			Actor plmo = players[ e.PlayerNumber ].mo;
 
-			initCurW2PlayerHandler = W2PlayerHandler( Actor.Spawn( "W2PlayerHandler", plmo.pos ) );
-			initCurW2PlayerHandler.FriendPlayer = e.PlayerNumber;
+			initCurW2PlayerHandler = W2PlayerHandler( new( 'W2PlayerHandler' ) );
+			initCurW2PlayerHandler.targetPlayerNum = e.PlayerNumber;
 			initCurW2PlayerHandler.w2level = w2level;
+
 			initCurW2SurfaceType = W2ST_None;
 
 			// Based on the both of SNDINFO and SNDSEQ.
@@ -253,15 +254,6 @@ class WeathremumHandler: EventHandler {
 		if ( w2level.allSectorsData.Size() != totalLevelSectors ) {
 			W2Global.Log( LL_Debug, GetClassName() .. "::WorldLoaded(). False sectors size: now " .. w2level.allSectorsData.Size() .. ", saved " .. totalLevelSectors .. ", really " .. level.sectors.Size() .. ". Recreating Weathremum level data..." );
 			CreateGeneralSectorsData();
-		}
-
-		if ( players[ consoleplayer ].mo != players[ consoleplayer ].Camera ) {
-			vector3 camerapos = players[ consoleplayer ].Camera.pos;
-			SendNetworkEvent( "mcm_weathremum_SetCameraXYZ", int( camerapos.x ), int( camerapos.y ), int( camerapos.z ) );
-
-		} else if ( playerHandlers[ consoleplayer ].useMultiplayerPos ) {
-			SendNetworkEvent( "mcm_weathremum_CancelCameraXYZ" );
-
 		}
 
 		if ( W2Global.GetLoglevel() >= LL_Debug ) {
@@ -317,15 +309,6 @@ class WeathremumHandler: EventHandler {
 	}
 
 	override void NetworkProcess( ConsoleEvent e ) {
-		if ( !e.IsManual && multiplayer ) {
-			if ( e.Name == "mcm_weathremum_SetCameraXYZ" ) {
-				playerHandlers[ e.Player ].useMultiplayerPos = true;
-				playerHandlers[ e.Player ].multiplayerPos = ( e.args[ 0 ], e.args[ 1 ], e.args[ 2 ] );
-			} else if ( e.Name == "mcm_weathremum_CancelCameraXYZ" ) {
-				playerHandlers[ e.Player ].useMultiplayerPos = false;
-			}
-		}
-
 		/*if ( e.Name ~== "test_turn180" ) {
 			players[ e.Player ].mo.angle = ( players[ e.Player ].mo.angle + 180.0 ) % 360.0;
 		} else if ( e.Name ~== "test_turnto" ) {

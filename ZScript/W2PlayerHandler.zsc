@@ -1,9 +1,7 @@
 // Weathremum handler for each player.
+// [McM]: Inherited from Thinker for the "profilethinkers" CCMD.
 
-class W2PlayerHandler: Actor {
-	bool useMultiplayerPos;
-	vector3 multiplayerPos;
-
+class W2PlayerHandler: Thinker {
 	W2LevelGeneralData w2level;
 
 	Array<W2SoundKeeper> sndkeepers;
@@ -12,17 +10,10 @@ class W2PlayerHandler: Actor {
 	Array<Line> corniceLines;			// Lines between outdoor and indoor areas.
 	Array<Line> cliffLines;
 
-	// "target" is an actor to follow (updates every "Tick()").
-
-	Default {
-		+NOINTERACTION; // Implies +NOGRAVITY and +NOBLOCKMAP.
-		+DONTSPLASH;
-		+NOTONAUTOMAP;
-	}
-
-	override void BeginPlay() {
-		useMultiplayerPos = false;
-	}
+	vector3 pos;
+	int targetPlayerNum;
+	Actor master; // Player.
+	Actor target; // An actor to follow (player or his camera).
 
 
 	void DoSectorEffects( void ) {
@@ -32,11 +23,11 @@ class W2PlayerHandler: Actor {
 		// Picking up and applying a current player sector sound type:
 		EWeathremumSectorType tCursector = W2ST_None;
 
-		if ( ceilingsector ) {
-			tCursector = w2level.allSectorsData[ ceilingsector.Index() ].w2type;
+		if ( target.ceilingsector ) {
+			tCursector = w2level.allSectorsData[ target.ceilingsector.Index() ].w2type;
 
 			if ( tCursector != W2ST_None ) {
-				vector3 newpos = ( pos.xy + (6.0, 0.0), floorz );
+				vector3 newpos = ( pos.xy + (6.0, 0.0), target.floorz );
 
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Left );
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Right );
@@ -47,7 +38,7 @@ class W2PlayerHandler: Actor {
 		// Searching for all types of the defined surfaces around player:
 
 		// Second argument is an environment test radius.
-		BlockLinesIterator it = BlockLinesIterator.Create( self, 768 );
+		BlockLinesIterator it = BlockLinesIterator.Create( target, 768 );
 
 		while ( it.Next() ) {
 			Line l = it.curline;
@@ -135,8 +126,8 @@ class W2PlayerHandler: Actor {
 
 				if ( secdata.GetHeight() > 8.0 ) {
 					Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_Raindrop", ( raindropPos, pos.z ) ) );
-					raindrop.target = target;
-					raindrop.master = self;
+
+					raindrop.master = raindrop.target = target;
 					raindrop.w2level = w2level;
 				}
 			} // of if ( raindropSector && raindropSector.GetTexture( Sector.CEILING ) == skyflatnum ) {}
@@ -171,7 +162,7 @@ class W2PlayerHandler: Actor {
 					Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + ldata.deltadir * FRandom( 0.0, ldata.linelen ), minspawnheight ) ) );
 
 					raindrop.vel.xy = ldata.corniceDir * FRandom( 0.0, ( windProjection + 0.3 ) * 3.0 ); // Yes, "windProjection" may be less than zero.
-					raindrop.master = target;
+					raindrop.master = raindrop.target = target;
 					raindrop.w2level = w2level;
 				}
 			}
@@ -202,7 +193,7 @@ class W2PlayerHandler: Actor {
 				Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + ldata.deltadir * FRandom( 0.0, ldata.linelen ) + ldata.cliffDir, maxspawnheight ) ) );
 
 				raindrop.vel.xy = ldata.cliffDir * FRandom( 0.0, ( ( windProjection + 0.8 ) * 2.0 ) );
-				raindrop.master = target;
+				raindrop.master = raindrop.target = target;
 				raindrop.w2level = w2level;
 			}
 		} // of for ( int i = 0; i < cliffLines.Size(); i++ ) {}
@@ -211,31 +202,22 @@ class W2PlayerHandler: Actor {
 
 
 	override void Tick() {
-		PlayerInfo pl = players[ FriendPlayer ];
+		PlayerInfo pl = players[ targetPlayerNum ];
 
-		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo || FriendPlayer != consoleplayer || globalfreeze || level.frozen )
+		if ( !playeringame[ targetPlayerNum ] || !pl.mo || targetPlayerNum != consoleplayer )
 			return;
 
-		target = pl.mo;
+		master = pl.mo;
 
-		if ( !target ) {
-			W2Global.Log( LL_Main, GetClassName() .. "::Tick(). Target player " .. FriendPlayer .. " disappeared, destroying self." );
+		if ( !master ) {
+			W2Global.Log( LL_Main, GetClassName() .. "::Tick(). Target player " .. targetPlayerNum .. " disappeared, destroying self." );
 			Destroy();
 			Super.Tick();
 		}
 
-		vector3 newpos;
-
-		if ( !multiplayer )
-			newpos = ( pl.Camera? pl.Camera.pos : target.pos );
-		else
-			newpos = ( useMultiplayerPos? multiplayerPos : target.pos );
-
-		//console.printf( "W2PlH <" .. self .. "> pos: Cam " .. ( pl.Camera? pl.Camera .. " (\"" .. pl.Camera.GetClassName() .. "\")" : "NULL" ) .. ", pos " .. newpos );
-
-		// Move the handler actor to the camera position:
-		SetOrigin( newpos, true );
-		angle = target.angle; // Singleplayer-aware!!
+		target = ( master.player.Camera? master.player.Camera : master );
+		pos = target.pos;
+		//console.printf( "W2PlH <" .. self .. "> pos: Cam " .. ( pl.Camera? pl.Camera .. " (\"" .. pl.Camera.GetClassName() .. "\")" : "NULL" ) .. ", pos " .. pos );
 
 
 		// Sound keepers pre-tick handling:
@@ -251,8 +233,6 @@ class W2PlayerHandler: Actor {
 
 		//int a = 0.123456; // Next line is for debug (uncomment lines above):
 		//sndkeepers[ W2ST_NormalSurface ].PostTick();
-
-		Super.Tick();
-	}
+	} // of override void Tick() {}
 
 } // of class W2PlayerHandler: Actor {}

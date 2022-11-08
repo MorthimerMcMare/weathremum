@@ -48,11 +48,6 @@ class Weathremum_Raindrop: Actor {
 		//if ( !cursector || ( ceilingpic != skyflatnum ) )
 		//	Destroy();
 
-		//console.printf( self .. ". master.FriendPlayer != consoleplayer: "  .. master.FriendPlayer .. "!=" .. consoleplayer );
-
-		if ( master.FriendPlayer != consoleplayer )
-			bINVISIBLE = true;
-
 		double minspawnheight = ( master? min( ceilingz, target.pos.z + target.height + 192.0 ) : ceilingz );
 
 		SetZ( minspawnheight - FRandom( 8.0, 25.0 ) );
