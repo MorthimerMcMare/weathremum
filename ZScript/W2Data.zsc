@@ -102,13 +102,12 @@ class W2LinedefData {
 	static W2LinedefData Create( Line initLinedef ) {
 		W2LinedefData newdata = new( 'W2LinedefData' );
 		newdata.l = initLinedef;
+		newdata.isCornice = false;
+
 		newdata.linelen = initLinedef.delta.Length();
 		newdata.deltadir = initLinedef.delta / newdata.linelen;
-
 		newdata.frontdir = (-newdata.deltadir.y, newdata.deltadir.x); // +90 degrees rotation.
-
 		newdata.midpoint = ( initLinedef.v1.p + initLinedef.v2.p ) / 2.0;
-		newdata.isCornice = false;
 
 		return newdata;
 	}
@@ -157,9 +156,10 @@ class W2SoundKeeper play {
 		"Plastic surface"
 	};
 
-	Actor master;
-	double minlength[ W2SD_Quantity ];
+	Actor master; // Player itself;
+	Actor target; // Player or his camera.
 
+	double minlength[ W2SD_Quantity ];
 	vector3 minposxyz[ W2SD_Quantity ];
 	vector3 ppos;
 
@@ -234,7 +234,7 @@ class W2SoundKeeper play {
 		// Belonging of the sound origin (to left/to right from current player):
 		// TODO: use linedef half planes clipping on found point, not on vertices!!
 		if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {
-			vector2 vec2plleft = master.AngleToVector( master.angle - 90.0, 1.0 );
+			vector2 vec2plleft = target.AngleToVector( target.angle - 90.0, 1.0 );
 
 			double v1leftProjection = ( ( plp - v1p ) dot vec2plleft );
 			double v2leftProjection = ( ( plp - v2p ) dot vec2plleft );
@@ -276,9 +276,16 @@ class W2SoundKeeper play {
 
 	void PreTick( void ) {
 		minlength[ W2SD_Left ] = minlength[ W2SD_Right ] = 999.9;
-		ppos = master.pos + (0.0, 0.0, master.player.ViewHeight);
 
-		minposxyz[ W2SD_Left ] = minposxyz[ W2SD_Right ] = (0.0, 0.0, -32767.0);
+		if ( master.player.Camera ) {
+			target = master.player.Camera;
+			ppos = target.pos + (0.0, 0.0, ( target.player? target.player.ViewHeight : target.CameraHeight ));
+		} else {
+			target = master;
+			ppos = master.pos + (0.0, 0.0, master.player.ViewHeight);
+		}
+
+		minposxyz[ W2SD_Left ] = minposxyz[ W2SD_Right ] = (0.0, 0.0, -32760.0);
 
 		// Suggest potential excess sounds to stop:
 		if ( status == W2HS_Active )
@@ -305,7 +312,7 @@ class W2SoundKeeper play {
 
 				for ( int j = 0; j < W2SD_Quantity; j++ ) {
 					W2SoundOrigin sndactor = sndorigin[ j ] = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( 0.0, 0.0, 0.0 ) ) );
-					sndactor.target = master; // Player.
+					sndactor.target = target; // Player or his camera.
 					sndactor.seq = sndactor.StartSoundSequence( sndname, SeqNode.ENVIRONMENT );
 				}
 
@@ -320,7 +327,7 @@ class W2SoundKeeper play {
 			double adjustedlen[ W2SD_Quantity ];
 
 			for ( int dir = 0; dir < W2SD_Quantity; dir++ )
-				anglediff[ dir ] = ( atan2( minposxyz[ dir ].y - ppos.y, minposxyz[ dir ].x - ppos.x ) - master.angle ) % 360.0;
+				anglediff[ dir ] = ( atan2( minposxyz[ dir ].y - ppos.y, minposxyz[ dir ].x - ppos.x ) - target.angle ) % 360.0;
 
 			adjustedlen[ W2SD_Left ] = minlength[ W2SD_Left ] * GetSoundAngleDistMul( anglediff[ W2SD_Left ] );
 			adjustedlen[ W2SD_Right ] = minlength[ W2SD_Right ] * GetSoundAngleDistMul( anglediff[ W2SD_Right ] + 180.0 );
@@ -339,8 +346,8 @@ class W2SoundKeeper play {
 			}
 
 			// TODO: "pos.z" coordinate based on the closest (?) sector in current group.
-			sndorigin[ W2SD_Left ].SetOrigin( ( master.Vec2Angle( minlength[ W2SD_Left ], master.angle + 90.0 ), master.pos.z ), true );
-			sndorigin[ W2SD_Right ].SetOrigin( ( master.Vec2Angle( minlength[ W2SD_Right ], master.angle - 90.0 ), master.pos.z ), true );
+			sndorigin[ W2SD_Left ].SetOrigin( ( target.Vec2Angle( minlength[ W2SD_Left ], target.angle + 90.0 ), target.pos.z ), true );
+			sndorigin[ W2SD_Right ].SetOrigin( ( target.Vec2Angle( minlength[ W2SD_Right ], target.angle - 90.0 ), target.pos.z ), true );
 
 		} else if ( status == W2HS_StopSuggestion ) {
 			// Wiping out too far sounds:

@@ -231,7 +231,7 @@ class W2PlayerHandler: Actor {
 		else
 			newpos = ( useMultiplayerPos? multiplayerPos : target.pos );
 
-		//console.printf( "W2PlH <" .. self .. "> target: <" .. target .. "> (Frnd <" .. pl.mo .. ">), useMultipl " .. useMultiplayerPos .. "-> " .. newpos );
+		//console.printf( "W2PlH <" .. self .. "> pos: Cam " .. ( pl.Camera? pl.Camera .. " (\"" .. pl.Camera.GetClassName() .. "\")" : "NULL" ) .. ", pos " .. newpos );
 
 		// Move the handler actor to the camera position:
 		SetOrigin( newpos, true );
