@@ -75,7 +75,7 @@ class Weathremum_Raindrop: Actor {
 		if ( w2type == W2ST_Water || w2type == W2ST_Nukage || w2type == W2ST_Incandecent ) {
 
 			if ( w2sector.w2type == W2ST_Water ) {
-				if ( target && Distance2D( target ) <= 512.0 ) {
+				if ( target && Distance2D( target ) <= 512.0 && target.pos.z > pos.z - 64.0 ) {
 					for ( int i = 0; i < 3; i++ )
 						Actor.Spawn( "Weathremum_WaterRipple", pos + ( FRandom( -4.0, 4.0 ), FRandom( -4.0, 4.0 ), 0.0 ) );
 				}
@@ -107,6 +107,11 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	void RaindropSplash( void ) {
+		if ( target.pos.z < pos.z - 64.0 ) {
+			Destroy();
+			return;
+		}
+
 		if ( w2sector && ( w2sector.w2type == W2ST_RockSurface || w2sector.w2type == W2ST_MetalSurface ) ) {
 			Actor.Spawn( "Weathremum_HardSurfaceRaindropBreak", pos + ( FRandom( -4.0, 4.0 ), FRandom( -4.0, 4.0 ), 0.0 ) );
 

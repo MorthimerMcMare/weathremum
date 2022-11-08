@@ -23,11 +23,12 @@ class W2PlayerHandler: Thinker {
 		// Picking up and applying a current player sector sound type:
 		EWeathremumSectorType tCursector = W2ST_None;
 
-		if ( target.ceilingsector ) {
-			tCursector = w2level.allSectorsData[ target.ceilingsector.Index() ].w2type;
+		if ( target.cursector ) {
+			tCursector = w2level.allSectorsData[ target.cursector.Index() ].w2type;
 
 			if ( tCursector != W2ST_None ) {
-				vector3 newpos = ( pos.xy + (6.0, 0.0), target.floorz );
+				double floorz = target.cursector.floorplane.d * target.cursector.floorplane.negiC;
+				vector3 newpos = ( target.Vec2Angle( 6.0, target.angle + 90.0 ), floorz );
 
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Left );
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Right );
