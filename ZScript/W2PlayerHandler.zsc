@@ -21,14 +21,17 @@ class W2PlayerHandler: Thinker {
 		cliffLines.Clear();
 
 		// Picking up and applying a current player sector sound type:
-		EWeathremumSectorType tCursector = W2ST_None;
+		EWeathremumAreaType aCursector = W2ST_None;
 
 		if ( target.cursector ) {
-			tCursector = w2level.allSectorsData[ target.cursector.Index() ].w2type;
+			W2SectorData secdata = w2level.GetSectorData( target.cursector );
+			aCursector = secdata.w2area;
 
-			if ( tCursector != W2ST_None ) {
+			if ( aCursector == W2AT_Outdoors ) {
 				double floorz = target.cursector.floorplane.d * target.cursector.floorplane.negiC;
-				vector3 newpos = ( target.Vec2Angle( 6.0, target.angle + 90.0 ), floorz );
+				vector3 newpos = ( target.Vec2Angle( 32.0, target.angle + 90.0 ), floorz );
+
+				EWeathremumSectorType tCursector = secdata.w2type;
 
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Left );
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Right );
@@ -55,23 +58,27 @@ class W2PlayerHandler: Thinker {
 			W2SectorData backsecdata = NULL;
 			EWeathremumSectorType tfront = W2ST_None;
 			EWeathremumSectorType tback = W2ST_None;
+			EWeathremumAreaType afront = W2AT_None;
+			EWeathremumAreaType aback = W2AT_None;
 
 			W2LinedefData ldata = w2level.GetLinedefData( l );
 
 			if ( frontsec ) {
 				frontsecdata = w2level.GetSectorData( frontsec );
 				tfront = frontsecdata.w2type;
+				afront = frontsecdata.w2area;
 			}
 			if ( backsec ) {
 				backsecdata = w2level.GetSectorData( backsec );
 				tback = backsecdata.w2type;
+				aback = backsecdata.w2area;
 			}
 
 			// Try to find a minimal length for the current sound:
-			if ( tfront != W2ST_None && frontsecdata.GetHeight() > 1.0 /*&& tfront != tCursector*/ )
+			if ( afront == W2AT_Outdoors && frontsecdata.GetHeight() > 2.0 /*&& tfront != tCursector*/ )
 				sndkeepers[ tfront ].SuggestLine( ldata, frontsec );
 
-			if ( tback != W2ST_None && tback != tfront && backsecdata.GetHeight() > 1.0 /*&& tback != tCursector*/ )
+			if ( aback == W2AT_Outdoors && aback != afront && backsecdata.GetHeight() > 2.0 /*&& tback != tCursector*/ )
 				sndkeepers[ tback ].SuggestLine( ldata, backsec );
 
 
@@ -86,12 +93,12 @@ class W2PlayerHandler: Thinker {
 					corniceLines.Push( l );
 
 					if ( min( ldata.fceilz, ldata.bceilz ) > pos.z - 256.0
-						 && (  ( tfront > W2ST_NextToOutdoor && cliffdelta > 16.0 )
-							|| ( tback > W2ST_NextToOutdoor && cliffdelta < -16.0 )
+						 && (  ( afront >= W2AT_Cornice && cliffdelta > 16.0 )
+							|| ( aback >= W2AT_Cornice && cliffdelta < -16.0 )
 						) )
 						isCliff = true;
 
-				} else if ( tfront > W2ST_NextToOutdoor && tback > W2ST_NextToOutdoor && abs( cliffdelta ) > 16.0 ) {
+				} else if ( afront >= W2AT_Cornice && aback >= W2AT_Cornice && abs( cliffdelta ) > 16.0 ) {
 					isCliff = true;
 				}
 

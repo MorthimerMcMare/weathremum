@@ -2,14 +2,17 @@ version "3.3.0"
 
 #include "ZScript/W2Util.zsc"
 #include "ZScript/W2Data.zsc"
+#include "ZScript/W2DListTexCache.zsc"
 #include "ZScript/W2PlayerHandler.zsc"
 #include "ZScript/W2AmbientActors.zsc"
 
-const WeathremumVersion = "0.3a";
+const WeathremumVersion = "0.31a";
 
 
 class WeathremumHandler: EventHandler {
 	bool mustCreateGeneralSectorsData;		// "PlayerEntered()" is called before "WorldLoaded()".
+
+	WeathremumCacheTextureKeeper texturesCache;
 
 	W2LevelGeneralData w2level;
 	W2PlayerHandler playerHandlers[ MAXPLAYERS ], initCurW2PlayerHandler;
@@ -28,6 +31,7 @@ class WeathremumHandler: EventHandler {
 
 		mustCreateGeneralSectorsData = true;
 		w2level = new( 'W2LevelGeneralData' );
+		texturesCache = WeathremumCacheTextureKeeper.CreateKeeper();
 
 		W2Global.Log( LL_Detailed, "Weathremum v" .. WeathremumVersion .. " handler initialized." );
 
@@ -39,7 +43,7 @@ class WeathremumHandler: EventHandler {
 		W2SectorData closeSectorData = w2level.allSectorsData[ ls.Index() ];
 
 		if ( ls.GetTexture( Sector.ceiling ) != skyflatnum ) {
-			closeSectorData.w2type = W2ST_NextToOutdoor;
+			closeSectorData.w2area = W2AT_NextToOutdoor;
 
 			W2LinedefData ldata = w2level.GetLinedefData( curline );
 			ldata.isCornice = true;
@@ -56,90 +60,97 @@ class WeathremumHandler: EventHandler {
 		w2secdata.lastFloorTexture = sec.GetTexture( Sector.FLOOR );
 
 		EWeathremumSectorType w2oldSectype = w2secdata.w2type;
-
 		w2secdata.w2type = W2ST_Default;
 
+		WeathremumCacheTexture texcache = texturesCache.Update( w2secdata.lastFloorTexture );
+
 		// Understanding the sector floor terrain Weathremum type:
-		String floorTexName = TexMan.GetName( w2secdata.lastFloorTexture );
-		String floorTexNameLeft4 = floorTexName.Left( 4 );
-		String floorTexNameLeft5 = floorTexName.Left( 5 );
-		String floorTexNameLeft6 = floorTexName.Left( 6 );
+		if ( texcache.w2type != W2ST_None ) {
+			w2secdata.w2type = texcache.w2type;
+		} else {
+			String floorTexName = TexMan.GetName( w2secdata.lastFloorTexture );
+			String floorTexNameLeft4 = floorTexName.Left( 4 );
+			String floorTexNameLeft5 = floorTexName.Left( 5 );
+			String floorTexNameLeft6 = floorTexName.Left( 6 );
 
-		bool isSlime00Slime08 = ( floorTexNameLeft6 == "SLIME0" && floorTexName.CharCodeAt( 6 ) <= 0x38 );
+			bool isSlime00Slime08 = ( floorTexNameLeft6 == "SLIME0" && floorTexName.CharCodeAt( 6 ) <= 0x38 );
 
-		if ( floorTexNameLeft6 == "FWATER" || ( isSlime00Slime08 && sec.damageamount ) ) {
-			w2secdata.w2type = W2ST_Water;
+			if ( floorTexNameLeft6 == "FWATER" || ( isSlime00Slime08 && sec.damageamount ) ) {
+				w2secdata.w2type = W2ST_Water;
 
-		} else if ( floorTexNameLeft5 == "METAL" ) {
-			w2secdata.w2type = W2ST_MetalSurface;
-
-		} else if ( floorTexNameLeft5 == "FLOOR" ) {
-			String postfix = floorTexName.Mid( 5, 3 );
-
-			if ( postfix == "0_5" || postfix == "0_6" || postfix == "0_7" || postfix == "3_3" || postfix == "4_8" || postfix == "5_1" )
+			} else if ( floorTexNameLeft5 == "METAL" ) {
 				w2secdata.w2type = W2ST_MetalSurface;
 
-		} else if ( floorTexName == "GATE4" || floorTexName == "SLIME14" || floorTexName == "SLIME15" || floorTexName == "SLIME16" || floorTexNameLeft4 == "STEP" || floorTexName == "CEIL3_5" || floorTexName == "CEIL3_6" || floorTexName == "CEIL1_2" ) {
-			w2secdata.w2type = W2ST_MetalSurface;
+			} else if ( floorTexNameLeft5 == "FLOOR" ) {
+				String postfix = floorTexName.Mid( 5, 3 );
 
-		} else if ( floorTexName == "FLOOR4_6" ) {
-			w2secdata.w2type = W2ST_PlasticSurface;
+				if ( postfix == "0_5" || postfix == "0_6" || postfix == "0_7" || postfix == "3_3" || postfix == "4_8" || postfix == "5_1" )
+					w2secdata.w2type = W2ST_MetalSurface;
 
-		} else if ( floorTexNameLeft4 == "FLAT" ) {
-			String postfix = floorTexName.Mid( 4, 3 );
-
-			if ( postfix == "20" || postfix == "22" || postfix == "23" || postfix == "3" || postfix == "4" )
+			} else if ( floorTexName == "GATE4" || floorTexName == "SLIME14" || floorTexName == "SLIME15" || floorTexName == "SLIME16" || floorTexNameLeft4 == "STEP" || floorTexName == "CEIL3_5" || floorTexName == "CEIL3_6" || floorTexName == "CEIL1_2" ) {
 				w2secdata.w2type = W2ST_MetalSurface;
-			else if ( postfix == "1" || postfix == "17" || postfix == "18" || postfix == "19" || postfix == "2" || postfix == "9" )
+
+			} else if ( floorTexName == "FLOOR4_6" ) {
 				w2secdata.w2type = W2ST_PlasticSurface;
-			else if ( postfix == "10" || postfix == "14" || postfix == "5_5" || postfix == "8" )
+
+			} else if ( floorTexNameLeft4 == "FLAT" ) {
+				String postfix = floorTexName.Mid( 4, 3 );
+
+				if ( postfix == "20" || postfix == "22" || postfix == "23" || postfix == "3" || postfix == "4" )
+					w2secdata.w2type = W2ST_MetalSurface;
+				else if ( postfix == "1" || postfix == "17" || postfix == "18" || postfix == "19" || postfix == "2" || postfix == "9" )
+					w2secdata.w2type = W2ST_PlasticSurface;
+				else if ( postfix == "10" || postfix == "14" || postfix == "5_5" || postfix == "8" )
+					w2secdata.w2type = W2ST_SoftSurface;
+
+			} else if ( floorTexNameLeft5 == "GRASS" ) {
 				w2secdata.w2type = W2ST_SoftSurface;
 
-		} else if ( floorTexNameLeft5 == "GRASS" ) {
-			w2secdata.w2type = W2ST_SoftSurface;
+			} else if ( floorTexNameLeft5 == "SLIME" || floorTexNameLeft5 == "RROCK" ) {
+				int texSubindex = floorTexName.Mid( 5, 2 ).ToInt();
 
-		} else if ( floorTexNameLeft5 == "SLIME" || floorTexNameLeft5 == "RROCK" ) {
-			int texSubindex = floorTexName.Mid( 5, 2 ).ToInt();
+				if (     isSlime00Slime08
+					|| ( floorTexNameLeft5 == "SLIME" && texSubindex >= 9 && texSubindex <= 12 )
+					|| ( floorTexNameLeft5 == "RROCK" && texSubindex <= 8 && texSubindex != 3 && texSubindex != 4 ) ) {
+					w2secdata.w2type = W2ST_Incandecent;
 
-			if (     isSlime00Slime08
-				|| ( floorTexNameLeft5 == "SLIME" && texSubindex >= 9 && texSubindex <= 12 )
-				|| ( floorTexNameLeft5 == "RROCK" && texSubindex <= 8 && texSubindex != 3 && texSubindex != 4 ) ) {
+				} else if ( floorTexNameLeft5 == "RROCK" ) {
+					w2secdata.w2type = W2ST_RockSurface;
+				}
+
+			} else if ( floorTexName == "GRNROCK" ) {
+				w2secdata.w2type = W2ST_RockSurface;
+
+			} else if ( floorTexNameLeft6 == "MFLR8_" ) {
+				String postfix = floorTexName.Mid( 6, 1 );
+
+				if ( postfix == "1" || postfix == "3" )
+					w2secdata.w2type = W2ST_RockSurface;
+				else
+					w2secdata.w2type = W2ST_SoftSurface;
+
+			} else if ( floorTexNameLeft4 == "SFLR" ) {
+				w2secdata.w2type = W2ST_SoftSurface;
+
+			} else if ( floorTexNameLeft4 == "LAVA" ) {
 				w2secdata.w2type = W2ST_Incandecent;
 
-			} else if ( floorTexNameLeft5 == "RROCK" ) {
-				w2secdata.w2type = W2ST_RockSurface;
+			} else if ( floorTexNameLeft5 == "BLOOD" || floorTexNameLeft6 == "NUKAGE" ) {
+				w2secdata.w2type = W2ST_Nukage;
+
+			} else if ( floorTexNameLeft6 == "F_SKY1" ) {
+				w2secdata.w2type = W2ST_Void;
+
 			}
 
-		} else if ( floorTexName == "GRNROCK" ) {
-			w2secdata.w2type = W2ST_RockSurface;
-
-		} else if ( floorTexNameLeft6 == "MFLR8_" ) {
-			String postfix = floorTexName.Mid( 6, 1 );
-
-			if ( postfix == "1" || postfix == "3" )
-				w2secdata.w2type = W2ST_RockSurface;
-			else
-				w2secdata.w2type = W2ST_SoftSurface;
-
-		} else if ( floorTexNameLeft4 == "SFLR" ) {
-			w2secdata.w2type = W2ST_SoftSurface;
-
-		} else if ( floorTexNameLeft4 == "LAVA" ) {
-			w2secdata.w2type = W2ST_Incandecent;
-
-		} else if ( floorTexNameLeft5 == "BLOOD" || floorTexNameLeft6 == "NUKAGE" ) {
-			w2secdata.w2type = W2ST_Nukage;
-
-		} else if ( floorTexNameLeft6 == "F_SKY1" ) {
-			w2secdata.w2type = W2ST_None;
-
+			texcache.w2type = w2secdata.w2type;
 		}
 
 		if ( W2Global.GetLoglevel() >= LL_Debug ) {
-			String w2oldSectypeName = ( w2oldSectype != W2ST_None? W2SoundKeeper.WeathremumSectorTypeNames[ w2oldSectype ] : TEXTCOLOR_RED .. "<None>" .. LLCOLOR_DEBUG );
-			String w2newSectypeName = ( w2secdata.w2type != W2ST_None? W2SoundKeeper.WeathremumSectorTypeNames[ w2secdata.w2type ] : TEXTCOLOR_RED .. "<None>" .. LLCOLOR_DEBUG );
+			String w2oldSectypeName = ( w2oldSectype != W2ST_None? TEXTCOLOR_GRAY .. W2SoundKeeper.WeathremumSectorTypeNames[ w2oldSectype ] .. LLCOLOR_DEBUG : "<None>" );
+			String w2newSectypeName = ( w2secdata.w2type != W2ST_None? TEXTCOLOR_GRAY .. W2SoundKeeper.WeathremumSectorTypeNames[ w2secdata.w2type ] .. LLCOLOR_DEBUG : "<None>" );
 
-			W2Global.ClearscopeLog( LL_Debug, GetClassName() .. "::UpdateW2SectorSurfaceType(). Updated sector #" .. sec.Index() .. " from \"" .. w2oldSectypeName .. "\" (" .. w2oldSectype .. ") to \"" .. w2newSectypeName .. "\" (" .. w2secdata.w2type .. ")." );
+			W2Global.ClearscopeLog( LL_Debug, GetClassName() .. "::UpdateW2SectorSurfaceType(). Sector #" .. sec.Index() .. ", from \"" .. w2oldSectypeName .. "\" (" .. w2oldSectype .. ") to \"" .. w2newSectypeName .. "\" (" .. w2secdata.w2type .. ")." );
 		}
 	} // of void UpdateW2SectorSurfaceType( out W2SectorData w2secdata, Sector sec ) {}
 
@@ -149,6 +160,7 @@ class WeathremumHandler: EventHandler {
 
 		w2level.allSectorsData.Clear();
 		w2level.allLinedefsData.Clear();
+		texturesCache.Clear();
 
 		// Save all of the level lines and sectors for the quick index-based
 		//access. Filled up before any other operations because the next ones
@@ -165,12 +177,14 @@ class WeathremumHandler: EventHandler {
 		for ( int i = 0; i < level.sectors.Size(); i++ ) {
 			//console.printf( "Sector " .. i .. ": " .. level.Sectors[ i ].GetTexture( Sector.ceiling ) .. "." );
 			Sector s = level.Sectors[ i ];
+			W2SectorData secdataOutdoor = w2level.allSectorsData[ i ];
+
+			if ( secdataOutdoor.w2area == W2AT_None )
+				secdataOutdoor.w2area = W2AT_Indoor;
 
 			if ( s.GetTexture( Sector.CEILING ) == skyflatnum ) {
-				W2SectorData secdataOutdoor = w2level.allSectorsData[ i ];
-
 				// Setting relationship to neighbour sectors:
-				secdataOutdoor.w2type = W2ST_NormalSurface;
+				secdataOutdoor.w2area = W2AT_Outdoor;
 
 				for ( int j = 0; j < s.Lines.Size(); j++ ) {
 					Line l = s.Lines[ j ];
@@ -183,11 +197,10 @@ class WeathremumHandler: EventHandler {
 
 					if ( lsector && lsector != s )
 						setNextToOutdoorSectorData( l, lsector );
-				}
-
-				UpdateW2SectorSurfaceType( secdataOutdoor, s );
-
+				} // of for ( int j = 0; j < s.Lines.Size(); j++ ) {}
 			} // of if ( s.GetTexture( Sector.ceiling ) == skyflatnum ) {}
+
+			UpdateW2SectorSurfaceType( secdataOutdoor, s );
 
 		} // of for ( int i = 0; i < level.Sectors.Size(); i++ ) {}
 
@@ -229,15 +242,15 @@ class WeathremumHandler: EventHandler {
 			initCurW2SurfaceType = W2ST_None;
 
 			// Based on the both of SNDINFO and SNDSEQ.
-			pushSound( "weather/wind(x)" );
-			pushSound( "weathremum/rain/default" );             // W2ST_NormalSurface,  
-			pushSound( "weathremum/rainsurface/soft" );         // W2ST_SoftSurface,	
-			pushSound( "weathremum/rain/heavy" );               // W2ST_Water,			
-			pushSound( "weathremum/rain/default" );             // W2ST_Nukage,		    
-			pushSound( "weathremum/rainsurface/incandescent" ); // W2ST_Incandecent,	
-			pushSound( "weathremum/rainsurface/rock" );         // W2ST_RockSurface,	
-			pushSound( "weathremum/rainsurface/metal" );        // W2ST_MetalSurface,   
-			pushSound( "weathremum/rainsurface/plasticglass" ); // W2ST_PlasticSurface, 
+			pushSound( "nothing" );                             // W2ST_Void,          
+			pushSound( "weathremum/rain/default" );             // W2ST_NormalSurface, 
+			pushSound( "weathremum/rainsurface/soft" );         // W2ST_SoftSurface,   
+			pushSound( "weathremum/rain/heavy" );               // W2ST_Water,		   
+			pushSound( "weathremum/rain/default" );             // W2ST_Nukage,		   
+			pushSound( "weathremum/rainsurface/incandescent" ); // W2ST_Incandecent,   
+			pushSound( "weathremum/rainsurface/rock" );         // W2ST_RockSurface,   
+			pushSound( "weathremum/rainsurface/metal" );        // W2ST_MetalSurface,  
+			pushSound( "weathremum/rainsurface/plasticglass" ); // W2ST_PlasticSurface,
 
 			playerHandlers[ e.PlayerNumber ] = initCurW2PlayerHandler;
 
@@ -256,27 +269,27 @@ class WeathremumHandler: EventHandler {
 			CreateGeneralSectorsData();
 		}
 
-		if ( W2Global.GetLoglevel() >= LL_Debug ) {
+		if ( W2Global.GetLoglevel() >= LL_Detailed ) {
 	        FLineTraceData ptrace;
 			PlayerPawn pl = players[ 0 ].mo;
 
-			pl.LineTrace( pl.angle, 256, pl.pitch, data: ptrace );
+			pl.LineTrace( pl.angle, 256, pl.pitch, offsetz: players[ 0 ].ViewHeight, data: ptrace );
 			debugTraceLineIndex = ( ptrace.hitLine? ptrace.hitLine.Index() : -1 );
 		}
 
+		// Pseudo-non-blocking updating surface data for all sectors:
 		for ( int i = 0; i < updateSectorsMaxTickAmount; i++ ) {
 			Sector s = level.sectors[ updateSectorCurIndex ];
 
-			if ( s.GetTexture( Sector.CEILING ) == skyflatnum ) {
-				W2SectorData secdata = w2level.allSectorsData[ updateSectorCurIndex ];
+			W2SectorData secdata = w2level.allSectorsData[ updateSectorCurIndex ];
 
-				if ( secdata.lastFloorTexture != s.GetTexture( Sector.FLOOR ) )
-					UpdateW2SectorSurfaceType( secdata, s );
-			}
+			if ( secdata.lastFloorTexture != s.GetTexture( Sector.FLOOR ) )
+				UpdateW2SectorSurfaceType( secdata, s );
 
 			updateSectorCurIndex = ( updateSectorCurIndex + 1 ) % totalLevelSectors;
 		}
 
+		// Winds handling (synchronized between clients):
 		if ( --globalWindVectorChangeCountdown <= 0 ) {
 			w2level.globalWindVector.x = clamp( w2level.globalWindVector.x + FRandom( -1.0, 1.0 ), -5.0, 5.0 );
 			w2level.globalWindVector.y = clamp( w2level.globalWindVector.y + FRandom( -1.0, 1.0 ), -5.0, 5.0 );
@@ -327,9 +340,9 @@ class WeathremumHandler: EventHandler {
 			return;
 		}
 
-		W2SectorData secdata = ( playerhandler.floorsector? w2level.allSectorsData[ playerhandler.floorsector.Index() ] : NULL );
+		W2SectorData secdata = ( playerhandler.target.floorsector? w2level.allSectorsData[ playerhandler.target.floorsector.Index() ] : NULL );
 
-		String outStr = "Total sounds: " .. playerhandler.sndkeepers.Size() .. ".\n";
+		String outStr = "Total sounds: " .. playerhandler.sndkeepers.Size() .. ".\n\n";
 
 		for ( int i = 0; i < playerhandler.sndkeepers.Size(); i++ ) {
 			W2SoundKeeper curkeeper = playerhandler.sndkeepers[ i ];
@@ -368,18 +381,24 @@ class WeathremumHandler: EventHandler {
 						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
 		if ( secdata )
-			Screen.DrawText( smallfont, Font.CR_GRAY, 1100, 100, "Current sector: " .. secdata.s.Index(),
+			Screen.DrawText( smallfont, Font.CR_GRAY, 1050, 100, "Current sector: " .. secdata.s.Index() .. TEXTCOLOR_DARKGRAY .. " (areatype " .. secdata.w2area .. ")",
 							DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
-		if ( debugTraceLineIndex != -1 )
-			Screen.DrawText( smallfont, Font.CR_GRAY, 1100, 120, "Line ID: " .. debugTraceLineIndex,
+		if ( debugTraceLineIndex != -1 ) {
+			W2LinedefData ldata = w2level.allLinedefsData[ debugTraceLineIndex ];
+
+			Screen.DrawText( smallfont, Font.CR_GRAY, 1050, 110, "Line ID: " .. debugTraceLineIndex .. "; \n" .. TEXTCOLOR_BLUE .. 
+								" ceil: " .. TEXTCOLOR_SAPPHIRE .. "fz " .. ldata.fceilz .. ", bz " .. ldata.bceilz .. "\n" .. TEXTCOLOR_BROWN ..
+								" flr : " .. TEXTCOLOR_TAN .. "fz " .. ldata.ffloorz .. ", bz " .. ldata.bfloorz .. "\n" .. TEXTCOLOR_DARKGREEN ..
+								"zdiffs: floors " .. ldata.floorsdiffz .. ", ceils " .. ldata.ceilsdiffz,
 							DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
+		}
 
 		vector2 playerDir = Actor.AngleToVector( players[ consoleplayer ].mo.angle, 1.0 );
 
-		Screen.DrawText( smallfont, Font.CR_CYAN, 1100, 140, "Global wind: " .. ( playerDir dot ( w2level.globalWindVector / w2level.globalWindVector.Length() ) ) .. ", " .. TEXTCOLOR_GRAY .. "len " .. w2level.globalWindVector.Length(),
+		Screen.DrawText( smallfont, Font.CR_CYAN, 1050, 160, "Global wind: " .. ( playerDir dot ( w2level.globalWindVector / w2level.globalWindVector.Length() ) ) .. ", " .. TEXTCOLOR_GRAY .. "len " .. w2level.globalWindVector.Length(),
 						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
-		Screen.DrawText( smallfont, Font.CR_DARKBROWN, 1100, 150, "Blow wind: " .. ( playerDir dot ( w2level.blowWindVector / w2level.blowWindVector.Length() ) ) .. ", " .. TEXTCOLOR_DARKGRAY .. "len " .. w2level.blowWindVector.Length(),
+		Screen.DrawText( smallfont, Font.CR_DARKBROWN, 1050, 170, "Blow wind: " .. ( playerDir dot ( w2level.blowWindVector / w2level.blowWindVector.Length() ) ) .. ", " .. TEXTCOLOR_DARKGRAY .. "len " .. w2level.blowWindVector.Length(),
 						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
 		Super.RenderOverlay( e );

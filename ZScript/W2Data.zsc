@@ -13,11 +13,23 @@ enum EWeathremumHandleStatus {
 	W2HS_StopSuggestion	// Pre-stop (must be changed to something else every "WorldTick()").
 }
 
+enum EWeathremumAreaType {
+	W2AT_None = -1,
+	W2AT_Indoors = 0,
+	W2AT_NextToOutdoor,
+	W2AT_Outdoors,
+
+	W2AT_Sill = W2AT_NextToOutdoor,
+	W2AT_Cornice = W2AT_NextToOutdoor,
+	W2AT_Indoor = W2AT_Indoors,
+	W2AT_Outdoor = W2AT_Outdoors
+}
+
 // Sector type changing may be checked in Doom 2 MAP20 or in Doom 1 E3M1.
 enum EWeathremumSectorType {
 	W2ST_None = -1,
-
-	W2ST_NextToOutdoor,	// Wind (on sills/cornices).
+	W2ST_Void = 0,		// Skybox floors.
+	//W2ST_NextToOutdoor,
 
 	W2ST_NormalSurface,
 	W2ST_SoftSurface,	// Grass, carpets, ...
@@ -32,7 +44,7 @@ enum EWeathremumSectorType {
 
 	W2ST_Normal = W2ST_NormalSurface,
 	W2ST_Default = W2ST_NormalSurface,
-	W2ST_Wind = W2ST_NextToOutdoor
+	//W2ST_Wind = W2ST_NextToOutdoor
 }
 
 enum EWeathremumSoundDirection {
@@ -64,6 +76,7 @@ class W2SectorData {
 	//Array<Line> lines;
 
 	EWeathremumSectorType w2type;
+	EWeathremumAreaType w2area;
 
 	TextureID lastFloorTexture;
 	//TextureID lastCeilingTexture;
@@ -72,6 +85,7 @@ class W2SectorData {
 		W2SectorData newdata = new( 'W2SectorData' );
 		newdata.s = initSector;
 		newdata.w2type = W2ST_None;
+		newdata.w2area = W2AT_None;
 
 		return newdata;
 	}
@@ -145,7 +159,7 @@ class W2SoundKeeper play {
 	W2SoundOrigin sndorigin[ W2SD_Quantity ];
 
 	static const String WeathremumSectorTypeNames[] = {
-		"(Cornice/Sill)",
+		"(Void)",
 		"Default",
 		"Soft",
 		"Water",
@@ -228,7 +242,7 @@ class W2SoundKeeper play {
 
 
 		for ( int dir = 0; dir < W2SD_Quantity; dir++ )
-			if ( minposxyz[ dir ].z > floorzdiff )
+			if ( floorzdiff < minposxyz[ dir ].z )
 				minposxyz[ dir ].z = floorzdiff;
 
 		// Belonging of the sound origin (to left/to right from current player):

@@ -1,0 +1,140 @@
+// Double-linked list ordered by use frequency.
+//Has been copied from Auto-Ambient Doom by Morthimer McMare.
+
+class WeathremumCacheTexture {
+	TextureID texID;
+	EWeathremumSectorType w2type;
+	uint frequency;
+
+	WeathremumCacheTexture next, prev;
+} // of class WeathremumCacheTexture {}
+
+class WeathremumCacheTextureKeeper play {
+	WeathremumCacheTexture head, tail, prevFound;
+
+	static WeathremumCacheTextureKeeper CreateKeeper( void ) {
+		WeathremumCacheTextureKeeper newKeeper = new( 'WeathremumCacheTextureKeeper' );
+		newKeeper.head = newKeeper.tail = NULL;
+
+		return newKeeper;
+	} // of static WeathremumCacheTextureKeeper CreateKeeper( void ) {}
+
+
+	private WeathremumCacheTexture Append( TextureID texID ) {
+		WeathremumCacheTexture newTextureCache = new( 'WeathremumCacheTexture' );
+
+		newTextureCache.texID = texID;
+		newTextureCache.w2type = W2ST_None;
+		newTextureCache.frequency = 1;
+		newTextureCache.next = NULL;
+
+		// Some textures definitions may break normal textureID handling. 
+		//Thanks to YURA_111 for the bug report.
+		String texName = TexMan.GetName( texID );
+
+		if ( !head ) {
+			head = tail = newTextureCache;
+		} else {
+			tail.next = newTextureCache;
+			newTextureCache.prev = tail;
+			tail = newTextureCache;
+		}
+
+		prevFound = newTextureCache;
+
+		return newTextureCache;
+	} // of private WeathremumCacheTexture Append( TextureID texID ) {}
+
+	WeathremumCacheTexture Update( TextureID texID ) {
+		WeathremumCacheTexture texCacheFound = head; // Found/updated texture cache node.
+		WeathremumCacheTexture prevFrequencyBlock = head;
+		int prevFrequency = -1;
+
+
+		if ( prevFound && prevFound.texID == texID ) {
+			//console.printf( "prevFound " .. prevFound .. ": (freq " .. prevFound.frequency .. ", texname " .. prevFound.texID .. "), must be (texname " .. texID .. ")" );
+			prevFrequencyBlock = texCacheFound = prevFound;
+
+			while ( prevFrequencyBlock && ( prevFrequencyBlock.frequency == texCacheFound.frequency ) )
+				prevFrequencyBlock = prevFrequencyBlock.prev;
+
+			if ( !prevFrequencyBlock )
+				prevFrequencyBlock = head;
+			else
+				prevFrequencyBlock = prevFrequencyBlock.next;
+
+			//console.printf( " \\_ prevFrequencyBlock end: " .. prevFrequencyBlock .. " (freq " .. prevFrequencyBlock.frequency .. ", texname " .. prevFrequencyBlock.texID .. ")" );
+		} else {
+			while ( texCacheFound && texCacheFound.texID != texID ) {
+				if ( prevFrequency != texCacheFound.frequency )
+					prevFrequencyBlock = texCacheFound;
+
+				prevFrequency = texCacheFound.frequency;
+				texCacheFound = texCacheFound.next;
+			}
+
+			//if ( texCacheFound )
+			//	console.printf( "NOT prevFound. texCacheFound " .. texCacheFound .. ": (freq " .. texCacheFound.frequency .. ", texname " .. texCacheFound.texID .. "), prevFrequencyBlock " .. prevFrequencyBlock .. ". Tex " .. texID );
+			//else
+			//	console.printf( "NOT prevFound. texCacheFound NULL, prevFrequencyBlock " .. prevFrequencyBlock .. ". Tex " .. texID );
+		}
+
+
+		if ( texCacheFound ) {
+			prevFound = texCacheFound;
+
+			texCacheFound.frequency++;
+
+			// If found is not a head, unlink it ("aaabbbcCcdd" -> "aaabbbccdd")
+			//and link closer to the list begin ("aaabbbccdd" -> "aaaBbbbccdd"):
+			if ( texCacheFound != head && prevFrequencyBlock.frequency < texCacheFound.frequency ) {
+				texCacheFound.prev.next = texCacheFound.next;
+
+				if ( texCacheFound.next )
+					texCacheFound.next.prev = texCacheFound.prev;
+				else
+					tail = texCacheFound.prev;
+
+				// Linking again:
+				texCacheFound.next = prevFrequencyBlock;
+				texCacheFound.prev = prevFrequencyBlock.prev;
+
+				texCacheFound.next.prev = texCacheFound;
+				if ( texCacheFound.prev )
+					texCacheFound.prev.next = texCacheFound;
+				else
+					head = texCacheFound;
+			}
+
+		} else {
+			texCacheFound = Append( texID );
+		}
+
+
+		/*
+		WeathremumCacheTexture debugTexCache = head;
+		console.printf( GetClassName() .. "::Update() end. head " .. head .. " <<->> tail " .. tail );
+		while ( debugTexCache ) {
+			console.printf( "Node " .. debugTexCache .. ": (freq " .. debugTexCache.frequency .. ", texname " .. debugTexCache.texID .. ". p<" .. debugTexCache.prev .. "/" .. debugTexCache.next .. ">n)" );
+			debugTexCache = debugTexCache.next;
+		}
+
+		console.printf( "" );
+		*/
+
+		return texCacheFound;
+	} // of WeathremumCacheTexture Update( TextureID texID ) {}
+
+
+	void Clear( void ) {
+		WeathremumCacheTexture curNode = head;
+		WeathremumCacheTexture prevNode;
+
+		while ( curNode ) {
+			prevNode = curNode;
+			curNode = curNode.next;
+			prevNode.Destroy();
+		}
+	} // of void Clear( void ) {}
+
+} // of WeathremumCacheTextureKeeper {}
