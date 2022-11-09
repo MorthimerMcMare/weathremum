@@ -346,8 +346,21 @@ class W2SoundKeeper play {
 			}
 
 			// TODO: "pos.z" coordinate based on the closest (?) sector in current group.
-			sndorigin[ W2SD_Left ].SetOrigin( ( target.Vec2Angle( minlength[ W2SD_Left ], target.angle + 90.0 ), target.pos.z ), true );
-			sndorigin[ W2SD_Right ].SetOrigin( ( target.Vec2Angle( minlength[ W2SD_Right ], target.angle - 90.0 ), target.pos.z ), true );
+			sndorigin[ W2SD_Left ].SetOrigin( ( target.Vec2Angle( minlength[ W2SD_Left ], target.angle + 90.0 ), target.pos.z ), false );
+			sndorigin[ W2SD_Right ].SetOrigin( ( target.Vec2Angle( minlength[ W2SD_Right ], target.angle - 90.0 ), target.pos.z ), false );
+
+			// Experimental: geometry must slightly mute any sounds.
+			/*for ( int dir = 0; dir < W2SD_Quantity; dir++ ) {
+				if ( !sndorigin[ dir ].CheckSight( target, SF_IGNOREVISIBILITY | SF_SEEPASTSHOOTABLELINES | SF_SEEPASTBLOCKEVERYTHING ) ) {
+					vector2 fromtarget = -sndorigin[ dir ].Vec2To( target );
+					double fromtargetlen = fromtarget.Length();
+
+					if ( fromtargetlen > 0.0 )
+						fromtarget = fromtarget / fromtargetlen;
+
+					sndorigin[ dir ].SetOrigin( sndorigin[ dir ].pos + ( 32.0 * fromtarget, 0.0 ), false );
+				}
+			}*/
 
 		} else if ( status == W2HS_StopSuggestion ) {
 			// Wiping out too far sounds:
