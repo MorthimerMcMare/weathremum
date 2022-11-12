@@ -8,6 +8,7 @@ class W2SoundOrigin: Actor {
 	Default {
 		+NOINTERACTION; // Implies +NOGRAVITY and +NOBLOCKMAP.
 		+DONTSPLASH;
+		+THRUACTORS;
 		//+NOTONAUTOMAP;
 		FloatBobPhase 0; // No more "FRandom pr_spawnmobj" desynchronizations!
 	}
@@ -32,6 +33,7 @@ class Weathremum_Raindrop: Actor {
 		+MISSILE;
 		-SOLID;
 		+NOBLOCKMAP;
+		+THRUACTORS; // No more "FRandom pr_reflect" ("Actor.BlockingMobj"/"AActor::AdjustReflectionAngle()") desynchronizations!
 		+NOTONAUTOMAP;
 		+DONTSPLASH;
 		+NOTELEPORT;
@@ -69,6 +71,9 @@ class Weathremum_Raindrop: Actor {
 			Destroy();
 			return;
 		}
+
+		//if ( BlockingMobj )
+		//	console.printf( "[Time " .. level.maptime .. "]. " .. GetClassName() .. "::Tick(). <" .. self .. "> BlockingMobj: " .. BlockingMobj );
 
 		Super.Tick();
 	}
