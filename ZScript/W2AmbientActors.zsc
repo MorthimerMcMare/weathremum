@@ -30,8 +30,9 @@ class Weathremum_Raindrop: Actor {
 	WeathremumUnsyncRandom rnd;
 
 	Default {
-		+MISSILE;
-		-SOLID;
+		//+MISSILE;
+		//-SOLID;
+		+NOINTERACTION;
 		+NOBLOCKMAP;
 		+THRUACTORS; // No more "FRandom pr_reflect" ("Actor.BlockingMobj"/"AActor::AdjustReflectionAngle()") desynchronizations!
 		+NOTONAUTOMAP;
@@ -67,16 +68,33 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	override void Tick() {
-		if ( master && pos.z - master.pos.z < -256.0 ) {
+		// Just emulating the base "AActor::Tick()".
+		if ( vel.xy != (0.0, 0.0) ) {
+			// This method also calls a "FindFloorCeiling()".
+			SetOrigin( pos + vel, false );
+		} else {
+			AddZ( vel.z );
+		}
+
+		if ( target && pos.z - target.pos.z < -256.0 ) {
 			Destroy();
 			return;
 		}
 
-		//if ( BlockingMobj )
-		//	console.printf( "[Time " .. level.maptime .. "]. " .. GetClassName() .. "::Tick(). <" .. self .. "> BlockingMobj: " .. BlockingMobj );
+		if ( pos.z <= floorz && !bCORPSE ) {
+			SetZ( floorz );
+			SetStateLabel( "Death" );
+			bCORPSE = true;
 
-		Super.Tick();
-	}
+		} else if ( tics != -1 ) {
+			if ( --tics <= 0 )
+				if ( !SetState( curState.NextState ) )
+					return;
+
+			//if ( BlockingMobj )
+			//	W2Global.Log( LL_Detailed, GetClassName() .. "::Tick(). " .. TEXTCOLOR_YELLOW .. "Syncronization warning" .. LLCOLOR_MAIN .. " for <" .. self .. ">: BlockingMobj is not null (\"" .. BlockingMobj.GetClassName() .. "\")." );
+		}
+	} // of override void Tick() {}
 
 	void RaindropPreSplash( void ) {
 		w2sector = w2level.GetSectorData( Sector.PointInSector( pos.xy ) );
@@ -113,8 +131,6 @@ class Weathremum_Raindrop: Actor {
 
 		SetZ( floorz );
 		ClearInterpolation();
-
-		bCORPSE = true;
 
 		// Optimizing out raindrop splashes on the static surfaces:
 		if ( ( cursector.floordata is 'Mover' ) )
