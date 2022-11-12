@@ -29,7 +29,7 @@ class Weathremum_Raindrop: Actor {
 	W2SectorData w2sector;
 	WeathremumUnsyncRandom rnd;
 
-	bool isCorpse; // No more "DoRadiusGive()" desynchronizations!
+	bool isCorpse; // No more "DoRadiusGive()" desynchronizations! (Thanks to Chameleon_111).
 
 	Default {
 		+NOINTERACTION;
@@ -44,7 +44,7 @@ class Weathremum_Raindrop: Actor {
 		Radius 1;
 		Mass 3;
 		RenderStyle "Translucent";
-		FloatBobPhase 0; // No more "FRandom pr_spawnmobj" desynchronizations!
+		FloatBobPhase 0; // No more "FRandom pr_spawnmobj" desynchronizations! (Thanks to Chameleon_111).
 		DamageFunction 0; // No more "FRandom pr_damagemobj" desynchronizations!
 	}
 

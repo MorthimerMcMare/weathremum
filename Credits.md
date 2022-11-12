@@ -10,7 +10,7 @@ Renaul Damek: beta-testing, realism consultant;
 
 crazyEagle: beta-testing, realism consultant;
 
-Chameleon_111: beta-testing;
+Chameleon_111: beta-testing and multiplayer desync testing;
 
 ika707: beta-testing.
 
