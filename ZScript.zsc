@@ -299,7 +299,7 @@ class WeathremumHandler: EventHandler {
 		/*Actor thrustee = NULL;
 
 		for ( int i = 500; i && ( thrustee = Actor( lastHandledActorIter.Next() ) ); i-- ) {
-			if ( !thrustee.bCORPSE )
+			if ( !thrustee.isCorpse )
 				thrustee.vel.xy += w2level.globalWindVector + w2level.blowWindVector;
 		}
 

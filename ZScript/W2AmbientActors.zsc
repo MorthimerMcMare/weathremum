@@ -29,16 +29,17 @@ class Weathremum_Raindrop: Actor {
 	W2SectorData w2sector;
 	WeathremumUnsyncRandom rnd;
 
+	bool isCorpse; // No more "DoRadiusGive()" desynchronizations!
+
 	Default {
-		//+MISSILE;
-		//-SOLID;
 		+NOINTERACTION;
 		+NOBLOCKMAP;
+		-SHOOTABLE; // No more "DoRadiusGive()" desynchronizations!
+		-VULNERABLE;
 		+THRUACTORS; // No more "FRandom pr_reflect" ("Actor.BlockingMobj"/"AActor::AdjustReflectionAngle()") desynchronizations!
 		+NOTONAUTOMAP;
 		+DONTSPLASH;
 		+NOTELEPORT;
-		//+DONTOVERLAP;
 		Height 0;
 		Radius 1;
 		Mass 3;
@@ -48,6 +49,7 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	override void BeginPlay() {
+		isCorpse = false;
 		ChangeStatNum( STAT_WEATHREMUM_MAINDECOR ); // 75.
 		Super.BeginPlay();
 	}
@@ -81,10 +83,10 @@ class Weathremum_Raindrop: Actor {
 			return;
 		}
 
-		if ( pos.z <= floorz && !bCORPSE ) {
+		if ( pos.z <= floorz && !isCorpse ) {
 			SetZ( floorz );
 			SetStateLabel( "Death" );
-			bCORPSE = true;
+			isCorpse = true;
 
 		} else if ( tics != -1 ) {
 			if ( --tics <= 0 )
@@ -201,7 +203,7 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 	}
 
 	override void Tick() {
-		if ( !bCORPSE && !globalfreeze && !level.frozen ) {
+		if ( !isCorpse && !globalfreeze && !level.frozen ) {
 			if ( dropCountdown > 0 ) {
 				dropCountdown--;
 
