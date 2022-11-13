@@ -78,7 +78,7 @@ class W2PlayerHandler: Thinker {
 			if ( afront == W2AT_Outdoors && frontsecdata.GetHeight() > 2.0 /*&& tfront != tCursector*/ )
 				sndkeepers[ tfront ].SuggestLine( ldata, frontsec );
 
-			if ( aback == W2AT_Outdoors && aback != afront && backsecdata.GetHeight() > 2.0 /*&& tback != tCursector*/ )
+			if ( aback == W2AT_Outdoors && tback != tfront && backsecdata.GetHeight() > 2.0 /*&& tback != tCursector*/ )
 				sndkeepers[ tback ].SuggestLine( ldata, backsec );
 
 
