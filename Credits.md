@@ -1,6 +1,6 @@
 # Weathremum
 
-## Main ##
+## Credits ##
 
 Morthimer McMare (JSO_x): idea, code, algorithms and data structures;
 
@@ -16,7 +16,7 @@ ika707: beta-testing.
 
 
 
-## Resources ##
+## Resources from ##
 
 ### Sounds
 
@@ -32,4 +32,12 @@ ika707: beta-testing.
 **Broil** ("freak9_6.pk3") by Dezette: rain splashes;
 
 shutterstock.com: water ripples.
+
+### Skyboxes
+
+- https://gamebanana.com/mods/cats/559
+
+### Other
+
+3D-skyboxes converter: https://jaxry.github.io/panorama-to-cubemap/
 

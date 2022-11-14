@@ -2,10 +2,10 @@
 
 // Weathremum fog box:
 Model W2SkyboxFog {
-	Path "Models/"
+	Path "Models/FogBox/"
+
 	Model 0 "W2FogBox.md3"
 	Scale 2.0 2.0 2.0
-
 	DONTCULLBACKFACES
 
 	Skin 0 "W2FogBox_Mist.png"
@@ -16,4 +16,16 @@ Model W2SkyboxFog {
 	FrameIndex	TROO	C	0	0
 	Skin 0 "W2FogBox_Sun.png"
 	FrameIndex	TROO	D	0	0
+}
+
+// Night ocean skybox:
+Model W2NightOceanSkybox {
+	Path "Models/SkyboxNightOcean/"
+
+	Model 0 "W2Skybox.md3"
+	Scale 64.0 64.0 64.0
+	DONTCULLBACKFACES
+
+	Skin 0 "UVSkybox_NightOcean.png"
+	FrameIndex	TROO	A	0	0
 }

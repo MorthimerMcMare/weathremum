@@ -1,6 +1,6 @@
 // All of the Weathremum skybox stuff.
 
-class W2BaseSkyboxActor: Actor {
+class W2BaseSkyActor: Actor {
 	W2SkyboxViewpoint skycam;
 	vector3 sphericaloffset; //double ra, decl, dist;
 
@@ -36,28 +36,44 @@ class W2BaseSkyboxActor: Actor {
 		return (cosangle * cospitch, sin( angle ) * cospitch, sin( pitch ));
 	}*/
 
-} // of class W2BaseSkyboxActor: Actor {}
+} // of class W2BaseSkyActor: Actor {}
+
+class W2StaticSkyActor: W2BaseSkyActor {
+	States {
+	Spawn:
+		TROO A -1;
+		Stop;
+	}
+} // of class W2StaticSkyActor: W2BaseSkyActor {}
+
+class W2DynamicSkyActor: W2BaseSkyActor {
+	Default {
+		RenderStyle "Translucent";
+	}
+
+	override void Tick() {
+		SetOrigin( skycam.pos + sphericalToVector3( sphericaloffset ), true );
+		Super.Tick();
+	}
+} // of class W2DynamicSkyActor: W2BaseSkyActor {}
+
 
 class W2SkyboxViewpoint: SkyViewpoint {
-	Array<W2BaseSkyboxActor> skyboxActors;
+	Array<W2BaseSkyActor> skyboxActors;
 
-	Sector skyflatSector;
+	double realangle;
 
 	static W2SkyboxViewpoint Create( int playernum ) {
 		W2SkyboxViewpoint newskies = W2SkyboxViewpoint( Actor.Spawn( "W2SkyboxViewpoint", (0, 0, 0) ) );
 
 		newskies.FriendPlayer = clamp( playernum, 0, MAXPLAYERS );
 		newskies.master = ( playeringame[ playernum ] && players[ playernum ].mo )? players[ playernum ].mo : NULL;
-		//newskies.args[ 0 ] = 32; // Mystical "Visibility".
 		newskies.UnlinkFromWorld();
 		newskies.bNOINTERACTION = true;
+		newskies.SetOrigin( (-100000, 0, 0), false );
 
-		/*for ( int i = 0; i < level.sectors.Size(); i++ ) {
-			if ( level.sectors[ i ].GetTexture( Sector.CEILING ) == skyflatnum ) {
-				newskies.skyflatSector = level.sectors[ i ];
-				break;
-			}
-		}*/
+		if ( newskies.master )
+			newskies.realangle = -newskies.master.angle;
 
 		return newskies;
 	}
@@ -67,71 +83,29 @@ class W2SkyboxViewpoint: SkyViewpoint {
 			W2Global.Log( LL_Detailed, GetClassName() .. "::Tick(). No master, destroying self." );
 			Destroy();
 		} else {
-			// === Less or greater universal variant, but not really good.
-			//Only one side visible. Sometimes skybox turns to void:
-			//SetOrigin( (master.Vec2Angle( -100000.0, 0.0 ), 0.0), false );
-			//angle = -master.angle;
-
-			// === Second less or greater universal variant (with the same 
-			//comment). Sky objects occasionally disappears:
-			vector2 newposxy = -AngleToVector( master.angle, 100000.0 );
-			SetOrigin( ( newposxy, 0.0 ), false );
-			SetZ( ceilingz );
-			ClearInterpolation();
-
 			// === For Doom 2, this works fine for all levels with skies, 
-			//except MAP23 and MAP29. Only one side visible:
-			//SetOrigin( (-100000, 0, 0), false );
-			//angle = -master.angle;
+			//except MAP23 and MAP29. Only one side is visible:
+			double prevangle = realangle;
+			realangle -= master.player.cmd.yaw * ( 360.0 / 65536.0 );
 
+			//angle = realangle;
+			//ClearInterpolation();
 
-			// === Other experiments:
-			/*if ( master.player ) {
-				console.printf( "Yaw: " .. master.player.cmd.yaw * ( 360.0 / 65536.0 ) );
-				angle = -master.angle - master.player.cmd.yaw * ( 360.0 / 65536.0 );
+			/*for ( int i = 0; i < skyboxActors.Size(); i++ ) {
+				W2BaseSkyActor curactor = skyboxActors[ i ];
+				curactor.sphericaloffset.x = ( curactor.sphericaloffset.x + realangle - prevangle ) % 360.0;
 			}*/
-
-			//SetXYZ( pos + (0, 0, -2.0) );
-			//level.sectorPortals[ 0 ].mDestination = level.sectors[ 0 ];
-			//level.sectorPortals[ 0 ].mType = SectorPortal.TYPE_PLANE;
-			//level.sectorPortals[ 0 ].mFlags |= SectorPortal.FLAG_INSKYBOX; // Will just set a default skies.
-
-			//angle = ( master.angle ) % 180.0 + 270.0;
-			//console.printf( "angle " .. angle .. ", newposxy " .. newposxy );
-
-			/*double ang = ( master.angle - 135.0 ) % 360.0;
-			vector3 newpos = (0.0, 0.0, 0.0);
-
-			if ( ang < 90.0 )
-				newpos.xy = (10000.0, 0.0);
-			else if ( ang < 180.0 )
-				newpos.xy = (0.0, 10000.0);
-			else if ( ang < 270.0 )
-				newpos.xy = (-10000.0, 0.0);
-			else
-				newpos.xy = (0.0, -10000.0);
-
-			console.printf( "ang: " .. ang .. ", newpos: " .. newpos );
-
-			//angle = AngleTo( master, false );
-			SetOrigin( newpos, false );*/
-
-
-			for ( int i = 0; i < skyboxActors.Size(); i++ ) {
-				W2BaseSkyboxActor curactor = skyboxActors[ i ];
-
-				curactor.SetOrigin( pos + W2BaseSkyboxActor.sphericalToVector3( curactor.sphericaloffset ), false );
-			}
 		}
 	} // of override void Tick() {}
 
-	uint CreateActor( class<W2BaseSkyboxActor> cls, vector3 thingSphericalOffset ) {
-		vector3 casterianOffset = W2BaseSkyboxActor.sphericalToVector3( thingSphericalOffset );
+	W2BaseSkyActor, uint CreateActor( class<W2BaseSkyActor> cls, vector3 thingSphericalOffset ) {
+		vector3 casterianOffset = W2BaseSkyActor.sphericalToVector3( thingSphericalOffset );
 
-		W2BaseSkyboxActor skyactor = W2BaseSkyboxActor( Actor.Spawn( cls, pos + casterianOffset ) );
+		W2BaseSkyActor skyactor = W2BaseSkyActor( Actor.Spawn( cls, pos + casterianOffset ) );
+		skyactor.skycam = self;
 		skyactor.sphericaloffset = thingSphericalOffset;
 
-		return skyboxActors.Push( skyactor );
+		return skyactor, skyboxActors.Push( skyactor );
 	}
 
 	override void OnDestroy() {
@@ -145,22 +119,73 @@ class W2SkyboxViewpoint: SkyViewpoint {
 } // of class W2SkyboxViewpoint: SkyViewpoint {}
 
 
-class W2SkyboxFog: W2BaseSkyboxActor {
+class W2SkyboxFog: W2DynamicSkyActor {
+	enum ESkyboxFogType {
+		SFT_Mist 	= 0,
+		SFT_Light 	= 1,
+		SFT_Dark 	= 2,
+		SFT_Sun		= 3
+	};
+
 	Default {
 		RenderStyle "Translucent";
-		Alpha 0.25;
+		Alpha 0.1;
 	}
 
-	override void Tick() {
+	void SetType( ESkyboxFogType newtype, double newalpha = -0.1 ) {
+		frame = newtype;
+
+		if ( newalpha >= 0.0 )
+			alpha = min( newalpha, 1.0 );
+	}
+
+	/*override void Tick() {
 		//sphericaloffset.x += 1.0;
 		//sphericaloffset.y += sin( level.maptime / 70.0 );
 		//AddVec3Pos( ( sin( level.maptime / 1000.0 ) * 20.0, 0, 0 ) );
 		Super.Tick();
-	}
+	}*/
 
 	States {
 	Spawn:
 		TROO A -1;
 		Stop;
 	}
-} // of class W2SkyboxFog: Actor {}
+} // of class W2SkyboxFog: W2DynamicSkyActor {}
+
+
+class W2NightOceanSkybox: W2StaticSkyActor {
+}
+
+class W2SkyboxSmallStar: W2DynamicSkyActor {
+	Default {
+		+FORCEXYBILLBOARD;
+	}
+
+	int delayModulo;
+	double theta, thetaGradient;
+
+	override void PostBeginPlay() {
+		Super.PostBeginPlay();
+		scale.x = scale.y = FRandom( 0.2, 1.5 );
+
+		delayModulo = Random( 5, 35 );
+		theta = FRandom( 0.0, 360.0 );
+		thetaGradient = FRandom( 1.0, 15.0 );
+	}
+
+	override void Tick() {
+		if ( !( level.time % delayModulo ) ) {
+			theta += thetaGradient;
+			alpha = clamp( sin( theta ), 0.05, 1.0 );
+		}
+
+		//Super.Tick();
+	}
+
+	States {
+	Spawn:
+		STAR "[" -1;
+		Stop;
+	}
+}
