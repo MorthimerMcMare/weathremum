@@ -4,7 +4,7 @@
 
 Morthimer McMare (JSO_x): idea, code, algorithms and data structures;
 
-Dezette: optimisation comparing, beta-testing, 3D models;
+Dezette: optimisation comparing, beta-testing, 3D models & skyboxes consultant;
 
 Renaul Damek: beta-testing, realism consultant;
 
