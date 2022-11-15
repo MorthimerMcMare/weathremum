@@ -22,6 +22,7 @@ class W2SoundOrigin: Actor {
 
 
 class Weathremum_Raindrop: Actor {
+	W2LevelGeneralData w2level;
 	W2SectorData w2sector;
 
 	Default {
@@ -30,6 +31,7 @@ class Weathremum_Raindrop: Actor {
 		+NOBLOCKMAP;
 		+NOTONAUTOMAP;
 		+DONTSPLASH;
+		+NOTELEPORT;
 		Height 0;
 		Radius 1;
 		Mass 3;
@@ -42,13 +44,8 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	override void PostBeginPlay() {
-		if ( !cursector || ( ceilingpic != skyflatnum ) )
-			Destroy();
-
-		//console.printf( self .. ". master.FriendPlayer != consoleplayer: "  .. master.FriendPlayer .. "!=" .. consoleplayer );
-
-		if ( master.FriendPlayer != consoleplayer )
-			bINVISIBLE = true;
+		//if ( !cursector || ( ceilingpic != skyflatnum ) )
+		//	Destroy();
 
 		double minspawnheight = ( master? min( ceilingz, target.pos.z + target.height + 192.0 ) : ceilingz );
 
@@ -56,7 +53,9 @@ class Weathremum_Raindrop: Actor {
 
 		vel.z = -35.0;
 		scale = ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
-		alpha = FRandom( 0.2, 0.7 );
+
+		// It's assumed that alpha may be changed with CVar "mcm_weathremum_rainalphamul".
+		alpha = clamp( w2level.raindropsAlphaMul * FRandom( 0.2, 0.7 ), 0.05, 1.0 );
 
 		ClearInterpolation();
 	}
@@ -71,12 +70,13 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	void RaindropPreSplash( void ) {
+		w2sector = w2level.GetSectorData( Sector.PointInSector( pos.xy ) );
 		EWeathremumSectorType w2type = ( w2sector? w2sector.w2type : W2ST_None );
 
 		if ( w2type == W2ST_Water || w2type == W2ST_Nukage || w2type == W2ST_Incandecent ) {
 
 			if ( w2sector.w2type == W2ST_Water ) {
-				if ( target && Distance2D( target ) <= 512.0 ) {
+				if ( target && Distance2D( target ) <= 512.0 && target.pos.z > pos.z - 64.0 ) {
 					for ( int i = 0; i < 3; i++ )
 						Actor.Spawn( "Weathremum_WaterRipple", pos + ( FRandom( -4.0, 4.0 ), FRandom( -4.0, 4.0 ), 0.0 ) );
 				}
@@ -100,12 +100,19 @@ class Weathremum_Raindrop: Actor {
 		SetZ( floorz );
 		ClearInterpolation();
 
+		bCORPSE = true;
+
 		// Optimizing out raindrop splashes on the static surfaces:
 		if ( ( cursector.floordata is 'Mover' ) )
 			bMOVEWITHSECTOR = true;
 	}
 
 	void RaindropSplash( void ) {
+		if ( target.pos.z < pos.z - 64.0 ) {
+			Destroy();
+			return;
+		}
+
 		if ( w2sector && ( w2sector.w2type == W2ST_RockSurface || w2sector.w2type == W2ST_MetalSurface ) ) {
 			Actor.Spawn( "Weathremum_HardSurfaceRaindropBreak", pos + ( FRandom( -4.0, 4.0 ), FRandom( -4.0, 4.0 ), 0.0 ) );
 
@@ -113,21 +120,27 @@ class Weathremum_Raindrop: Actor {
 			return;
 		}
 
-		bFLATSPRITE = bROLLSPRITE = bFLOORCLIP = bCORPSE = true;
+		//ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR ); // Not works.
+		vel = (0.0, 0.0, 0.0);
+
+		bFLATSPRITE = bROLLSPRITE = bFLOORCLIP = true;
 
 		// General visual tweaks:
 		ClearInterpolation();
 		A_SetRenderStyle( 0.1, STYLE_Add );
-		scale = ( 1, 1 ) * FRandom( 0.1, 0.25 );
+		scale = ( 1.0, 1.0 ) * FRandom( 0.1, 0.25 );
 		frame = Random( 0, 4 );
 
 		// Setting the position on a slopes:
-		vector3 norm = cursector.floorplane.normal;
-		vector2 norm_p1 = ( norm.x != 0 || norm.y != 0 )? (norm.x, norm.y).Unit() : (0, 0);
-		vector2 norm_p2 = ((norm.x, norm.y).Length(), norm.z );
+		if ( cursector.floorplane.isSlope() ) {
+			vector3 norm = cursector.floorplane.normal;
+			vector2 norm_p1 = ( norm.x != 0 || norm.y != 0 )? (norm.x, norm.y).Unit() : (0, 0);
+			vector2 norm_p2 = ((norm.x, norm.y).Length(), norm.z);
 
-		angle = atan2( norm_p1.y, norm_p1.x );
-		pitch = atan2( norm_p2.x, norm_p2.y );
+			angle = atan2( norm_p1.y, norm_p1.x );
+			pitch = atan2( norm_p2.x, norm_p2.y );
+		}
+
 		roll = FRandom( 0.0, 360.0 );
 	}
 
@@ -151,18 +164,28 @@ class Weathremum_Raindrop: Actor {
 } // of class Weathremum_Raindrop: Actor {}
 
 class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
+	int dropCountdown;
+
 	override void PostBeginPlay() {
 		vel.z = 0.0;
 		scale = ( FRandom( 0.1, 0.5 ), FRandom( 0.2, 0.5 ) );
-		alpha = FRandom( 0.3, 0.7 );
+		alpha = clamp( w2level.raindropsAlphaMul * FRandom( 0.3, 0.7 ), 0.075, 1.0 );
+		dropCountdown = Random( 1, 3 );
 	}
 
 	override void Tick() {
 		if ( !bCORPSE && !globalfreeze && !level.frozen ) {
-			if ( vel.z > -35.0 )
-				vel.z -= 1.5;
+			if ( dropCountdown > 0 ) {
+				dropCountdown--;
 
-			scale.y *= 1.1;
+				scale.y *= 1.02;
+			} else {
+				if ( vel.z > -35.0 )
+					vel.z -= 1.5;
+
+				scale.y *= 1.1;
+				vel.xy *= 0.9;
+			}
 
 			if ( scale.x > 0.2 )
 				scale.x *= 0.95;
@@ -309,7 +332,7 @@ class Weathremum_NukageVapor: Actor {
 	}
 
 	override void BeginPlay() {
-		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
+		ChangeStatNum( STAT_WEATHREMUM_MAINDECOR );
 		Super.BeginPlay();
 	}
 

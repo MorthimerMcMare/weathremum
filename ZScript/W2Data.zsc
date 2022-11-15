@@ -13,11 +13,23 @@ enum EWeathremumHandleStatus {
 	W2HS_StopSuggestion	// Pre-stop (must be changed to something else every "WorldTick()").
 }
 
+enum EWeathremumAreaType {
+	W2AT_None = -1,
+	W2AT_Indoors = 0,
+	W2AT_NextToOutdoor,
+	W2AT_Outdoors,
+
+	W2AT_Sill = W2AT_NextToOutdoor,
+	W2AT_Cornice = W2AT_NextToOutdoor,
+	W2AT_Indoor = W2AT_Indoors,
+	W2AT_Outdoor = W2AT_Outdoors
+}
+
 // Sector type changing may be checked in Doom 2 MAP20 or in Doom 1 E3M1.
 enum EWeathremumSectorType {
 	W2ST_None = -1,
-
-	W2ST_NextToOutdoor,	// Wind (on sills/cornices).
+	W2ST_Void = 0,		// Skybox floors.
+	//W2ST_NextToOutdoor,
 
 	W2ST_NormalSurface,
 	W2ST_SoftSurface,	// Grass, carpets, ...
@@ -32,7 +44,7 @@ enum EWeathremumSectorType {
 
 	W2ST_Normal = W2ST_NormalSurface,
 	W2ST_Default = W2ST_NormalSurface,
-	W2ST_Wind = W2ST_NextToOutdoor
+	//W2ST_Wind = W2ST_NextToOutdoor
 }
 
 enum EWeathremumSoundDirection {
@@ -45,20 +57,31 @@ enum EWeathremumSoundDirection {
 
 class W2LevelGeneralData {
 	Array<W2SectorData> allSectorsData;		// All of the sectors.
+	Array<W2LinedefData> allLinedefsData;	// All of the linedefs, mainly for the raindrops effect from a canopy.
 
-	// TODO: remove??
-	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
+	play W2SectorData GetSectorData( Sector s ) {
+		return allSectorsData[ s.Index() ];
+	}
+
+	play W2LinedefData GetLinedefData( Line l ) {
+		return allLinedefsData[ l.Index() ];
+	}
+
+	vector2 globalWindVector, blowWindVector;
 
 	W2SkyboxViewpoint sky;
+
+	// Non-synchronous between clients:
+	double raindropsAlphaMul;
 }
 
 
 class W2SectorData {
 	Sector s;
-	Array<Line> lines;
-	//Array<int> lineindices; // Temporary, for the UI-scoped "RenderOverlay()".
+	//Array<Line> lines;
 
 	EWeathremumSectorType w2type;
+	EWeathremumAreaType w2area;
 
 	TextureID lastFloorTexture;
 	//TextureID lastCeilingTexture;
@@ -67,10 +90,70 @@ class W2SectorData {
 		W2SectorData newdata = new( 'W2SectorData' );
 		newdata.s = initSector;
 		newdata.w2type = W2ST_None;
+		newdata.w2area = W2AT_None;
 
 		return newdata;
 	}
+
+	double GetHeight( void ) {
+		return ( s.ceilingplane.d * s.ceilingplane.negiC - s.floorplane.d * s.floorplane.negiC );
+	}
 }
+
+class W2LinedefData {
+	Line l;
+
+	vector2 deltadir;
+	vector2 frontdir; // Normal to frontsector.
+	double linelen;
+	vector2 midpoint; // "(v1 + v2) / 2".
+
+	bool isCornice;
+	vector2 corniceDir;	// Really a cornice direction normal pointing indoor.
+	vector2 cliffDir;	// Really a cliff direction normal pointing outdoor (tic-temporal field).
+
+	// Updates every tic (if necessary):
+	double ffloorz, fceilz;
+	double bfloorz, bceilz;
+	double floorsdiffz, ceilsdiffz;
+	vector2 closestXYPointToPlayer;
+
+	static W2LinedefData Create( Line initLinedef ) {
+		W2LinedefData newdata = new( 'W2LinedefData' );
+		newdata.l = initLinedef;
+		newdata.isCornice = false;
+
+		newdata.linelen = initLinedef.delta.Length();
+		newdata.deltadir = initLinedef.delta / newdata.linelen;
+		newdata.frontdir = (-newdata.deltadir.y, newdata.deltadir.x); // +90 degrees rotation.
+		newdata.midpoint = ( initLinedef.v1.p + initLinedef.v2.p ) / 2.0;
+
+		return newdata;
+	}
+
+	void UpdateSectorPlanesZ( void ) {
+		Sector sec = l.frontsector;
+
+		if ( sec ) {
+			ffloorz = sec.floorplane.d * sec.floorplane.negiC;
+			fceilz = sec.ceilingplane.d * sec.ceilingplane.negiC;
+		}
+
+		if ( sec = l.backsector ) {
+			bfloorz = sec.floorplane.d * sec.floorplane.negiC;
+			bceilz = sec.ceilingplane.d * sec.ceilingplane.negiC;
+
+			floorsdiffz = ffloorz - bfloorz;
+			ceilsdiffz = fceilz - bceilz;
+		}
+	}
+
+	bool IsSectorsSpacesJointed( void ) {
+		return ( ffloorz < bceilz && bfloorz < fceilz );
+	}
+}
+
+
 
 class W2SoundKeeper play {
 	EWeathremumHandleStatus status;
@@ -81,7 +164,7 @@ class W2SoundKeeper play {
 	W2SoundOrigin sndorigin[ W2SD_Quantity ];
 
 	static const String WeathremumSectorTypeNames[] = {
-		"(Cornice/Sill)",
+		"(Void)",
 		"Default",
 		"Soft",
 		"Water",
@@ -92,9 +175,10 @@ class W2SoundKeeper play {
 		"Plastic surface"
 	};
 
-	Actor master;
-	double minlength[ W2SD_Quantity ];
+	Actor master; // Player itself;
+	Actor target; // Player or his camera.
 
+	double minlength[ W2SD_Quantity ];
 	vector3 minposxyz[ W2SD_Quantity ];
 	vector3 ppos;
 
@@ -114,15 +198,18 @@ class W2SoundKeeper play {
 		}
 	}
 
-	void SuggestLine( Line curline, Sector lsec ) {
+	void SuggestLine( W2LinedefData curlinedata, Sector lsec ) {
+		// Minimal length, from linedef to the player position point.
 		double curminlength;
 		vector2 curposxy;
 
+		Line curline = curlinedata.l;
 		vector2 v1p = curline.v1.p;
 		vector2 v2p = curline.v2.p;
 		vector2 plp = ppos.xy;
 
 		if ( ( (v1p - plp) dot (v1p - v2p) <= 0.0 ) || ( (v2p - plp) dot (v2p - v1p) <= 0.0 ) ) {
+			// If there's no way to draw a perpendicular, getting the nearest vertex:
 			double length1 = ( plp - v1p ).Length();
 			double length2 = ( plp - v2p ).Length();
 
@@ -135,13 +222,14 @@ class W2SoundKeeper play {
 			}
 
 		} else {
+			// Else, if possible, dropping a perpendicular to the linedef:
 			double dlx = curline.delta.x;
 			double dly = curline.delta.y;
 
-			if ( dlx == 0 ) {
+			if ( dlx == 0.0 ) {
 				curposxy = (v1p.x, plp.y);
 
-			} else if ( dly == 0 ) {
+			} else if ( dly == 0.0 ) {
 				curposxy = (plp.x, v1p.y);
 
 			} else {
@@ -152,21 +240,20 @@ class W2SoundKeeper play {
 			curminlength = ( curposxy - plp ).Length();
 		}
 
-		double floorzdiff = abs( lsec.floorplane.d * lsec.floorplane.negiC - ppos.z );
+		curlinedata.closestXYPointToPlayer = curposxy;
 
+		double floorzdiff = abs( lsec.floorplane.d * lsec.floorplane.negiC - ppos.z );
 		curminlength = sqrt( curminlength * curminlength + floorzdiff * floorzdiff );
 
-		//if ( w2type == W2ST_Default )
-		//	console.printf( "SuggestLine(). Default type. curminlength " .. curminlength );
 
 		for ( int dir = 0; dir < W2SD_Quantity; dir++ )
-			if ( minposxyz[ dir ].z > floorzdiff )
+			if ( floorzdiff < minposxyz[ dir ].z )
 				minposxyz[ dir ].z = floorzdiff;
 
 		// Belonging of the sound origin (to left/to right from current player):
 		// TODO: use linedef half planes clipping on found point, not on vertices!!
 		if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {
-			vector2 vec2plleft = master.AngleToVector( master.angle - 90.0, 1.0 );
+			vector2 vec2plleft = target.AngleToVector( target.angle - 90.0, 1.0 );
 
 			double v1leftProjection = ( ( plp - v1p ) dot vec2plleft );
 			double v2leftProjection = ( ( plp - v2p ) dot vec2plleft );
@@ -186,40 +273,6 @@ class W2SoundKeeper play {
 			status = W2HS_Active;
 		} // of if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {}
 
-		/*
-		//atan2( curposxy.y - plp.y, minposxy[ dir ].x - plp.x ) - master.angle
-		GetSoundAngleDistMul(  );
-
-		bool isLeftHalfplane = false;
-		bool isRightHalfplane = false;
-
-		// Belonging of the sound origin (to left/to right from current player):
-		if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {
-			vector2 vec2plleft = master.AngleToVector( master.angle - 90.0, 1.0 );
-
-			//double v1leftProjection = ( ( plp - v1p ) dot vec2plleft );
-			double leftProjection = ( ( plp - curposxy ) dot vec2plleft );
-
-			//if ( loopdataindices[ i ] == 10 ) console.printf( loopdataindices[ i ] .. "v1leftProjection " .. v1leftProjection .. ", v2leftProjection " .. v2leftProjection );
-
-			if ( leftProjection >= 0.0 && ( curminlength < minlength[ W2SD_Left ] ) ) {
-				isLeftHalfplane = true;
-				//minlength[ W2SD_Left ] = curminlength;
-				//minposxy[ W2SD_Left ] = curposxy;
-			}
-
-			if ( leftProjection <= 0.0 && ( curminlength < minlength[ W2SD_Right ] ) ) {
-				isRightHalfplane = true;
-				//minlength[ W2SD_Right ] = curminlength;
-				//minposxy[ W2SD_Right ] = curposxy;
-			}
-		} // of if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {}
-
-		if ( curminlength < minlength ) {
-			minlength = curminlength;
-			minposxy = curposxy;
-		}*/
-
 	} // of void SuggestLine( Line curline, Sector lsec ) {}
 
 
@@ -237,14 +290,21 @@ class W2SoundKeeper play {
 			newkeeper.w2typename = inittypename;
 
 		return newkeeper;
-	} // of static W2SoundKeeper Create( Sound initsnd, EWeathremumSectorType inittype, Actor initmaster ) {}
+	} // of static W2SoundKeeper Create( Sound initsnd, EWeathremumSectorType inittype, Actor initmaster, String inittypename = "" ) {}
 
 
 	void PreTick( void ) {
 		minlength[ W2SD_Left ] = minlength[ W2SD_Right ] = 999.9;
-		ppos = master.pos + (0.0, 0.0, master.player.ViewHeight);
 
-		minposxyz[ W2SD_Left ] = minposxyz[ W2SD_Right ] = (0.0, 0.0, -32767.0);
+		if ( master.player.Camera ) {
+			target = master.player.Camera;
+			ppos = target.pos + (0.0, 0.0, ( target.player? target.player.ViewHeight : target.CameraHeight ));
+		} else {
+			target = master;
+			ppos = master.pos + (0.0, 0.0, master.player.ViewHeight);
+		}
+
+		minposxyz[ W2SD_Left ] = minposxyz[ W2SD_Right ] = (0.0, 0.0, -32760.0);
 
 		// Suggest potential excess sounds to stop:
 		if ( status == W2HS_Active )
@@ -262,20 +322,18 @@ class W2SoundKeeper play {
 			return 4.4 * x - 0.8;
 
 		return -6.2 * x + 7.15;
-
-		//return ( abs( ( ang % 360.0 ) / 360.0 - 0.5 ) * 5.0 + 1.0 );
 	}
 
 	void PostTick( void ) {
 		if ( status == W2HS_Active ) {
-
 			// Creating new sound origins if they are not spawned yet:
 			if ( !sndorigin[ W2SD_Left ] ) {
+
 				for ( int j = 0; j < W2SD_Quantity; j++ ) {
 					W2SoundOrigin sndactor = sndorigin[ j ] = W2SoundOrigin( Actor.Spawn( "W2SoundOrigin", ( 0.0, 0.0, 0.0 ) ) );
-					sndactor.target = master; // Player or his camera.
+					sndactor.target = target; // Player or his camera.
 					sndactor.seq = sndactor.StartSoundSequence( sndname, SeqNode.ENVIRONMENT );
-				} // of for ( int j = 0; j < W2SoundKeeper.W2SD_Quantity; j++ ) {}
+				}
 
 				String w2sectypeName = ( w2type != W2ST_None? WeathremumSectorTypeNames[ w2type ] : TEXTCOLOR_RED .. "<None>" .. LLCOLOR_DEBUG );
 				W2Global.Log( LL_Debug, GetClassName() .. "::PostTick(). " .. TEXTCOLOR_DARKGREEN .. "+Started" .. LLCOLOR_DEBUG .. " sound of type \"" .. w2sectypeName .. "\" (".. w2type .. ")." );
@@ -288,7 +346,7 @@ class W2SoundKeeper play {
 			double adjustedlen[ W2SD_Quantity ];
 
 			for ( int dir = 0; dir < W2SD_Quantity; dir++ )
-				anglediff[ dir ] = ( atan2( minposxyz[ dir ].y - ppos.y, minposxyz[ dir ].x - ppos.x ) - master.angle ) % 360.0;
+				anglediff[ dir ] = ( atan2( minposxyz[ dir ].y - ppos.y, minposxyz[ dir ].x - ppos.x ) - target.angle ) % 360.0;
 
 			adjustedlen[ W2SD_Left ] = minlength[ W2SD_Left ] * GetSoundAngleDistMul( anglediff[ W2SD_Left ] );
 			adjustedlen[ W2SD_Right ] = minlength[ W2SD_Right ] * GetSoundAngleDistMul( anglediff[ W2SD_Right ] + 180.0 );
@@ -307,8 +365,21 @@ class W2SoundKeeper play {
 			}
 
 			// TODO: "pos.z" coordinate based on the closest (?) sector in current group.
-			sndorigin[ W2SD_Left ].SetOrigin( ( master.Vec2Angle( minlength[ W2SD_Left ], master.angle + 90.0 ), master.pos.z ), true );
-			sndorigin[ W2SD_Right ].SetOrigin( ( master.Vec2Angle( minlength[ W2SD_Right ], master.angle - 90.0 ), master.pos.z ), true );
+			sndorigin[ W2SD_Left ].SetOrigin( ( target.Vec2Angle( minlength[ W2SD_Left ], target.angle + 90.0 ), target.pos.z ), false );
+			sndorigin[ W2SD_Right ].SetOrigin( ( target.Vec2Angle( minlength[ W2SD_Right ], target.angle - 90.0 ), target.pos.z ), false );
+
+			// Experimental: geometry must slightly mute any sounds.
+			/*for ( int dir = 0; dir < W2SD_Quantity; dir++ ) {
+				if ( !sndorigin[ dir ].CheckSight( target, SF_IGNOREVISIBILITY | SF_SEEPASTSHOOTABLELINES | SF_SEEPASTBLOCKEVERYTHING ) ) {
+					vector2 fromtarget = -sndorigin[ dir ].Vec2To( target );
+					double fromtargetlen = fromtarget.Length();
+
+					if ( fromtargetlen > 0.0 )
+						fromtarget = fromtarget / fromtargetlen;
+
+					sndorigin[ dir ].SetOrigin( sndorigin[ dir ].pos + ( 32.0 * fromtarget, 0.0 ), false );
+				}
+			}*/
 
 		} else if ( status == W2HS_StopSuggestion ) {
 			// Wiping out too far sounds:

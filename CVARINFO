@@ -1,6 +1,8 @@
 // Weathremum control CVars:
 
-user int		mcm_weathremum_loglevel = 1;
+user int 	mcm_weathremum_loglevel = 1;
+
+user float 	mcm_weathremum_rainalphamul = 1.0;
 
 
 // [Legacy/deprecated] Weather control CVars:

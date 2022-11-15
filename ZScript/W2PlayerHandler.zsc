@@ -1,37 +1,45 @@
 // Weathremum handler for each player.
+// [McM]: Inherited from Thinker for the "profilethinkers" CCMD.
 
-class W2PlayerHandler: Actor {
-	bool useMultiplayerPos;
-	vector3 multiplayerPos;
-
+class W2PlayerHandler: Thinker {
 	W2LevelGeneralData w2level;
 
 	Array<W2SoundKeeper> sndkeepers;
+
+	// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to the "validcount" variable.
 	Array<Line> corniceLines;			// Lines between outdoor and indoor areas.
+	Array<Line> cliffLines;
 
-	// "target" is an actor to follow (updates every "Tick()").
+	vector3 pos;
+	int targetPlayerNum;
+	Actor master; // Player.
+	Actor target; // An actor to follow (player or his camera).
 
-	Default {
-		+NOINTERACTION; // Implies +NOGRAVITY and +NOBLOCKMAP.
-		+DONTSPLASH;
-		+NOTONAUTOMAP;
+	transient CVar raindropsAlphaMulCVar;
+
+	void DoCVarsHandling( void ) {
+		if ( !raindropsAlphaMulCVar )
+			raindropsAlphaMulCVar = CVar.GetCVar( "mcm_weathremum_rainalphamul", players[ targetPlayerNum ] );
+
+		w2level.raindropsAlphaMul = raindropsAlphaMulCVar.GetFloat();
 	}
-
-	override void BeginPlay() {
-		useMultiplayerPos = false;
-	}
-
 
 	void DoSectorEffects( void ) {
 		corniceLines.Clear();
+		cliffLines.Clear();
 
-		EWeathremumSectorType tCursector = W2ST_None;
+		// Picking up and applying a current player sector sound type:
+		EWeathremumAreaType aCursector = W2ST_None;
 
-		if ( ceilingsector ) {
-			tCursector = w2level.allSectorsData[ ceilingsector.Index() ].w2type;
+		if ( target.cursector ) {
+			W2SectorData secdata = w2level.GetSectorData( target.cursector );
+			aCursector = secdata.w2area;
 
-			if ( tCursector != W2ST_None ) {
-				vector3 newpos = ( pos.xy + (6.0, 0.0), floorz );
+			if ( aCursector == W2AT_Outdoors ) {
+				double floorz = target.cursector.floorplane.d * target.cursector.floorplane.negiC;
+				vector3 newpos = ( target.Vec2Angle( 32.0, target.angle + 90.0 ), floorz );
+
+				EWeathremumSectorType tCursector = secdata.w2type;
 
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Left );
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Right );
@@ -39,29 +47,80 @@ class W2PlayerHandler: Actor {
 		}
 
 
+		// Searching for all types of the defined surfaces around player:
+
 		// Second argument is an environment test radius.
-		BlockLinesIterator it = BlockLinesIterator.Create( self, 768 );
+		BlockLinesIterator it = BlockLinesIterator.Create( target, 768 );
 
 		while ( it.Next() ) {
 			Line l = it.curline;
 
+			Sector frontsec = l.frontsector;
+			Sector backsec = l.backsector;
+
 			//int a = 0.123456; // Last part of the next line is for debug:
-			if ( !l.frontsector /*|| ( l.frontsector.Index() != 11 )*/ )
+			if ( !frontsec /*|| ( l.frontsector.Index() != 11 )*/ )
 				continue;
 
-			EWeathremumSectorType tfront = ( l.frontsector? w2level.allSectorsData[ l.frontsector.Index() ].w2type : W2ST_None );
-			EWeathremumSectorType tback = ( l.backsector? w2level.allSectorsData[ l.backsector.Index() ].w2type : W2ST_None );
+			W2SectorData frontsecdata = NULL;
+			W2SectorData backsecdata = NULL;
+			EWeathremumSectorType tfront = W2ST_None;
+			EWeathremumSectorType tback = W2ST_None;
+			EWeathremumAreaType afront = W2AT_None;
+			EWeathremumAreaType aback = W2AT_None;
+
+			W2LinedefData ldata = w2level.GetLinedefData( l );
+
+			if ( frontsec ) {
+				frontsecdata = w2level.GetSectorData( frontsec );
+				tfront = frontsecdata.w2type;
+				afront = frontsecdata.w2area;
+			}
+			if ( backsec ) {
+				backsecdata = w2level.GetSectorData( backsec );
+				tback = backsecdata.w2type;
+				aback = backsecdata.w2area;
+			}
 
 			// Try to find a minimal length for the current sound:
-			if ( tfront != W2ST_None /*&& tfront != tCursector*/ )
-				sndkeepers[ tfront ].SuggestLine( l, l.frontsector );
+			if ( afront == W2AT_Outdoors && frontsecdata.GetHeight() > 2.0 /*&& tfront != tCursector*/ )
+				sndkeepers[ tfront ].SuggestLine( ldata, frontsec );
 
-			if ( tback != W2ST_None && tback != tfront /*&& tback != tCursector*/ )
-				sndkeepers[ tback ].SuggestLine( l, l.backsector );
+			if ( aback == W2AT_Outdoors && tback != tfront && backsecdata.GetHeight() > 2.0 /*&& tback != tCursector*/ )
+				sndkeepers[ tback ].SuggestLine( ldata, backsec );
 
-			// "Actor.Spawn()" violates "BlockLinesIterator" work because of interference to the "validcount" variable.
-			if ( w2level.corniceLinesFlags[ l.Index() ] == 1 )
-				corniceLines.Push( l );
+
+			// Cliffs and cornices rain effect:
+			ldata.UpdateSectorPlanesZ();
+
+			if ( ldata.IsSectorsSpacesJointed() ) {
+				double cliffdelta = ldata.floorsdiffz;
+				bool isCliff = false;
+
+				if ( ldata.isCornice ) {
+					corniceLines.Push( l );
+
+					if ( min( ldata.fceilz, ldata.bceilz ) > pos.z - 256.0
+						 && (  ( afront >= W2AT_Cornice && cliffdelta > 16.0 )
+							|| ( aback >= W2AT_Cornice && cliffdelta < -16.0 )
+						) )
+						isCliff = true;
+
+				} else if ( afront >= W2AT_Cornice && aback >= W2AT_Cornice && abs( cliffdelta ) > 16.0 ) {
+					isCliff = true;
+				}
+
+				if ( isCliff ) {
+					ldata.cliffDir = ( cliffdelta > 0.0? ldata.frontdir : -ldata.frontdir );
+
+					// Optimizing out non-visible cliffs:
+					vector2 plp = target.pos.xy;
+					vector2 deltaPlayerMidpoint = ( plp - ldata.midpoint );
+
+					if ( ldata.cliffDir dot ( deltaPlayerMidpoint / deltaPlayerMidpoint.Length() ) >= -0.1 || ( plp - ldata.closestXYPointToPlayer ).Length() < 64.0 )
+						cliffLines.Push( l );
+				}
+			} // of if ( ldata.IsSectorsSpacesJointed() ) {}
 		} // of while ( it.Next() ) {}
 
 	} // of void DoSectorEffects( void ) {}
@@ -74,40 +133,86 @@ class W2PlayerHandler: Actor {
 		// Outdoor areas raindrop effect:
 		for ( int i = 0; i < 250; i++ ) {
 			double angletheta = FRandom( 0.0, 360.0 );
-
 			vector2 raindropPos = pos.xy + ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom( 0.0, 1.0 ) ) * 764.0 );
 
-			Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_Raindrop", ( raindropPos, pos.z ) ) );
-			raindrop.target = target;
-			raindrop.master = self;
-			raindrop.w2sector = w2level.allSectorsData[ raindrop.cursector.Index() ];
+			Sector raindropSector = Sector.PointInSector( raindropPos );
 
-			//raindrop.vel.xy = ( 10.0, 10.0 ) * ( sin( rainwaveOffset ) + 1.0 );
+			if ( raindropSector && raindropSector.GetTexture( Sector.CEILING ) == skyflatnum ) {
+				W2SectorData secdata = w2level.GetSectorData( raindropSector );
+
+				if ( secdata.GetHeight() > 8.0 ) {
+					Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_Raindrop", ( raindropPos, pos.z ) ) );
+
+					raindrop.master = raindrop.target = target;
+					raindrop.w2level = w2level;
+				}
+			} // of if ( raindropSector && raindropSector.GetTexture( Sector.CEILING ) == skyflatnum ) {}
 		}
+
+		vector2 windDir = ( w2level.globalWindVector + 3.0 * w2level.blowWindVector );
+		windDir /= windDir.Length();
 
 		// Cornice raindrops effect:
 		for ( int i = 0; i < corniceLines.Size(); i++ ) {
 			Line l = corniceLines[ i ];
-			double linelength = l.delta.Length();
+			W2LinedefData ldata = w2level.GetLinedefData( l );
 
-			double minspawnheight = ( l.frontsector? l.frontsector.ceilingplane.d : 1e300 );
+			double minspawnheight = min( ldata.fceilz, ldata.bceilz );
 
-			if ( l.backsector && ( l.backsector.ceilingplane.d < minspawnheight ) )
-				minspawnheight = l.backsector.ceilingplane.d;
+			// Cornice raindrops amount relates to the linedef length and to 
+			//the global wind direction.
 
-			double spawnCoef = linelength / 96.0;
+			// Scalar product here will be in range [-1.0; 1.0].
+			double windProjection = ldata.corniceDir dot windDir;
 
-			int spawnAmount = int( floor( spawnCoef ) );
-			double extraSpawnChange = spawnCoef - spawnAmount;
+			if ( windProjection > -0.4 ) {
+				double spawnCoef = 156.2 * W2GlobalMath.Power( windProjection + 0.5, -1.2 );
 
-			if ( extraSpawnChange > 0.0 && FRandom( 0.0, 1.0 ) < extraSpawnChange )
+				double spawnChange = ldata.linelen / spawnCoef;
+				int spawnAmount = int( floor( spawnChange ) );
+
+				if ( spawnChange - spawnAmount > 0.5 )
+					spawnAmount++;
+
+				for ( int i = 0; i < spawnAmount; i++ ) {
+					Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + ldata.deltadir * FRandom( 0.0, ldata.linelen ), minspawnheight ) ) );
+
+					raindrop.vel.xy = ldata.corniceDir * FRandom( 0.0, ( windProjection + 0.3 ) * 3.0 ); // Yes, "windProjection" may be less than zero.
+					raindrop.master = raindrop.target = target;
+					raindrop.w2level = w2level;
+				}
+			}
+		} // of for ( int i = 0; i < corniceLines.Size(); i++ ) {}
+
+		// Raindrops from cliffs:
+		for ( int i = 0; i < cliffLines.Size(); i++ ) {
+			Line l = cliffLines[ i ];
+			W2LinedefData ldata = w2level.GetLinedefData( l );
+
+			double maxspawnheight = max( ldata.ffloorz, ldata.bfloorz ) - 3.0;
+
+			// Cliff raindrops amount relates to the linedef length and to the 
+			//global wind direction.
+
+			// Scalar product here will be in range [-1.0; 1.0].
+			double windProjection = ldata.cliffDir dot windDir;
+
+			double spawnCoef = 137.0 * W2GlobalMath.Power( windProjection + 1.05, -0.5 );
+
+			double spawnChange = ldata.linelen / spawnCoef;
+			int spawnAmount = int( floor( spawnChange ) );
+
+			if ( spawnChange - spawnAmount > FRandom( 0.0, 2.0 ) )
 				spawnAmount++;
 
 			for ( int i = 0; i < spawnAmount; i++ ) {
-				Actor raindrop = Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + l.delta / linelength * FRandom( 0.0, linelength ), minspawnheight ) );
-				raindrop.master = target;
+				Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + ldata.deltadir * FRandom( 0.0, ldata.linelen ) + ldata.cliffDir, maxspawnheight ) ) );
+
+				raindrop.vel.xy = ldata.cliffDir * FRandom( 0.0, ( ( windProjection + 0.8 ) * 2.0 ) );
+				raindrop.master = raindrop.target = target;
+				raindrop.w2level = w2level;
 			}
-		}
+		} // of for ( int i = 0; i < cliffLines.Size(); i++ ) {}
 
 		if ( w2level.sky ) {
 			W2SkyboxViewpoint sky = w2level.sky;
@@ -122,46 +227,42 @@ class W2PlayerHandler: Actor {
 
 				Weathremum_SkyboxRaindrop raindrop = Weathremum_SkyboxRaindrop( sky.CreateActor( "Weathremum_SkyboxRaindrop", ( raindropPos, FRandom( 96.0, 130.0 ) ) ) );
 				raindrop.target = sky;
-				raindrop.master = self;
 			}
 		}
 	} // of void DoRainEffects( void ) {}
 
 
-	override void Tick() {
-		PlayerInfo pl = players[ FriendPlayer ];
 
-		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo || FriendPlayer != consoleplayer || globalfreeze || level.frozen )
+
+	override void Tick() {
+		PlayerInfo pl = players[ targetPlayerNum ];
+
+		if ( !playeringame[ targetPlayerNum ] || !pl.mo || targetPlayerNum != consoleplayer )
 			return;
 
-		target = pl.mo;
+		master = pl.mo;
 
-		if ( !target ) {
-			W2Global.Log( LL_Main, GetClassName() .. "::Tick(). Target player " .. FriendPlayer .. " disappeared, destroying self." );
+		if ( !master ) {
+			W2Global.Log( LL_Main, GetClassName() .. "::Tick(). Target player " .. targetPlayerNum .. " disappeared, destroying self." );
 			Destroy();
 			Super.Tick();
 		}
 
-		vector3 newpos;
+		target = ( master.player.Camera? master.player.Camera : master );
+		pos = target.pos;
+		//console.printf( "W2PlH <" .. self .. "> pos: Cam " .. ( pl.Camera? pl.Camera .. " (\"" .. pl.Camera.GetClassName() .. "\")" : "NULL" ) .. ", pos " .. pos );
 
-		if ( !multiplayer )
-			newpos = ( pl.Camera? pl.Camera.pos : target.pos );
-		else
-			newpos = ( useMultiplayerPos? multiplayerPos : target.pos );
 
-		//console.printf( "W2PlH <" .. self .. "> target: <" .. target .. "> (Frnd <" .. pl.mo .. ">), useMultipl " .. useMultiplayerPos .. "-> " .. newpos );
-
-		// Move the handler actor to the camera position:
-		SetOrigin( newpos, true );
-		angle = target.angle; // Singleplayer-aware!!
-
+		DoCVarsHandling();
 
 		// Sound keepers pre-tick handling:
 		for ( int i = 0; i < sndkeepers.Size(); i++ )
 			sndkeepers[ i ].PreTick();
 
 		DoSectorEffects(); 	// Sector sounds (rain, winds);
-		DoRainEffects(); 	// Rain itself, raindrops from cornices.
+
+		if ( !( level.frozen || globalfreeze ) )
+			DoRainEffects(); 	// Rain itself, raindrops from cornices.
 
 		// Sound keepers post-tick handling:
 		for ( int i = 0; i < sndkeepers.Size(); i++ )
@@ -169,8 +270,6 @@ class W2PlayerHandler: Actor {
 
 		//int a = 0.123456; // Next line is for debug (uncomment lines above):
 		//sndkeepers[ W2ST_NormalSurface ].PostTick();
-
-		Super.Tick();
-	}
+	} // of override void Tick() {}
 
 } // of class W2PlayerHandler: Actor {}
