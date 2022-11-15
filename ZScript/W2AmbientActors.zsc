@@ -210,6 +210,8 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 }
 
 class Weathremum_SkyboxRaindrop: W2DynamicSkyActor {
+	W2LevelGeneralData w2level;
+
 	Default {
 		+NOBLOCKMAP;
 		+NOINTERACTION;
@@ -221,9 +223,9 @@ class Weathremum_SkyboxRaindrop: W2DynamicSkyActor {
 	}
 
 	override void PostBeginPlay() {
-		//vel.z = -35.0;
-		scale = 0.5 * ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
-		alpha = FRandom( 0.3, 0.9 );
+		vel.z = -35.0;
+		scale = 0.33 * ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
+		alpha = clamp( w2level.raindropsAlphaMul * FRandom( 0.4, 0.8 ), 0.075, 1.0 );
 
 		ClearInterpolation();
 	}
@@ -232,7 +234,7 @@ class Weathremum_SkyboxRaindrop: W2DynamicSkyActor {
 		if ( level.frozen || globalfreeze )
 			return;
 
-		AddZ( -35.0 );
+		AddZ( vel.z );
 
 		if ( curState.tics != -1 ) {
 			if ( --tics <= 0 )
@@ -244,7 +246,7 @@ class Weathremum_SkyboxRaindrop: W2DynamicSkyActor {
 
 	States {
 	Spawn:
-		RAIN N 6;
+		RAIN N 5;
 		Stop;
 	}
 } // of class Weathremum_SkyboxRaindrop: Weathremum_Raindrop {}

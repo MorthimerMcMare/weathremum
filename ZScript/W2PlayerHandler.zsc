@@ -218,14 +218,15 @@ class W2PlayerHandler: Thinker {
 			W2SkyboxViewpoint sky = w2level.sky;
 
 			bool thetaWholeCircle = ( abs( target.pitch ) > 50.0 );
-			double circleRadius = 96.0 + ( 100 * !thetaWholeCircle );
+			double circleRadius = 100.0 + ( 96.0 * !thetaWholeCircle );
 
 			for ( int i = 0; i < 80; i++ ) {
 				double angletheta = ( thetaWholeCircle? FRandom( 0.0, 360.0 ) : target.angle + FRandom( -90.0, 90.0 ) );
 
-				vector2 raindropPos = ( cos( angletheta ), sin( angletheta ) ) * ( 8.0 + sqrt( FRandom( 0.0, 1.0 ) ) * circleRadius );
+				vector2 raindropPos = ( cos( angletheta ), sin( angletheta ) ) * ( 2.0 + FRandom( 0.0, 1.0 ) * circleRadius );
 
 				Weathremum_SkyboxRaindrop raindrop = Weathremum_SkyboxRaindrop( sky.CreateActor( "Weathremum_SkyboxRaindrop", ( raindropPos, FRandom( 96.0, 130.0 ) ) ) );
+				raindrop.w2level = w2level;
 				raindrop.target = sky;
 			}
 		}
