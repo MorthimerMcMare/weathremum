@@ -3,7 +3,17 @@
 OptionMenu "mcm_WeathremumControl" {
     Title "Weathremum control"
 	StaticText " "
+    StaticText "=== Client-side ===", SAPPHIRE
+    StaticText "Raindrops", TEAL
+	Slider "Overall translucency multiplier", "mcm_weathremum_rainalphamul", 0.5, 1.5, 0.1, 1
+	StaticText " "
+    StaticText "Other", TEAL
 	Option "Log level", "mcm_weathremum_loglevel", "mcm_weathremum_LogLevels"
+
+	StaticText " "
+	StaticText " "
+    StaticText "=== Server-side ===", SAPPHIRE
+    StaticText "(Nothing yet)", DARKGRAY
 }
 
 AddOptionMenu "OptionsMenu" {

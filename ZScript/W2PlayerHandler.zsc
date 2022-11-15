@@ -15,6 +15,14 @@ class W2PlayerHandler: Thinker {
 	Actor master; // Player.
 	Actor target; // An actor to follow (player or his camera).
 
+	transient CVar raindropsAlphaMulCVar;
+
+	void DoCVarsHandling( void ) {
+		if ( !raindropsAlphaMulCVar )
+			raindropsAlphaMulCVar = CVar.GetCVar( "mcm_weathremum_rainalphamul", players[ targetPlayerNum ] );
+
+		w2level.raindropsAlphaMul = raindropsAlphaMulCVar.GetFloat();
+	}
 
 	void DoSectorEffects( void ) {
 		corniceLines.Clear();
@@ -209,6 +217,8 @@ class W2PlayerHandler: Thinker {
 	} // of void DoRainEffects( void ) {}
 
 
+
+
 	override void Tick() {
 		PlayerInfo pl = players[ targetPlayerNum ];
 
@@ -228,12 +238,16 @@ class W2PlayerHandler: Thinker {
 		//console.printf( "W2PlH <" .. self .. "> pos: Cam " .. ( pl.Camera? pl.Camera .. " (\"" .. pl.Camera.GetClassName() .. "\")" : "NULL" ) .. ", pos " .. pos );
 
 
+		DoCVarsHandling();
+
 		// Sound keepers pre-tick handling:
 		for ( int i = 0; i < sndkeepers.Size(); i++ )
 			sndkeepers[ i ].PreTick();
 
 		DoSectorEffects(); 	// Sector sounds (rain, winds);
-		DoRainEffects(); 	// Rain itself, raindrops from cornices.
+
+		if ( !( level.frozen || globalfreeze ) )
+			DoRainEffects(); 	// Rain itself, raindrops from cornices.
 
 		// Sound keepers post-tick handling:
 		for ( int i = 0; i < sndkeepers.Size(); i++ )

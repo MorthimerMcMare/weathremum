@@ -54,7 +54,9 @@ class Weathremum_Raindrop: Actor {
 
 		vel.z = -35.0;
 		scale = ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
-		alpha = FRandom( 0.2, 0.7 );
+
+		// It's assumed that alpha may be changed with CVar "mcm_weathremum_rainalphamul".
+		alpha = clamp( w2level.raindropsAlphaMul * FRandom( 0.2, 0.7 ), 0.05, 1.0 );
 
 		ClearInterpolation();
 	}
@@ -168,7 +170,7 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 	override void PostBeginPlay() {
 		vel.z = 0.0;
 		scale = ( FRandom( 0.1, 0.5 ), FRandom( 0.2, 0.5 ) );
-		alpha = FRandom( 0.3, 0.7 );
+		alpha = clamp( w2level.raindropsAlphaMul * FRandom( 0.3, 0.7 ), 0.075, 1.0 );
 		dropCountdown = Random( 1, 3 );
 	}
 

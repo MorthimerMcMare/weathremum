@@ -68,6 +68,10 @@ class W2LevelGeneralData {
 	}
 
 	vector2 globalWindVector, blowWindVector;
+
+
+	// Non-synchronous between clients:
+	double raindropsAlphaMul;
 }
 
 
