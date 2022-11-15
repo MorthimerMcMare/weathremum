@@ -98,22 +98,31 @@ class W2SkyboxViewpoint: SkyViewpoint {
 		}
 	} // of override void Tick() {}
 
-	W2BaseSkyActor, uint CreateActor( class<W2BaseSkyActor> cls, vector3 thingSphericalOffset ) {
-		vector3 casterianOffset = W2BaseSkyActor.sphericalToVector3( thingSphericalOffset );
+	W2BaseSkyActor, uint CreateActor( class<W2BaseSkyActor> cls, vector3 thingCartesianOffset ) {
+		W2BaseSkyActor skyactor = W2BaseSkyActor( Actor.Spawn( cls, pos + thingCartesianOffset ) );
+		skyactor.skycam = self;
+		skyactor.sphericaloffset = W2BaseSkyActor.vector3ToSpherical( thingCartesianOffset );
 
-		W2BaseSkyActor skyactor = W2BaseSkyActor( Actor.Spawn( cls, pos + casterianOffset ) );
+		return skyactor, skyboxActors.Push( skyactor );
+	}
+
+	W2BaseSkyActor, uint CreateActorSpherical( class<W2BaseSkyActor> cls, vector3 thingSphericalOffset ) {
+		W2BaseSkyActor skyactor = W2BaseSkyActor( Actor.Spawn( cls, pos + W2BaseSkyActor.sphericalToVector3( thingSphericalOffset ) ) );
 		skyactor.skycam = self;
 		skyactor.sphericaloffset = thingSphericalOffset;
 
 		return skyactor, skyboxActors.Push( skyactor );
 	}
 
-	override void OnDestroy() {
-		LinkToWorld();
-
+	void Clear() {
 		for ( int i = 0; i < skyboxActors.Size(); i++ )
 			skyboxActors[ i ].Destroy();
 
+		Super.OnDestroy();
+	}
+
+	override void OnDestroy() {
+		LinkToWorld();
 		Super.OnDestroy();
 	}
 } // of class W2SkyboxViewpoint: SkyViewpoint {}

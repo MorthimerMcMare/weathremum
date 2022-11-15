@@ -48,6 +48,8 @@ class W2LevelGeneralData {
 
 	// TODO: remove??
 	Array<int> corniceLinesFlags;			// For the raindrops effect from a canopy.
+
+	W2SkyboxViewpoint sky;
 }
 
 

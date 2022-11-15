@@ -223,17 +223,17 @@ class WeathremumHandler: EventHandler {
 			W2Global.Log( LL_Detailed, "Created handler " .. initCurW2PlayerHandler.GetClassName() .. " for player " .. e.PlayerNumber .. "." );
 
 
-			W2SkyboxViewpoint sky = W2SkyboxViewpoint.Create( e.PlayerNumber );
+			W2SkyboxViewpoint sky = w2level.sky = W2SkyboxViewpoint.Create( e.PlayerNumber );
 
-			sky.CreateActor( "W2NightOceanSkybox", (0, 90.0, 16.0) );
+			sky.CreateActorSpherical( "W2NightOceanSkybox", (0, 90.0, 16.0) );
 
-			W2SkyboxFog skyfog = W2SkyboxFog( sky.CreateActor( "W2SkyboxFog", (0, 90.0, 16.0) ) );
+			W2SkyboxFog skyfog = W2SkyboxFog( sky.CreateActorSpherical( "W2SkyboxFog", (0, 90.0, 16.0) ) );
 			skyfog.SetType( skyfog.SFT_Dark, 0.5 );
 
 			for ( int i = 0; i < 1024; i++ )
-				sky.CreateActor( "W2SkyboxSmallStar", (FRandom( 0.0, 360.0 ), FRandom( 10.0, 90.0 ), 512.0) );
+				sky.CreateActorSpherical( "W2SkyboxSmallStar", (FRandom( 0.0, 360.0 ), FRandom( 10.0, 90.0 ), 512.0) );
 		}
-		
+
 		Super.PlayerEntered( e );
 
 		/*if ( e.PlayerNumber == consoleplayer && gl_texture_format == "5" ) {

@@ -186,6 +186,48 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 	}
 }
 
+class Weathremum_SkyboxRaindrop: W2DynamicSkyActor {
+	Default {
+		+NOBLOCKMAP;
+		+NOINTERACTION;
+		+NOTONAUTOMAP;
+		+DONTSPLASH;
+		Height 0;
+		Radius 1;
+		RenderStyle "Translucent";
+	}
+
+	override void PostBeginPlay() {
+		//vel.z = -35.0;
+		scale = 0.5 * ( FRandom( 0.1, 0.3 ), FRandom( 0.75, 2 ) );
+		alpha = FRandom( 0.3, 0.9 );
+
+		ClearInterpolation();
+	}
+
+	override void Tick() {
+		if ( level.frozen || globalfreeze )
+			return;
+
+		AddZ( -35.0 );
+
+		if ( curState.tics != -1 ) {
+			if ( --tics <= 0 )
+				SetState( curState.nextState );
+		}
+
+		//Super.Tick();
+	}
+
+	States {
+	Spawn:
+		RAIN N 6;
+		Stop;
+	}
+} // of class Weathremum_SkyboxRaindrop: Weathremum_Raindrop {}
+
+
+
 class Weathremum_WaterRipple: Actor {
 	Default {
 		+NOTONAUTOMAP;
