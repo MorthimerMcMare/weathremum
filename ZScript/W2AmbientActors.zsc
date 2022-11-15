@@ -71,7 +71,9 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	void RaindropPreSplash( void ) {
-		w2sector = w2level.GetSectorData( Sector.PointInSector( pos.xy ) );
+		//FindFloorCeiling();
+		w2sector = w2level.GetSectorData( cursector );
+		//w2sector = w2level.GetSectorData( Sector.PointInSector( pos.xy ) );
 		EWeathremumSectorType w2type = ( w2sector? w2sector.w2type : W2ST_None );
 
 		if ( w2type == W2ST_Water || w2type == W2ST_Nukage || w2type == W2ST_Incandecent ) {

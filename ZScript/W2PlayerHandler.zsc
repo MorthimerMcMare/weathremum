@@ -100,13 +100,15 @@ class W2PlayerHandler: Thinker {
 				if ( ldata.isCornice ) {
 					corniceLines.Push( l );
 
+					// Treat line as a cliff if it is enough high (relative to 
+					//the player's camera) and if its sectors has proper height.
 					if ( min( ldata.fceilz, ldata.bceilz ) > pos.z - 256.0
-						 && (  ( afront >= W2AT_Cornice && cliffdelta > 16.0 )
-							|| ( aback >= W2AT_Cornice && cliffdelta < -16.0 )
+						 && (  ( cliffdelta > 16.0 && afront >= W2AT_Cornice && ldata.fceilz - ldata.ffloorz > 32.0 )
+							|| ( cliffdelta < -16.0 && aback >= W2AT_Cornice && ldata.bceilz - ldata.bfloorz > 32.0 )
 						) )
 						isCliff = true;
 
-				} else if ( afront >= W2AT_Cornice && aback >= W2AT_Cornice && abs( cliffdelta ) > 16.0 ) {
+				} else if ( afront >= W2AT_Cornice && aback >= W2AT_Cornice && W2AT_Cornice != ( afront & aback & W2AT_Cornice ) && abs( cliffdelta ) > 16.0 ) {
 					isCliff = true;
 				}
 
@@ -197,7 +199,15 @@ class W2PlayerHandler: Thinker {
 			// Scalar product here will be in range [-1.0; 1.0].
 			double windProjection = ldata.cliffDir dot windDir;
 
-			double spawnCoef = 137.0 * W2GlobalMath.Power( windProjection + 1.05, -0.5 );
+			if ( ldata.isCornice ) {
+				if ( windProjection > 0.0 )
+					continue;
+
+				windProjection = -0.5 * windProjection;
+			}
+
+			//double spawnCoef = 137.0 * W2GlobalMath.Power( windProjection + 1.05, -0.5 );
+			double spawnCoef = 64.0 * ( 1 - windProjection ) + 76.0;
 
 			double spawnChange = ldata.linelen / spawnCoef;
 			int spawnAmount = int( floor( spawnChange ) );
@@ -208,7 +218,7 @@ class W2PlayerHandler: Thinker {
 			for ( int i = 0; i < spawnAmount; i++ ) {
 				Weathremum_Raindrop raindrop = Weathremum_Raindrop( Actor.Spawn( "Weathremum_CanopyRaindrop", ( l.v1.p + ldata.deltadir * FRandom( 0.0, ldata.linelen ) + ldata.cliffDir, maxspawnheight ) ) );
 
-				raindrop.vel.xy = ldata.cliffDir * FRandom( 0.0, ( ( windProjection + 0.8 ) * 2.0 ) );
+				raindrop.vel.xy = ldata.cliffDir * FRandom( 0.0, ( ( windProjection + 1.0 ) * 2.0 ) );
 				raindrop.master = raindrop.target = target;
 				raindrop.w2level = w2level;
 			}
