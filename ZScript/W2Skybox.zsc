@@ -68,9 +68,13 @@ class W2SkyboxViewpoint: SkyViewpoint {
 
 		newskies.FriendPlayer = clamp( playernum, 0, MAXPLAYERS );
 		newskies.master = ( playeringame[ playernum ] && players[ playernum ].mo )? players[ playernum ].mo : NULL;
-		newskies.UnlinkFromWorld();
-		newskies.bNOINTERACTION = true;
 		newskies.SetOrigin( (-100000, 0, 0), false );
+
+		newskies.FindFloorCeiling();
+		newskies.SetZ( newskies.floorz - 16.0 );
+
+		newskies.bNOINTERACTION = true;
+		newskies.UnlinkFromWorld();
 
 		if ( newskies.master )
 			newskies.realangle = -newskies.master.angle;
