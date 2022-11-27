@@ -1,16 +1,18 @@
 # Weathremum
 
-## Main ##
+## Crew ##
 
 Morthimer McMare (JSO_x): idea, code, algorithms and data structures;
 
-Dezette: optimisation comparing, beta-testing;
+Dezette: optimization comparing, beta-testing;
+
+Chameleon_111: beta-testing, some sprites;
 
 Renaul Damek: beta-testing, realism consultant;
 
 crazyEagle: beta-testing, realism consultant;
 
-Chameleon_111: beta-testing;
+identifiera: approximation method idea;
 
 ika707: beta-testing.
 
@@ -31,5 +33,7 @@ ika707: beta-testing.
 
 **Broil** ("freak9_6.pk3") by Dezette: rain splashes;
 
-shutterstock.com: water ripples.
+**Old Good RPG Doom** by Woodpecker Bird: water ripples, lightnings;
+
+shutterstock.com: rock sphashes (heavily reworked).
 

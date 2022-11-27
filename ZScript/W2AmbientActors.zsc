@@ -79,9 +79,9 @@ class Weathremum_Raindrop: Actor {
 		if ( w2type == W2ST_Water || w2type == W2ST_Nukage || w2type == W2ST_Incandecent ) {
 
 			if ( w2sector.w2type == W2ST_Water ) {
-				if ( target && Distance2D( target ) <= 512.0 && target.pos.z > pos.z - 64.0 ) {
+				if ( target && Distance2D( target ) <= 448.0 && target.pos.z > pos.z - 64.0 ) {
 					for ( int i = 0; i < 3; i++ )
-						Actor.Spawn( "Weathremum_WaterRipple", pos + ( FRandom( -4.0, 4.0 ), FRandom( -4.0, 4.0 ), 0.0 ) );
+						Actor.Spawn( "Weathremum_WaterRipple", pos + ( FRandom( -7.0, 7.0 ), FRandom( -7.0, 7.0 ), 0.0 ) );
 				}
 
 			} else if ( !Random( 0, 7 ) ) {
@@ -149,7 +149,7 @@ class Weathremum_Raindrop: Actor {
 
 	States {
 	Spawn:
-		RAIN N -1;
+		RAIN A -1;
 		Stop;
 	Death:
 		RAIN "#" 0 RaindropPreSplash();
@@ -219,6 +219,8 @@ class Weathremum_WaterRipple: Actor {
 		+FLATSPRITE;
 		+FLOORCLIP;
 		RenderStyle "Translucent";
+		Radius 0;
+		Height 0;
 	}
 
 	override void BeginPlay() {
@@ -228,25 +230,25 @@ class Weathremum_WaterRipple: Actor {
 
 	override void PostBeginPlay() {
 		frame = Random( 0, 3 );
-		alpha = FRandom( 0.095, 0.333 );
-		scale.x = scale.y = FRandom( 0.1, 0.25 );
+		alpha = FRandom( 0.095, 0.35 );
+		scale.x = scale.y = FRandom( 0.04, 0.1 );
 	}
 
 	override void Tick() {
 		if ( !globalfreeze && !level.frozen ) {
-			Super.Tick();
+			//Super.Tick();
 
-			scale.y = ( scale.x += 0.025 );
-			A_FadeOut( 0.025 );
+			if ( ++frame > 11 ) // 22
+				Destroy();
+
+			A_FadeOut( 0.02 );
 		}
 	}
 
 	States {
 	Spawn:
-		WRPL "#" 2 {
-			frame = ( frame + 1 ) % 4;
-		}
-		Loop;
+		WRPL "#" 2;
+		Stop;
 	}
 }
 
@@ -279,7 +281,7 @@ class Weathremum_HardSurfaceRaindropBreak: Actor {
 
 	States {
 	Spawn:
-		WRPL "#" -1;
+		RRPL "#" -1;
 		Stop;
 	}	
 }
@@ -288,24 +290,26 @@ class Weathremum_NukageVapor: Actor {
 	Default {
 		+NOTONAUTOMAP;
 		+NOINTERACTION;
-		+FLATSPRITE;
-		RenderStyle "Add";
+		RenderStyle "Translucent";
+		Radius 0;
+		Height 0;
 	}
 
 	override void BeginPlay() {
-		ChangeStatNum( STAT_WEATHREMUM_MAINDECOR );
+		ChangeStatNum( STAT_WEATHREMUM_EXTRADECOR );
 		Super.BeginPlay();
 	}
 
 	override void PostBeginPlay() {
 		vel.z = FRandom( 0.0, 5.0 );
 		alpha = FRandom( 0.075, 0.33 );
-		scale.x = scale.y = FRandom( 0.25, 0.75 ) * FRandomPick( -1.0, 1.0 );
+		scale.x = scale.y = FRandom( 0.1, 0.23 );
+		scale.x *= FRandomPick( -1.0, 1.0 );
 	}
 
 	States {
 	Spawn:
-		RAIS ABCDEFGHI 2 A_FadeOut( 0.05 );
+		RAIS ABCDEFGHIJKL 1 A_FadeOut( 0.02 );
 		Stop;
 	}
 }
