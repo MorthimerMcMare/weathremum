@@ -170,6 +170,10 @@ class W2SkyboxFog: W2DynamicSkyActor {
 class W2NightOceanSkybox: W2StaticSkyActor {
 }
 
+class W2Galaxy1Skybox: W2StaticSkyActor {
+}
+
+
 class W2SkyboxSmallStar: W2DynamicSkyActor {
 	Default {
 		+FORCEXYBILLBOARD;

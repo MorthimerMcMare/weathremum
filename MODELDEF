@@ -20,12 +20,24 @@ Model W2SkyboxFog {
 
 // Night ocean skybox:
 Model W2NightOceanSkybox {
-	Path "Models/SkyboxNightOcean/"
+	Path "Models/Skyboxes/"
 
 	Model 0 "W2Skybox.md3"
 	Scale 64.0 64.0 64.0
 	DONTCULLBACKFACES
 
 	Skin 0 "UVSkybox_NightOcean.png"
+	FrameIndex	TROO	A	0	0
+}
+
+// Night ocean skybox:
+Model W2Galaxy1Skybox {
+	Path "Models/Skyboxes/"
+
+	Model 0 "W2Skybox.md3"
+	Scale 64.0 64.0 64.0
+	DONTCULLBACKFACES
+
+	Skin 0 "UVSkybox_Galaxy1.png"
 	FrameIndex	TROO	A	0	0
 }

@@ -261,6 +261,7 @@ class WeathremumHandler: EventHandler {
 			W2SkyboxViewpoint sky = w2level.sky = W2SkyboxViewpoint.Create( e.PlayerNumber );
 
 			sky.CreateActorSpherical( "W2NightOceanSkybox", (0, 90.0, 16.0) );
+			//sky.CreateActorSpherical( "W2Galaxy1Skybox", (0, 90.0, 16.0) );
 
 			W2SkyboxFog skyfog = W2SkyboxFog( sky.CreateActorSpherical( "W2SkyboxFog", (0, 90.0, 16.0) ) );
 			skyfog.SetType( skyfog.SFT_Dark, 0.5 );
