@@ -15,6 +15,9 @@ class W2PlayerHandler: Thinker {
 	Actor master; // Player.
 	Actor target; // An actor to follow (player or his camera).
 
+	vector2 closestCorniceXYPoint;
+	double closestCorniceDist;
+
 	transient CVar raindropsAlphaMulCVar;
 
 	void DoCVarsHandling( void ) {
@@ -24,9 +27,27 @@ class W2PlayerHandler: Thinker {
 		w2level.raindropsAlphaMul = raindropsAlphaMulCVar.GetFloat();
 	}
 
+	protected void updateVisibleCorniceXY( W2LinedefData ldata ) {
+		if ( closestCorniceDist > 1.0 ) {
+			vector2 deltadir = ( ldata.closestXYPointToPlayer - target.pos.xy );
+
+			if ( target.AngleToVector( target.angle, 1.0 ) dot deltadir > 0.0 ) {
+				double curLineDist = deltadir.Length();
+
+				if ( curLineDist < closestCorniceDist ) {
+					closestCorniceXYPoint = ldata.closestXYPointToPlayer;
+					closestCorniceDist = curLineDist;
+				}
+			}
+		} // of if ( curLineDist > 1.0 ) {}
+	} // of protected void updateVisibleCorniceXY( W2LinedefData ldata ) {}
+
 	void DoSectorEffects( void ) {
 		corniceLines.Clear();
 		cliffLines.Clear();
+
+		// Searching for all types of the defined surfaces around player:
+		closestCorniceDist = 9999.9;
 
 		// Picking up and applying a current player sector sound type:
 		EWeathremumAreaType aCursector = W2ST_None;
@@ -43,11 +64,9 @@ class W2PlayerHandler: Thinker {
 
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Left );
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Right );
+				closestCorniceDist = 0.0;
 			}
 		}
-
-
-		// Searching for all types of the defined surfaces around player:
 
 		// Second argument is an environment test radius.
 		BlockLinesIterator it = BlockLinesIterator.Create( target, 768 );
@@ -83,11 +102,15 @@ class W2PlayerHandler: Thinker {
 			}
 
 			// Try to find a minimal length for the current sound:
-			if ( afront == W2AT_Outdoors && frontsecdata.GetHeight() > 2.0 /*&& tfront != tCursector*/ )
+			if ( afront == W2AT_Outdoors && frontsecdata.GetHeight() > 2.0 /*&& tfront != tCursector*/ ) {
 				sndkeepers[ tfront ].SuggestLine( ldata, frontsec );
+				updateVisibleCorniceXY( ldata );
+			}
 
-			if ( aback == W2AT_Outdoors && tback != tfront && backsecdata.GetHeight() > 2.0 /*&& tback != tCursector*/ )
+			if ( aback == W2AT_Outdoors && tback != tfront && backsecdata.GetHeight() > 2.0 /*&& tback != tCursector*/ ) {
 				sndkeepers[ tback ].SuggestLine( ldata, backsec );
+				updateVisibleCorniceXY( ldata );
+			}
 
 
 			// Cliffs and cornices rain effect:
@@ -227,13 +250,15 @@ class W2PlayerHandler: Thinker {
 		if ( w2level.sky ) {
 			W2SkyboxViewpoint sky = w2level.sky;
 
+			closestCorniceXYPoint;
+
 			bool thetaWholeCircle = ( abs( target.pitch ) > 50.0 );
 			double circleRadius = 100.0 + ( 96.0 * !thetaWholeCircle );
 
 			for ( int i = 0; i < 80; i++ ) {
 				double angletheta = ( thetaWholeCircle? FRandom( 0.0, 360.0 ) : target.angle + FRandom( -90.0, 90.0 ) );
 
-				vector2 raindropPos = ( cos( angletheta ), sin( angletheta ) ) * ( 2.0 + FRandom( 0.0, 1.0 ) * circleRadius );
+				vector2 raindropPos = ( cos( angletheta ), sin( angletheta ) ) * ( closestCorniceDist * 0.25 + 2.0 + FRandom( 0.0, 1.0 ) * circleRadius );
 
 				Weathremum_SkyboxRaindrop raindrop = Weathremum_SkyboxRaindrop( sky.CreateActor( "Weathremum_SkyboxRaindrop", ( raindropPos, FRandom( 96.0, 130.0 ) ) ) );
 				raindrop.w2level = w2level;
