@@ -107,7 +107,9 @@ class W2SkyboxViewpoint: SkyViewpoint {
 		skyactor.skycam = self;
 		skyactor.sphericaloffset = W2BaseSkyActor.vector3ToSpherical( thingCartesianOffset );
 
-		return skyactor, skyboxActors.Push( skyactor );
+		int pushedIndex = skyboxActors.Push( skyactor );
+
+		return skyactor, pushedIndex;
 	}
 
 	W2BaseSkyActor, uint CreateActorSpherical( class<W2BaseSkyActor> cls, vector3 thingSphericalOffset ) {
@@ -115,7 +117,9 @@ class W2SkyboxViewpoint: SkyViewpoint {
 		skyactor.skycam = self;
 		skyactor.sphericaloffset = thingSphericalOffset;
 
-		return skyactor, skyboxActors.Push( skyactor );
+		int pushedIndex = skyboxActors.Push( skyactor );
+
+		return skyactor, pushedIndex;
 	}
 
 	void Clear() {

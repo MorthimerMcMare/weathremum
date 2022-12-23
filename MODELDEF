@@ -38,6 +38,6 @@ Model W2Galaxy1Skybox {
 	Scale 64.0 64.0 64.0
 	DONTCULLBACKFACES
 
-	Skin 0 "UVSkybox_Galaxy1.png"
+	Skin 0 "GalaxyWide.png"
 	FrameIndex	TROO	A	0	0
 }

@@ -248,7 +248,7 @@ class Weathremum_SkyboxRaindrop: W2DynamicSkyActor {
 
 	States {
 	Spawn:
-		RAIN N 5;
+		RAIN A 5;
 		Stop;
 	}
 } // of class Weathremum_SkyboxRaindrop: Weathremum_Raindrop {}
