@@ -7,6 +7,12 @@ version "3.3.0"
 
 const WeathremumVersion = "0.3a";
 
+struct Debug {
+	static void Print( String msg ) {
+		console.printf( TEXTCOLOR_DARKGRAY .. msg );
+	}
+}
+
 
 class WeathremumHandler: EventHandler {
 	W2LevelGeneralData w2level;
@@ -32,7 +38,7 @@ class WeathremumHandler: EventHandler {
 
 		W2Global.Log( LL_Detailed, "Weathremum v" .. WeathremumVersion .. " handler initialized." );
 
-		W2Global.ClearscopeLog( LL_Debug, "OnRegister(). Consoleplayer == " .. consoleplayer );
+		Debug.Print( "OnRegister(). Consoleplayer == " .. consoleplayer );
 
 		Super.OnRegister();
 	}
@@ -142,7 +148,7 @@ class WeathremumHandler: EventHandler {
 			String w2oldSectypeName = ( w2oldSectype != W2ST_None? W2SoundKeeper.WeathremumSectorTypeNames[ w2oldSectype ] : TEXTCOLOR_RED .. "<None>" .. LLCOLOR_DEBUG );
 			String w2newSectypeName = ( w2secdata.w2type != W2ST_None? W2SoundKeeper.WeathremumSectorTypeNames[ w2secdata.w2type ] : TEXTCOLOR_RED .. "<None>" .. LLCOLOR_DEBUG );
 
-			W2Global.ClearscopeLog( LL_Debug, GetClassName() .. "::UpdateW2SectorSurfaceType(). Updated sector #" .. sec.Index() .. " from \"" .. w2oldSectypeName .. "\" (" .. w2oldSectype .. ") to \"" .. w2newSectypeName .. "\" (" .. w2secdata.w2type .. ")." );
+			Debug.Print( GetClassName() .. "::UpdateW2SectorSurfaceType(). Updated sector #" .. sec.Index() .. " from \"" .. w2oldSectypeName .. "\" (" .. w2oldSectype .. ") to \"" .. w2newSectypeName .. "\" (" .. w2secdata.w2type .. ")." );
 		}
 	} // of void UpdateW2SectorSurfaceType( out W2SectorData w2secdata, Sector sec ) {}
 
@@ -255,14 +261,12 @@ class WeathremumHandler: EventHandler {
 	int debugTraceLineIndex;
 
 	override void WorldTick() {
-		W2Global.ClearscopeLog( LL_Debug, TEXTCOLOR_SAPPHIRE .. "WorldTick(). Started; pre-array sizes check. Consoleplayer == " .. consoleplayer );
+		Debug.Print( TEXTCOLOR_SAPPHIRE .. "WTick(). Pre-ArrSz, conpl=" .. consoleplayer );
 
 		if ( w2level.allSectorsData.Size() != totalLevelSectors ) {
 			W2Global.Log( LL_Debug, GetClassName() .. "::WorldLoaded(). " .. TEXTCOLOR_DARKRED .. "False sectors size" .. LLCOLOR_DEBUG .. ": now " .. w2level.allSectorsData.Size() .. ", saved " .. totalLevelSectors .. ", really " .. level.sectors.Size() .. ". Recreating Weathremum level data..." );
 			CreateGeneralSectorsData();
 		}
-
-		W2Global.ClearscopeLog( LL_Debug, TEXTCOLOR_SAPPHIRE .. "WorldTick(). Pre-Debug LineTrace." );
 
 		if ( W2Global.GetLoglevel() >= LL_Debug ) {
 	        FLineTraceData ptrace;
@@ -272,7 +276,7 @@ class WeathremumHandler: EventHandler {
 			debugTraceLineIndex = ( ptrace.hitLine? ptrace.hitLine.Index() : -1 );
 		}
 
-		W2Global.ClearscopeLog( LL_Debug, TEXTCOLOR_SAPPHIRE .. "WorldTick(). Pre-UpdateW2SectorSurfaceType() loop." );
+		Debug.Print( TEXTCOLOR_SAPPHIRE .. "WTick(). Pre-UpdSecs loop." );
 
 		for ( int i = 0; i < updateSectorsMaxTickAmount; i++ ) {
 			Sector s = level.sectors[ updateSectorCurIndex ];
@@ -287,7 +291,7 @@ class WeathremumHandler: EventHandler {
 			updateSectorCurIndex = ( updateSectorCurIndex + 1 ) % totalLevelSectors;
 		}
 
-		W2Global.ClearscopeLog( LL_Debug, TEXTCOLOR_SAPPHIRE .. "WorldTick(). Pre-globalWindVectorChange (now " .. globalWindVectorChangeCountdown .. ")" );
+		Debug.Print( TEXTCOLOR_SAPPHIRE .. "WTick(). Pre-WindChg (glb " .. globalWindVectorChangeCountdown .. ", blw " .. blowWindVectorChangeCountdown .. ")" );
 
 		if ( --globalWindVectorChangeCountdown <= 0 ) {
 			w2level.globalWindVector.x = clamp( w2level.globalWindVector.x + FRandom( -1.0, 1.0 ), -5.0, 5.0 );
@@ -295,8 +299,6 @@ class WeathremumHandler: EventHandler {
 			globalWindVectorChangeCountdown = Random( 35 * 5, 35 * 100 );
 			W2Global.Log( LL_Debug, GetClassName() .. "::WorldTick(). " .. TEXTCOLOR_CYAN .. "Global wind " .. LLCOLOR_DEBUG .. "changed to " .. w2level.globalWindVector .. ", left " .. globalWindVectorChangeCountdown .. " tics." );
 		}
-
-		W2Global.ClearscopeLog( LL_Debug, TEXTCOLOR_SAPPHIRE .. "WorldTick(). Pre-blowlWindVectorChange (now " .. blowWindVectorChangeCountdown .. ")." );
 
 		w2level.blowWindVector *= 0.975;
 
@@ -321,7 +323,7 @@ class WeathremumHandler: EventHandler {
 
 		Super.WorldTick();
 
-		W2Global.ClearscopeLog( LL_Debug, TEXTCOLOR_SAPPHIRE .. "WorldTick(). Post Super.WorldTick(). Total sounds: " .. playerHandlers[ consoleplayer ].sndkeepers.Size() );
+		Debug.Print( TEXTCOLOR_SAPPHIRE .. "WTick() end. Total sndkpr: " .. playerHandlers[ consoleplayer ].sndkeepers.Size() );
 	}
 
 	/*override void NetworkProcess( ConsoleEvent e ) {
@@ -343,7 +345,7 @@ class WeathremumHandler: EventHandler {
 			return;
 		}
 
-		//W2Global.ClearscopeLog( LL_Debug, TEXTCOLOR_SAPPHIRE .. "RenderOverlay(). Total sounds: " .. playerhandler.sndkeepers.Size() );
+		//Debug.Print( TEXTCOLOR_SAPPHIRE .. "RenderOverlay(). Total sounds: " .. playerhandler.sndkeepers.Size() );
 
 		W2SectorData secdata = ( playerhandler.floorsector? w2level.allSectorsData[ playerhandler.floorsector.Index() ] : NULL );
 
@@ -385,7 +387,7 @@ class WeathremumHandler: EventHandler {
 		Screen.DrawText( smallfont, Font.CR_GRAY, 30, 60, outStr,
 						DTA_KeepRatio, true, DTA_VirtualWidth, 1366, DTA_VirtualHeight, 768 );
 
-		//W2Global.ClearscopeLog( LL_Debug, TEXTCOLOR_SAPPHIRE .. "RenderOverlay(). Current sector: " .. (secdata? secdata.s.Index() : "(none)" ) .. ", line ID: " .. debugTraceLineIndex .. "" );
+		//Debug.Print( TEXTCOLOR_SAPPHIRE .. "RenderOverlay(). Current sector: " .. (secdata? secdata.s.Index() : "(none)" ) .. ", line ID: " .. debugTraceLineIndex .. "" );
 
 		if ( secdata )
 			Screen.DrawText( smallfont, Font.CR_GRAY, 1100, 100, "Current sector: " .. secdata.s.Index(),

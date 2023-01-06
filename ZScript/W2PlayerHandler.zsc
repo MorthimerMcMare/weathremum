@@ -26,7 +26,7 @@ class W2PlayerHandler: Actor {
 
 
 	void DoSectorEffects( void ) {
-		W2Global.ClearscopeLog( LL_Debug, "  W2PlayerHandler::DoSectorEffects() start." );
+		Debug.Print( "PlHnlr:Secs() strt." );
 
 		corniceLines.Clear();
 		cliffLines.Clear();
@@ -43,7 +43,7 @@ class W2PlayerHandler: Actor {
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Left );
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Right );
 
-				W2Global.ClearscopeLog( LL_Debug, "  W2PlayerHandler::DoSectorEffects(). Ceilsector suggested successful, w2type " .. tCursector .. ", newpos " .. ZCGlobal.squeezeVector3( newpos ) );
+				Debug.Print( "PlHnlr:Secs(). CurSec: w2t " .. tCursector .. ", pos " .. ZCGlobal.squeezeVector3( newpos ) );
 			}
 		}
 
@@ -127,7 +127,7 @@ class W2PlayerHandler: Actor {
 			debugPickedLinesAmount++;
 		} // of while ( it.Next() ) {}
 
-		W2Global.ClearscopeLog( LL_Debug, "  W2PlayerHandler::DoSectorEffects() end. Quantities: all lines " .. debugAllLinesAmount .. ", picked lines " .. debugPickedLinesAmount );
+		Debug.Print( "PlHnlr:Secs() LnAmnt: all " .. debugAllLinesAmount .. ", pick " .. debugPickedLinesAmount );
 	} // of void DoSectorEffects( void ) {}
 
 
@@ -161,7 +161,7 @@ pos.Z == FLOATRANDZ
 		// For the cumulative distribution function "sqrt()" addition 
 		//thanks to https://habr.com/ru/post/583838/.
 
-		W2Global.ClearscopeLog( LL_Debug, "  W2PlayerHandler::DoRainEffects() start." );
+		Debug.Print( "PlHnlr:Rain() start." );
 
 		// Outdoor areas raindrop effect:
 		for ( int i = 0; i < 250; i++ ) {
@@ -189,7 +189,7 @@ pos.Z == FLOATRANDZ
 		vector2 windDir = ( w2level.globalWindVector + 3.0 * w2level.blowWindVector );
 		windDir /= windDir.Length();
 
-		W2Global.ClearscopeLog( LL_Debug, "  W2PlayerHandler::DoRainEffects(). Pre-cornices, array size " .. corniceLines.Size() .. ", windDir " .. windDir );
+		Debug.Print( "PlHnlr:Rain(). CrncArr sz " .. corniceLines.Size() );
 
 		// Cornice raindrops effect:
 		for ( int i = 0; i < corniceLines.Size(); i++ ) {
@@ -226,7 +226,7 @@ pos.Z == FLOATRANDZ
 			}
 		} // of for ( int i = 0; i < corniceLines.Size(); i++ ) {}
 
-		W2Global.ClearscopeLog( LL_Debug, "  W2PlayerHandler::DoRainEffects(). Pre-cliffs, array size " .. cliffLines.Size() );
+		Debug.Print( "PlHnlr:Rain(). ClifArr sz " .. cliffLines.Size() );
 
 		// Raindrops from cliffs:
 		for ( int i = 0; i < cliffLines.Size(); i++ ) {
@@ -259,8 +259,6 @@ pos.Z == FLOATRANDZ
 				raindrop.w2level = w2level;
 			}
 		} // of for ( int i = 0; i < cliffLines.Size(); i++ ) {}
-
-		W2Global.ClearscopeLog( LL_Debug, "  W2PlayerHandler::DoRainEffects() end." );
 	} // of void DoRainEffects( void ) {}
 
 
@@ -282,7 +280,7 @@ pos.Z == FLOATRANDZ
 
 		//console.printf( "W2PlH <" .. self .. "> target: <" .. target .. "> (Frnd <" .. pl.mo .. ">), useMultipl " .. useMultiplayerPos .. "-> " .. newpos );
 
-		W2Global.ClearscopeLog( LL_Debug, "W2PlayerHandler::Tick(). Post-skips, player " .. consoleplayer );
+		Debug.Print( "PlHnlr:Tick(). Plr " .. consoleplayer );
 
 		// Move the handler actor to the camera position:
 		SetOrigin( ( pl.Camera? pl.Camera.pos : target.pos ), true );
@@ -308,7 +306,7 @@ pos.Z == FLOATRANDZ
 		//int a = 0.123456; // Next line is for debug (uncomment lines above):
 		//sndkeepers[ W2ST_NormalSurface ].PostTick();
 
-		W2Global.ClearscopeLog( LL_Debug, "W2PlayerHandler::Tick(). Pre-Super.Tick() for player " .. consoleplayer );
+		Debug.Print( "PlHnlr:Tick(). Pre-Super, plr " .. consoleplayer );
 
 		Super.Tick();
 	} // of override void Tick() {}
