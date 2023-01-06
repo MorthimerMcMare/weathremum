@@ -77,6 +77,13 @@ class W2Global: Thinker {
 		console.printf( logPrefix .. text );
 	} // of static clearscope void ClearscopeLog( EWeathremumLogLevels loglevel, String text ) {}
 
+    static clearscope String squeezeVector3( vector3 vec ) {
+		return String.Format( "(%i, %i, %i)", int( vec.x ), int( vec.y ), int( vec.z ) );
+    }
+    static clearscope String squeezeVector2( vector2 vec ) {
+		return String.Format( "(%i, %i)", int( vec.x ), int( vec.y ) );
+    }
+
 	static int GetLoglevel( void ) {
 		return W2Global.Get().curloglevel;
 	}

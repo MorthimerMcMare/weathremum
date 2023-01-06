@@ -178,6 +178,8 @@ class W2SoundKeeper play {
 	}
 
 	void SuggestLine( W2LinedefData curlinedata, Sector lsec ) {
+		W2Global.ClearscopeLog( LL_Debug, "    W2SndKpr::SgstLine(). Start. curlinedata " .. curlinedata .. "(line id " .. curlinedata.l.Index() .. "), lsec " .. lsec );
+
 		// Minimal length, from linedef to the player position point.
 		double curminlength;
 		vector2 curposxy;
@@ -186,6 +188,7 @@ class W2SoundKeeper play {
 		vector2 v1p = curline.v1.p;
 		vector2 v2p = curline.v2.p;
 		vector2 plp = ppos.xy;
+		bool isPerp = false;
 
 		if ( ( (v1p - plp) dot (v1p - v2p) <= 0.0 ) || ( (v2p - plp) dot (v2p - v1p) <= 0.0 ) ) {
 			// If there's no way to draw a perpendicular, getting the nearest vertex:
@@ -205,6 +208,8 @@ class W2SoundKeeper play {
 			double dlx = curline.delta.x;
 			double dly = curline.delta.y;
 
+			isPerp = true;
+
 			if ( dlx == 0.0 ) {
 				curposxy = (v1p.x, plp.y);
 
@@ -220,6 +225,8 @@ class W2SoundKeeper play {
 		}
 
 		curlinedata.closestXYPointToPlayer = curposxy;
+
+		W2Global.ClearscopeLog( LL_Debug, "    W2SndKpr::SgstLine(). curminlength " .. int( curminlength ) .. ", isPerp " .. isPerp .. ", curposxy " .. W2Global.squeezeVector2( curposxy ) );
 
 		double floorzdiff = abs( lsec.floorplane.d * lsec.floorplane.negiC - ppos.z );
 		curminlength = sqrt( curminlength * curminlength + floorzdiff * floorzdiff );
@@ -252,6 +259,7 @@ class W2SoundKeeper play {
 			status = W2HS_Active;
 		} // of if ( curminlength < minlength[ W2SD_Left ] || curminlength < minlength[ W2SD_Right ] ) {}
 
+		W2Global.ClearscopeLog( LL_Debug, "    W2SndKpr::SgstLine(). End. minlen: [" .. int( minlength[ W2SD_Left ] ) .. ", " .. int( minlength[ W2SD_Right ] ) .. "]; minxyz: " .. W2Global.squeezeVector3( minposxyz[ W2SD_Left ] ) .. ", " .. W2Global.squeezeVector3( minposxyz[ W2SD_Right ] ) .. "]" );
 	} // of void SuggestLine( Line curline, Sector lsec ) {}
 
 
@@ -273,6 +281,8 @@ class W2SoundKeeper play {
 
 
 	void PreTick( void ) {
+		W2Global.ClearscopeLog( LL_Debug, "  W2SoundKeeper()::PreTick() start. W2Type " .. w2type );
+
 		minlength[ W2SD_Left ] = minlength[ W2SD_Right ] = 999.9;
 		ppos = master.pos + (0.0, 0.0, master.player.ViewHeight);
 
@@ -297,6 +307,8 @@ class W2SoundKeeper play {
 	}
 
 	void PostTick( void ) {
+		W2Global.ClearscopeLog( LL_Debug, "  W2SoundKeeper::PostTick() start. W2Type " .. w2type .. ", status " .. status );
+
 		if ( status == W2HS_Active ) {
 			// Creating new sound origins if they are not spawned yet:
 			if ( !sndorigin[ W2SD_Left ] ) {
@@ -308,7 +320,7 @@ class W2SoundKeeper play {
 				}
 
 				String w2sectypeName = ( w2type != W2ST_None? WeathremumSectorTypeNames[ w2type ] : TEXTCOLOR_RED .. "<None>" .. LLCOLOR_DEBUG );
-				W2Global.Log( LL_Debug, GetClassName() .. "::PostTick(). " .. TEXTCOLOR_DARKGREEN .. "+Started" .. LLCOLOR_DEBUG .. " sound of type \"" .. w2sectypeName .. "\" (".. w2type .. ")." );
+				W2Global.ClearscopeLog( LL_Debug, GetClassName() .. "::PostTick(). " .. TEXTCOLOR_DARKGREEN .. "+Started" .. LLCOLOR_DEBUG .. " sound of type \"" .. w2sectypeName .. "\" (".. w2type .. ")." );
 			}
 
 
@@ -345,7 +357,7 @@ class W2SoundKeeper play {
 			status = W2HS_Off;
 
 			String w2sectypeName = ( w2type != W2ST_None? WeathremumSectorTypeNames[ w2type ] : TEXTCOLOR_RED .. "<None>" .. LLCOLOR_DEBUG );
-			W2Global.Log( LL_Debug, GetClassName() .. "::PostTick(). " .. TEXTCOLOR_DARKRED .. "-Stopped" .. LLCOLOR_DEBUG .. " sound of type \"" .. w2sectypeName .. "\" (".. w2type .. ")." );
+			W2Global.ClearscopeLog( LL_Debug, GetClassName() .. "::PostTick(). " .. TEXTCOLOR_DARKRED .. "-Stopped" .. LLCOLOR_DEBUG .. " sound of type \"" .. w2sectypeName .. "\" (".. w2type .. ")." );
 
 			for ( int i = 0; i < W2SD_Quantity; i++ ) {
 				if ( sndorigin[ i ] ) {
@@ -355,6 +367,7 @@ class W2SoundKeeper play {
 			}
 		}
 
+		W2Global.ClearscopeLog( LL_Debug, "  W2SoundKeeper::PostTick() end. sndorigin[l,r]: [" .. sndorigin[ W2SD_Left ] .. ", " .. sndorigin[ W2SD_Right ] .. "]" );
 	} // of void PostTick( void ) {}
 
 } // of class W2SoundKeeper {}
