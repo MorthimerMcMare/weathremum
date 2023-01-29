@@ -21,13 +21,10 @@ class W2PlayerHandler: Actor {
 
 	override void BeginPlay() {
 		rnd = WeathremumUnsyncRandom.Create();
-		Super.BeginPlay();
 	}
 
 
 	void DoSectorEffects( void ) {
-		Debug.Print( "PlHnlr:Secs() strt." );
-
 		corniceLines.Clear();
 		cliffLines.Clear();
 
@@ -42,8 +39,6 @@ class W2PlayerHandler: Actor {
 
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Left );
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Right );
-
-				Debug.Print( "PlHnlr:Secs(). CurSec: w2t " .. tCursector .. ", pos " .. W2Global.squeezeVector3( newpos ) );
 			}
 		}
 
@@ -127,7 +122,7 @@ class W2PlayerHandler: Actor {
 			debugPickedLinesAmount++;
 		} // of while ( it.Next() ) {}
 
-		Debug.Print( "PlHnlr:Secs() LnAmnt: all " .. debugAllLinesAmount .. ", pick " .. debugPickedLinesAmount );
+		Debug.Print( "PlHdl.Secs() end. Ln: all " .. debugAllLinesAmount .. ", pick " .. debugPickedLinesAmount );
 	} // of void DoSectorEffects( void ) {}
 
 
@@ -161,7 +156,7 @@ pos.Z == FLOATRANDZ
 		// For the cumulative distribution function "sqrt()" addition 
 		//thanks to https://habr.com/ru/post/583838/.
 
-		Debug.Print( "PlHnlr:Rain() start." );
+		Debug.Print( "PlHnlr.Rain(). CrncArr sz " .. corniceLines.Size() .. ", ClifArr sz " .. cliffLines.Size() );
 
 		// Outdoor areas raindrop effect:
 		for ( int i = 0; i < 250; i++ ) {
@@ -188,8 +183,6 @@ pos.Z == FLOATRANDZ
 
 		vector2 windDir = ( w2level.globalWindVector + 3.0 * w2level.blowWindVector );
 		windDir /= windDir.Length();
-
-		Debug.Print( "PlHnlr:Rain(). CrncArr sz " .. corniceLines.Size() );
 
 		// Cornice raindrops effect:
 		for ( int i = 0; i < corniceLines.Size(); i++ ) {
@@ -225,8 +218,6 @@ pos.Z == FLOATRANDZ
 				}
 			}
 		} // of for ( int i = 0; i < corniceLines.Size(); i++ ) {}
-
-		Debug.Print( "PlHnlr:Rain(). ClifArr sz " .. cliffLines.Size() );
 
 		// Raindrops from cliffs:
 		for ( int i = 0; i < cliffLines.Size(); i++ ) {
@@ -280,18 +271,16 @@ pos.Z == FLOATRANDZ
 
 		//console.printf( "W2PlH <" .. self .. "> target: <" .. target .. "> (Frnd <" .. pl.mo .. ">), useMultipl " .. useMultiplayerPos .. "-> " .. newpos );
 
-		Debug.Print( "PlHnlr:Tick(). Plr " .. consoleplayer );
+		Debug.Print( "PlHnlr:Tick(). Plr " .. consoleplayer .. ", time " .. level.maptime );
 
 		// Move the handler actor to the camera position:
-		SetOrigin( ( pl.Camera? pl.Camera.pos : target.pos ), true );
+		SetXYZ( pl.Camera? pl.Camera.pos : target.pos );
 		angle = target.angle;
 
 
 		// Sound keepers pre-tick handling:
 		for ( int i = 0; i < sndkeepers.Size(); i++ )
 			sndkeepers[ i ].PreTick();
-
-		//console.printf( GetClassName() .. "::Tick(). Maptime " .. level.maptime .. ", rnd.Random( 1, 10 ): " .. rnd.Random( 1, 10 ) .. "." );
 
 		DoSectorEffects(); 	// Sector sounds (rain, winds);
 
@@ -306,9 +295,7 @@ pos.Z == FLOATRANDZ
 		//int a = 0.123456; // Next line is for debug (uncomment lines above):
 		//sndkeepers[ W2ST_NormalSurface ].PostTick();
 
-		Debug.Print( "PlHnlr:Tick(). Pre-Super, plr " .. consoleplayer );
-
-		Super.Tick();
+		Debug.Print( "PlHnlr:Tick() end. plr " .. consoleplayer .. ", time " .. level.maptime );
 	} // of override void Tick() {}
 
 } // of class W2PlayerHandler: Actor {}

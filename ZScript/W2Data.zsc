@@ -279,8 +279,6 @@ class W2SoundKeeper play {
 
 
 	void PreTick( void ) {
-		Debug.Print( "SndKpr:Pre() start. W2T " .. w2type );
-
 		minlength[ W2SD_Left ] = minlength[ W2SD_Right ] = 999.9;
 		ppos = master.pos + (0.0, 0.0, master.player.ViewHeight);
 
@@ -305,8 +303,6 @@ class W2SoundKeeper play {
 	}
 
 	void PostTick( void ) {
-		Debug.Print( "SndKpr:Post(). W2T " .. w2type .. ", status " .. status );
-
 		if ( status == W2HS_Active ) {
 			// Creating new sound origins if they are not spawned yet:
 			if ( !sndorigin[ W2SD_Left ] ) {
@@ -364,8 +360,6 @@ class W2SoundKeeper play {
 				}
 			}
 		}
-
-		Debug.Print( "- end snds: [" .. (sndorigin[ W2SD_Left ]? "Y" : "n") .. ", " .. (sndorigin[ W2SD_Right ]? "Y" : "n") .. "]" );
 	} // of void PostTick( void ) {}
 
 } // of class W2SoundKeeper {}

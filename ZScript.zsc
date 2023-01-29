@@ -261,7 +261,7 @@ class WeathremumHandler: EventHandler {
 	int debugTraceLineIndex;
 
 	override void WorldTick() {
-		Debug.Print( TEXTCOLOR_SAPPHIRE .. "WTick(). Pre-ArrSz, conpl=" .. consoleplayer );
+		Debug.Print( TEXTCOLOR_SAPPHIRE .. "WTick(). 1, conpl=" .. consoleplayer );
 
 		if ( w2level.allSectorsData.Size() != totalLevelSectors ) {
 			W2Global.Log( LL_Debug, GetClassName() .. "::WorldLoaded(). " .. TEXTCOLOR_DARKRED .. "False sectors size" .. LLCOLOR_DEBUG .. ": now " .. w2level.allSectorsData.Size() .. ", saved " .. totalLevelSectors .. ", really " .. level.sectors.Size() .. ". Recreating Weathremum level data..." );
@@ -323,7 +323,7 @@ class WeathremumHandler: EventHandler {
 
 		Super.WorldTick();
 
-		Debug.Print( TEXTCOLOR_SAPPHIRE .. "WTick() end. Total sndkpr: " .. playerHandlers[ consoleplayer ].sndkeepers.Size() );
+		Debug.Print( TEXTCOLOR_SAPPHIRE .. "WTick(). Super.WTick() end. Total sndkpr: " .. playerHandlers[ consoleplayer ].sndkeepers.Size() );
 	}
 
 	/*override void NetworkProcess( ConsoleEvent e ) {
