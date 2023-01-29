@@ -43,7 +43,7 @@ class W2PlayerHandler: Actor {
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Left );
 				sndkeepers[ tCursector ].SuggestPos3( newpos, W2SD_Right );
 
-				Debug.Print( "PlHnlr:Secs(). CurSec: w2t " .. tCursector .. ", pos " .. ZCGlobal.squeezeVector3( newpos ) );
+				Debug.Print( "PlHnlr:Secs(). CurSec: w2t " .. tCursector .. ", pos " .. W2Global.squeezeVector3( newpos ) );
 			}
 		}
 
