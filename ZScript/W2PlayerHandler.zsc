@@ -260,7 +260,7 @@ class W2PlayerHandler: Thinker {
 
 				vector2 raindropPos = ( cos( angletheta ), sin( angletheta ) ) * ( closestCorniceDist * 0.25 + 2.0 + FRandom( 0.0, 1.0 ) * circleRadius );
 
-				Weathremum_SkyboxRaindrop raindrop = Weathremum_SkyboxRaindrop( sky.CreateActor( "Weathremum_SkyboxRaindrop", ( raindropPos, FRandom( 96.0, 130.0 ) ) ) );
+				Weathremum_SkyboxRaindrop raindrop = Weathremum_SkyboxRaindrop( sky.CreateUnlinkedActor( "Weathremum_SkyboxRaindrop", ( raindropPos, FRandom( 96.0, 130.0 ) ) ) );
 				raindrop.w2level = w2level;
 				raindrop.target = sky;
 			}

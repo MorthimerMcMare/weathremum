@@ -1,6 +1,6 @@
 // All of the Weathremum skybox stuff.
 
-class W2BaseSkyActor: Actor {
+class W2BaseSkyActor: Actor abstract {
 	W2SkyboxViewpoint skycam;
 	vector3 sphericaloffset; //double ra, decl, dist;
 
@@ -12,6 +12,10 @@ class W2BaseSkyActor: Actor {
 
 	static clearscope vector3 vector3ToSpherical( vector3 vec ) {
 		return (atan2( vec.y, vec.x ), -90.0 * sin( vec.z ), vec.length());
+
+		// Real spherical (not RA/Decl) coords calc:
+		//double r = vec.length();
+		//return (atan2( vec.y, vec.x ), acos( vec.z / r ), r);
 	}
 
 	static clearscope vector3 sphericalToVector3( vector3 spherical ) {
@@ -19,14 +23,27 @@ class W2BaseSkyActor: Actor {
 		double cospitch = cos( spherical.y );
 
 		return (cosangle * cospitch, sin( spherical.x ) * cospitch, sin( spherical.y )) * spherical.z;
+
+		// Real spherical (not RA/Decl) coords calc:
+		/*double cosphi = cos( spherical.x );
+		double sinphi = sin( spherical.x );
+		double costheta = cos( spherical.y );
+		double sintheta = sin( spherical.y );
+
+		return spherical.z * (cosphi * sintheta, sinphi * sintheta, costheta);*/
 	}
 
-	void AddVec3Pos( vector3 vec3pos ) {
+	void AddOrigin( vector3 vec3pos ) {
 		sphericaloffset = vector3ToSpherical( sphericalToVector3( sphericaloffset ) + vec3pos );
 	}
 
+	override void PostBeginPlay() {
+		if ( !skycam )
+			Destroy();
+	}
+
 	/*static double, double vector3ToAnglePitch( vector3 vec ) {
-		return atan2( vec.y, vec.x ), -90.0 * sin( vec.z );
+		return atan2( vec.y, vec.x ), -atan2( vec.z, vec.xy.length() );
 	}
 
 	static vector3 anglePitchToVector3( double angle, double pitch ) {
@@ -36,17 +53,21 @@ class W2BaseSkyActor: Actor {
 		return (cosangle * cospitch, sin( angle ) * cospitch, sin( pitch ));
 	}*/
 
-} // of class W2BaseSkyActor: Actor {}
+} // of class W2BaseSkyActor: Actor abstract {}
 
-class W2StaticSkyActor: W2BaseSkyActor {
+class W2StaticSkyActor: W2BaseSkyActor abstract {
 	States {
 	Spawn:
 		TROO A -1;
 		Stop;
 	}
-} // of class W2StaticSkyActor: W2BaseSkyActor {}
 
-class W2DynamicSkyActor: W2BaseSkyActor {
+	override void Tick() {
+		SetZ( skycam.pos.z + sphericaloffset.z * cos( sphericaloffset.y ) );
+	}
+} // of class W2StaticSkyActor: W2BaseSkyActor abstract {}
+
+class W2DynamicSkyActor: W2BaseSkyActor abstract {
 	Default {
 		RenderStyle "Translucent";
 	}
@@ -55,7 +76,7 @@ class W2DynamicSkyActor: W2BaseSkyActor {
 		SetOrigin( skycam.pos + sphericalToVector3( sphericaloffset ), true );
 		Super.Tick();
 	}
-} // of class W2DynamicSkyActor: W2BaseSkyActor {}
+} // of class W2DynamicSkyActor: W2BaseSkyActor abstract {}
 
 
 class W2SkyboxViewpoint: SkyViewpoint {
@@ -68,13 +89,14 @@ class W2SkyboxViewpoint: SkyViewpoint {
 
 		newskies.FriendPlayer = clamp( playernum, 0, MAXPLAYERS );
 		newskies.master = ( playeringame[ playernum ] && players[ playernum ].mo )? players[ playernum ].mo : NULL;
-		newskies.SetOrigin( (-100000, 0, 0), false );
 
-		newskies.FindFloorCeiling();
-		newskies.SetZ( newskies.floorz - 16.0 );
+		// Don't sure why exactly that coordinates, but skybox on specified 
+		//constants not vanishes temporarely on some player angles/pitches.
+		newskies.SetOrigin( (50000, 0, 0), false );
+		newskies.SetZ( newskies.floorz );
 
 		newskies.bNOINTERACTION = true;
-		newskies.UnlinkFromWorld();
+		//newskies.UnlinkFromWorld();
 
 		if ( newskies.master )
 			newskies.realangle = -newskies.master.angle;
@@ -84,21 +106,52 @@ class W2SkyboxViewpoint: SkyViewpoint {
 
 	override void Tick() {
 		if ( !master ) {
-			W2Global.Log( LL_Detailed, GetClassName() .. "::Tick(). No master, destroying self." );
+			W2Global.Log( LL_Detailed, GetClassName() .. "::Tick(). No master (player), destroying self." );
 			Destroy();
+
 		} else {
 			// === For Doom 2, this works fine for all levels with skies, 
 			//except MAP23 and MAP29. Only one side is visible:
 			double prevangle = realangle;
 			realangle -= master.player.cmd.yaw * ( 360.0 / 65536.0 );
 
-			//angle = realangle;
-			//ClearInterpolation();
+			vector3 outOfBoundsPos = pos;
+			double oldPosZ = outOfBoundsPos.z;
 
-			/*for ( int i = 0; i < skyboxActors.Size(); i++ ) {
-				W2BaseSkyActor curactor = skyboxActors[ i ];
-				curactor.sphericaloffset.x = ( curactor.sphericaloffset.x + realangle - prevangle ) % 360.0;
-			}*/
+			SetOrigin( master.pos, false );
+			//UnlinkFromWorld();
+			//SetXYZ( master.pos );
+			//FindFloorCeiling();
+			//LinkToWorld();
+			outOfBoundsPos.z = master.cursector.floorplane.ZatPoint( master.pos.xy );
+
+			SetXYZ( outOfBoundsPos );
+			ClearInterpolation();
+
+			//console.printf( "skyboxActors.Size() at time %i: %i.", level.maptime, skyboxActors.Size() );
+
+			if ( pos.z != oldPosZ ) {
+				//console.printf( "Skybox floorsector: " .. floorsector .. ", cursector: " .. cursector );
+
+				//angle = realangle;
+				//ClearInterpolation();
+
+				for ( int i = 0; i < skyboxActors.Size(); i++ ) {
+					W2BaseSkyActor curactor = skyboxActors[ i ];
+
+					if ( curactor ) {
+
+						//curactor.sphericaloffset.x = ( curactor.sphericaloffset.x + realangle - prevangle ) % 360.0;
+						//curactor.AddOrigin( (0.0, 0.0, oldPosZ - pos.z ) );
+						curactor.SetZ( pos.z + curactor.sphericaloffset.z * sin( curactor.sphericaloffset.y ) );
+						curactor.ClearInterpolation();
+					} else {
+						W2Global.Log( LL_Emergency, GetClassName() .. "::Tick(). Maptime " .. level.maptime .. "; skyboxActors[ " .. i .. " ] == NULL. skyboxActors.Size() " .. skyboxActors.Size() );
+					}
+				} // of for ( int i = 0; i < skyboxActors.Size(); i++ ) {}
+
+			} // of if ( pos.z != oldPosZ ) {}
+
 		}
 	} // of override void Tick() {}
 
@@ -121,6 +174,15 @@ class W2SkyboxViewpoint: SkyViewpoint {
 
 		return skyactor, pushedIndex;
 	}
+
+	W2BaseSkyActor CreateUnlinkedActor( class<W2BaseSkyActor> cls, vector3 thingCartesianOffset ) {
+		W2BaseSkyActor skyactor = W2BaseSkyActor( Actor.Spawn( cls, pos + thingCartesianOffset ) );
+		skyactor.skycam = self;
+		skyactor.sphericaloffset = W2BaseSkyActor.vector3ToSpherical( thingCartesianOffset );
+
+		return skyactor;
+	}
+
 
 	void Clear() {
 		for ( int i = 0; i < skyboxActors.Size(); i++ )
