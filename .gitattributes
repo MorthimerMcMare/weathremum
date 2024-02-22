@@ -1,0 +1,22 @@
+# ZScript:
+*.zsc 		linguist-language=C#
+
+# ACS:
+*.acs		linguist-language=C
+
+# Decorate:
+*.dec			linguist-language=C#
+Decorate.txt	linguist-language=C#
+111/*			linguist-language=C#
+111/Enemies/*	linguist-language=C#
+111/Players/*	linguist-language=C#
+
+# Other config files:
+CVARINFO* 	linguist-language=C
+KEYCONF*	linguist-language=D
+MAPINFO* 	linguist-language=C
+SNDINFO* 	linguist-language=C
+MENUDEF*	linguist-language=C++
+TRNSLATE*	linguist-language=C
+TEXTURES*	linguist-language=C
+ANIMDEFS* 	linguist-language=C
