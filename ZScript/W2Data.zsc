@@ -297,7 +297,14 @@ class W2SoundKeeper play {
 
 		if ( master.player.Camera ) {
 			target = master.player.Camera;
-			ppos = target.pos + (0.0, 0.0, ( target.player? target.player.ViewHeight : target.CameraHeight ));
+			ppos = target.pos;
+
+			// By default "CameraHeight" equals to "int.min".
+			if ( target.player )
+				ppos.z += target.player.ViewHeight;
+			else if ( target.CameraHeight > int.min )
+				ppos.z += target.CameraHeight;
+
 		} else {
 			target = master;
 			ppos = master.pos + (0.0, 0.0, master.player.ViewHeight);
