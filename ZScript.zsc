@@ -7,6 +7,8 @@ version "3.3.0"
 #include "ZScript/W2Skybox.zsc"
 #include "ZScript/W2AmbientActors.zsc"
 
+#include "WeathremumAddon.zsc"
+
 const WeathremumVersion = "0.31a";
 
 
@@ -260,14 +262,7 @@ class WeathremumHandler: EventHandler {
 
 			W2SkyboxViewpoint sky = w2level.sky = W2SkyboxViewpoint.Create( e.PlayerNumber );
 
-			sky.CreateActorSpherical( "W2NightOceanSkybox", (0, 90.0, 16.0) );
-			//sky.CreateActorSpherical( "W2Galaxy1Skybox", (0, 90.0, 0.0) );
-
-			W2SkyboxFog skyfog = W2SkyboxFog( sky.CreateActorSpherical( "W2SkyboxFog", (0, 90.0, 16.0) ) );
-			skyfog.SetType( skyfog.SFT_Dark, 0.5 );
-
-			for ( int i = 0; i < 1024; i++ )
-				sky.CreateActorSpherical( "W2SkyboxSmallStar", (FRandom( 0.0, 360.0 ), FRandom( 10.0, 90.0 ), 512.0) );
+			SkyboxInit();
 		}
 
 		Super.PlayerEntered( e );

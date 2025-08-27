@@ -1,0 +1,92 @@
+// By wishes...
+
+extend class WeathremumHandler {
+	// Setup a main skybox texture.
+	//   - skyboxcls: a skybox class;
+	//   - zoffset: Z-coordinate offset from the point of view (by default = 0.01).
+	//
+	// Установить основную текстуру скайбокса 
+	//   - skyboxcls: класс скайбокса;
+	//   - zoffset: аппликата смещения от точки обзора (по умолчанию = 0.01).
+	void SetSkyboxTexture( class<W2StaticSkyActor> skyboxcls, double zoffset = 0.01 ) {
+		AddSkyboxObject( skyboxcls, 0, 90.0, zoffset );
+	}
+
+	//
+	//     Simplified version of the "sky.CreateActorSpherical()".
+	//
+	// Usage:   AddSkyboxObject( Actor_name, Right_ascention, Declination, Distance );
+	//                                       └─Dflt: 0.0      └─Dflt: 0.0  └─Dflt: 512.0
+	// Ranges:  AddSkyboxObject( 'W2BaseSkyActor', 0.0 … 360.0, -90.0 … 90.0, 0.0 … 10³⁰⁸ );
+	//
+	// Examp.1: AddSkyboxObject( 'Planet1', 113.58, 45 );
+	//
+	// Examp.2: AddSkyboxObject( 'SmallStar', FRandom( 0.0, 360.0 ), FRandom( 15.0, 90.0 ), 520.0 );
+	//
+	//
+	//     Упрощённая версия "sky.CreateActorSpherical()".
+	//
+	// Использ.:AddSkyboxObject( Название_актора, Прямое_восхождение, Склонение, Расстояние );
+	//                                            └─Умолч: 0.0        └─Ум: 0.0  └─Умолч: 512.0
+	// Диапазон:AddSkyboxObject( 'W2BaseSkyActor', 0.0 … 360.0, -90.0 … 90.0, 0.0 … 10³⁰⁸ );
+	//
+	// Пример1: AddSkyboxObject( 'Planet1', 113.58, 45 );
+	//
+	// Пример2: AddSkyboxObject( 'SmallStar', FRandom( 0.0, 360.0 ), FRandom( 15.0, 90.0 ), 520.0 );
+	W2BaseSkyActor AddSkyboxObject( class<W2BaseSkyActor> cls, double ra = 0.0, double decl = 0.0, double dist = 512.0 ) {
+		return w2level.sky.CreateActorSpherical( cls, (ra, decl, dist) );
+	}
+
+	// Fog/dim setup. Usage parameters:
+	//  - alpha: transparency. Range 0.0 … 1.0, by default 0.5;
+	//  - type can be:
+	//      * W2SkyboxFog.SFT_Dark  — black
+	//      * W2SkyboxFog.SFT_Mist  — mist gray
+	//      * W2SkyboxFog.SFT_Light — white
+	//      * W2SkyboxFog.SFT_Sun   — sun yellow
+	//
+	// Установка тумана/затемнения. Параметры использования:
+	//  - alpha: прозрачность. Диапазон 0.0 … 1.0, по умолчанию 0.5;
+	//  - type может быть:
+	//      * W2SkyboxFog.SFT_Dark  — чёрный
+	//      * W2SkyboxFog.SFT_Mist  — туманно-серый
+	//      * W2SkyboxFog.SFT_Light — белый
+	//      * W2SkyboxFog.SFT_Sun   — солнечный жёлтый
+	W2SkyboxFog AddSkyboxFog( int type, double alpha = 0.5 ) {
+		W2SkyboxFog skyfog = W2SkyboxFog( AddSkyboxObject( "W2SkyboxFog", 0.0, 90.0, 16.0 ) );
+		skyfog.SetType( type, alpha );
+
+		return skyfog;
+	}
+
+
+	// Main function for skybox actors creating.
+	// Основная функция создания объектов.
+	void SkyboxInit( void ) {
+		SetSkyboxTexture( "W2NightOceanSkybox" );
+
+		for ( int i = 0; i < 1024; i++ )
+			AddSkyboxObject( "W2SkyboxStaticStar", FRandom( 0.0, 360.0 ), FRandom( 10.0, 90.0 ), 512.0 );
+
+		AddSkyboxFog( W2SkyboxFog.SFT_Dark, 0.5 );
+	}
+}
+
+class W2SkyboxStaticStar: W2DynamicSkyActor {
+	Default {
+		+FORCEXYBILLBOARD;
+	}
+
+	States {
+	Spawn:
+		STAR "[" -1;
+		Stop;
+	}
+}
+
+
+class W2NightOceanSkybox: W2StaticSkyActor {
+}
+
+class W2Galaxy1Skybox: W2StaticSkyActor {
+}
