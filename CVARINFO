@@ -1,6 +1,9 @@
 // Weathremum control CVars:
 
-user int 	mcm_weathremum_loglevel = 1;
+user int 	  mcm_weathremum_loglevel = 1;
+server int    mcm_weathremumtest_max_raindrops = 250;
+server float  mcm_weathremumtest_max_rain_radius = 768.0;
+
 
 user float 	mcm_weathremum_rainalphamul = 1.0;
 
