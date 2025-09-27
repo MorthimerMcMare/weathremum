@@ -13,7 +13,17 @@ OptionMenu "mcm_WeathremumControl" {
 	StaticText " "
 	StaticText " "
     StaticText "=== Server-side ===", SAPPHIRE
-    StaticText "(Nothing yet)", DARKGRAY
+    StaticText "- Rain density -", TEAL
+    StaticText "Default 250, range 100..25000", DARKGRAY
+	Slider "Max. raindrops (50x)", "mcm_weathremumtest_max_raindrops", 100, 25000, 50, 0
+	Slider "Max. raindrops (500x)", "mcm_weathremumtest_max_raindrops", 100, 25000, 500, 0
+	Slider "Max. raindrops (5000x)", "mcm_weathremumtest_max_raindrops", 100, 25000, 5000, 0
+	StaticText " "
+    StaticText "- Rain fall radius -", TEAL
+    StaticText "Default 768, range 512..2048", DARKGRAY
+	Slider "Max. rain radius (x8)", "mcm_weathremumtest_max_rain_radius", 512.0, 2048.0, 8, 0
+	Slider "Max. rain radius (x64)", "mcm_weathremumtest_max_rain_radius", 512.0, 2048.0, 64, 0
+	Slider "Max. rain radius (x512)", "mcm_weathremumtest_max_rain_radius", 512.0, 2048.0, 512, 0
 }
 
 AddOptionMenu "OptionsMenu" {
