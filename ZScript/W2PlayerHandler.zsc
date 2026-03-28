@@ -23,6 +23,13 @@ class W2PlayerHandler: Actor {
 		rnd = WeathremumUnsyncRandom.Create();
 	}
 
+	override void PostBeginPlay() {
+		if ( !w2level ) {
+			Destroy();
+			return;
+		}
+	}
+
 
 	void DoSectorEffects( void ) {
 		corniceLines.Clear();

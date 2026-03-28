@@ -55,8 +55,14 @@ class Weathremum_Raindrop: Actor {
 	}
 
 	override void PostBeginPlay() {
-		//if ( !cursector || ( ceilingpic != skyflatnum ) )
+		if ( !rnd ) {
+			Destroy();
+			return;
+		}
+		//if ( !cursector || ( ceilingpic != skyflatnum ) ) {
 		//	Destroy();
+		//	return;
+		//}
 
 		double minspawnheight = ( master? min( ceilingz, target.pos.z + target.height + 192.0 ) : ceilingz );
 
@@ -195,6 +201,11 @@ class Weathremum_CanopyRaindrop: Weathremum_Raindrop {
 	int dropCountdown;
 
 	override void PostBeginPlay() {
+		if ( !rnd ) {
+			Destroy();
+			return;
+		}
+
 		vel.z = 0.0;
 
 		scale = ( rnd.FRandom( 0.1, 0.5 ), rnd.FRandom( 0.2, 0.5 ) );
@@ -260,6 +271,11 @@ class Weathremum_ExtraDecoration: Actor {
 
 class Weathremum_WaterRipple: Weathremum_ExtraDecoration {
 	override void PostBeginPlay() {
+		if ( !rnd ) {
+			Destroy();
+			return;
+		}
+
 		frame = rnd.Random( 0, 3 );
 		alpha = rnd.FRandom( 0.095, 0.333 );
 		scale.x = scale.y = rnd.FRandom( 0.1, 0.25 );
@@ -285,6 +301,11 @@ class Weathremum_WaterRipple: Weathremum_ExtraDecoration {
 
 class Weathremum_HardSurfaceRaindropBreak: Weathremum_ExtraDecoration {
 	override void PostBeginPlay() {
+		if ( !rnd ) {
+			Destroy();
+			return;
+		}
+
 		frame = rnd.Random( 0, 3 );
 		alpha = rnd.FRandom( 0.5, 1.0 );
 		scale.x = scale.y = rnd.FRandom( 0.175, 0.45 );
@@ -311,6 +332,11 @@ class Weathremum_NukageVapor: Weathremum_ExtraDecoration {
 	}
 
 	override void PostBeginPlay() {
+		if ( !rnd ) {
+			Destroy();
+			return;
+		}
+
 		vel.z = rnd.FRandom( 0.0, 5.0 );
 		alpha = rnd.FRandom( 0.075, 0.33 );
 
