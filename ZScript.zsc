@@ -323,7 +323,10 @@ class WeathremumHandler: EventHandler {
 
 		Super.WorldTick();
 
-		Debug.Print( TEXTCOLOR_SAPPHIRE .. "WTick(). Super.WTick() end. Total sndkpr: " .. playerHandlers[ consoleplayer ].sndkeepers.Size() );
+		if ( !playerHandlers[ consoleplayer ] )
+			Debug.Print( TEXTCOLOR_SAPPHIRE .. "WTick(). Super.WTick() end. Total sndkpr: <playerHandlers[ consoleplayer=" .. consoleplayer .. " ] == NULL>" );
+		else
+			Debug.Print( TEXTCOLOR_SAPPHIRE .. "WTick(). Super.WTick() end. Total sndkpr: " .. playerHandlers[ consoleplayer ].sndkeepers.Size() );
 	}
 
 	/*override void NetworkProcess( ConsoleEvent e ) {
