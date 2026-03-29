@@ -218,34 +218,41 @@ class WeathremumHandler: EventHandler {
 									initCurW2PlayerHandler.FriendPlayer, initCurW2SurfaceType, initCurW2PlayerHandler.sndkeepers[ initCurW2SurfaceType ].w2typename, sndname ) );
 	}
 
+	protected void InitPlayerHandler( int playernum ) {
+		if ( !players[ playernum ].mo )
+			return;
+
+		Actor plmo = players[ playernum ].mo;
+
+		initCurW2PlayerHandler = W2PlayerHandler( Actor.Spawn( "W2PlayerHandler", plmo.pos ) );
+		initCurW2PlayerHandler.FriendPlayer = playernum;
+		initCurW2PlayerHandler.w2level = w2level;
+		initCurW2SurfaceType = W2ST_None;
+
+		// Based on the both of SNDINFO and SNDSEQ.
+		pushSound( "weather/wind(x)" );
+		pushSound( "weathremum/rain/default" );             // W2ST_NormalSurface,
+		pushSound( "weathremum/rainsurface/soft" );         // W2ST_SoftSurface,
+		pushSound( "weathremum/rain/heavy" );               // W2ST_Water,
+		pushSound( "weathremum/rain/default" );             // W2ST_Nukage,
+		pushSound( "weathremum/rainsurface/incandescent" ); // W2ST_Incandecent,
+		pushSound( "weathremum/rainsurface/rock" );         // W2ST_RockSurface,
+		pushSound( "weathremum/rainsurface/metal" );        // W2ST_MetalSurface,
+		pushSound( "weathremum/rainsurface/plasticglass" ); // W2ST_PlasticSurface,
+
+		playerHandlers[ playernum ] = initCurW2PlayerHandler;
+
+		W2Global.Log( LL_Detailed, "Created handler " .. initCurW2PlayerHandler.GetClassName() .. " for player " .. playernum .. "." );
+	}
+
+
 	override void PlayerEntered( PlayerEvent e ) {
 		if ( mustCreateGeneralSectorsData )
 			CreateGeneralSectorsData();
 
-		if ( players[ e.PlayerNumber ].mo ) {
-			Actor plmo = players[ e.PlayerNumber ].mo;
+		if ( players[ e.PlayerNumber ].mo )
+			InitPlayerHandler( e.PlayerNumber );
 
-			initCurW2PlayerHandler = W2PlayerHandler( Actor.Spawn( "W2PlayerHandler", plmo.pos ) );
-			initCurW2PlayerHandler.FriendPlayer = e.PlayerNumber;
-			initCurW2PlayerHandler.w2level = w2level;
-			initCurW2SurfaceType = W2ST_None;
-
-			// Based on the both of SNDINFO and SNDSEQ.
-			pushSound( "weather/wind(x)" );
-			pushSound( "weathremum/rain/default" );             // W2ST_NormalSurface,  
-			pushSound( "weathremum/rainsurface/soft" );         // W2ST_SoftSurface,	
-			pushSound( "weathremum/rain/heavy" );               // W2ST_Water,			
-			pushSound( "weathremum/rain/default" );             // W2ST_Nukage,		    
-			pushSound( "weathremum/rainsurface/incandescent" ); // W2ST_Incandecent,	
-			pushSound( "weathremum/rainsurface/rock" );         // W2ST_RockSurface,	
-			pushSound( "weathremum/rainsurface/metal" );        // W2ST_MetalSurface,   
-			pushSound( "weathremum/rainsurface/plasticglass" ); // W2ST_PlasticSurface, 
-
-			playerHandlers[ e.PlayerNumber ] = initCurW2PlayerHandler;
-
-			W2Global.Log( LL_Detailed, "Created handler " .. initCurW2PlayerHandler.GetClassName() .. " for player " .. e.PlayerNumber .. "." );
-		}
-		
 		Super.PlayerEntered( e );
 	} // of override void PlayerEntered( PlayerEvent e ) {}
 

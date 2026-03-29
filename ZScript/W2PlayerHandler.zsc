@@ -250,13 +250,13 @@ pos.Z == FLOATRANDZ
 	override void Tick() {
 		PlayerInfo pl = players[ FriendPlayer ];
 
-		if ( bDORMANT || !playeringame[ FriendPlayer ] || !pl.mo || FriendPlayer != consoleplayer )
+		if ( bDORMANT || !playeringame[ FriendPlayer ] || FriendPlayer != consoleplayer )
 			return;
 
 		target = pl.mo;
 
 		if ( !target ) {
-			W2Global.Log( LL_Main, GetClassName() .. "::Tick(). Target player " .. FriendPlayer .. " disappeared, destroying self." );
+			W2Global.ClearscopeLog( LL_Main, GetClassName() .. "::Tick(). Target player " .. FriendPlayer .. " disappeared, destroying self." );
 			Destroy();
 			return;
 		}
@@ -264,7 +264,7 @@ pos.Z == FLOATRANDZ
 		//console.printf( "W2PlH <" .. self .. "> target: <" .. target .. "> (Frnd <" .. pl.mo .. ">), useMultipl " .. useMultiplayerPos .. "-> " .. newpos );
 
 		// Move the handler actor to the camera position:
-		SetOrigin( ( pl.Camera? pl.Camera.pos : target.pos ), true );
+		SetXYZ( (pl.Camera? pl.Camera.pos : target.pos) );
 		angle = target.angle;
 
 
@@ -286,8 +286,6 @@ pos.Z == FLOATRANDZ
 
 		//int a = 0.123456; // Next line is for debug (uncomment lines above):
 		//sndkeepers[ W2ST_NormalSurface ].PostTick();
-
-		Super.Tick();
 	} // of override void Tick() {}
 
 } // of class W2PlayerHandler: Actor {}

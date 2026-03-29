@@ -156,6 +156,13 @@ class W2GlobalMath {
 
 		return exp( power * log( value ) );
 	}
+
+	static String squeezeVector3( vector3 vec ) {
+		return String.Format( "(%i, %i, %i)", int( vec.x ), int( vec.y ), int( vec.z ) );
+	}
+	static String squeezeVector2( vector2 vec ) {
+		return String.Format( "(%i, %i)", int( vec.x ), int( vec.y ) );
+	}
 } // of class W2GlobalMath {}
 
 
@@ -175,4 +182,3 @@ class tempLeftRightMarker: Actor {
 		Stop;
 	}
 }
-
