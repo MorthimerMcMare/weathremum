@@ -236,7 +236,7 @@ class WeathremumHandler: EventHandler {
 		if ( players[ e.PlayerNumber ].mo ) {
 			Actor plmo = players[ e.PlayerNumber ].mo;
 
-			initCurW2PlayerHandler = W2PlayerHandler( new( 'W2PlayerHandler' ) );
+			/*initCurW2PlayerHandler = W2PlayerHandler( new( 'W2PlayerHandler' ) );
 			initCurW2PlayerHandler.targetPlayerNum = e.PlayerNumber;
 			initCurW2PlayerHandler.w2level = w2level;
 
@@ -255,16 +255,18 @@ class WeathremumHandler: EventHandler {
 
 			playerHandlers[ e.PlayerNumber ] = initCurW2PlayerHandler;
 
-			W2Global.Log( LL_Detailed, "Created handler " .. initCurW2PlayerHandler.GetClassName() .. " for player " .. e.PlayerNumber .. "." );
+			W2Global.Log( LL_Detailed, "Created handler " .. initCurW2PlayerHandler.GetClassName() .. " for player " .. e.PlayerNumber .. "." );*/
 
 
+			// Skybox itself:
 			W2SkyboxViewpoint sky = w2level.sky = W2SkyboxViewpoint.Create( e.PlayerNumber );
-
 			sky.CreateActorSpherical( "W2NightOceanSkybox", (0, 90.0, 16.0) );
-			//sky.CreateActorSpherical( "W2Galaxy1Skybox", (0, 90.0, 0.0) );
 
+			// Skybox fog:
 			W2SkyboxFog skyfog = W2SkyboxFog( sky.CreateActorSpherical( "W2SkyboxFog", (0, 90.0, 16.0) ) );
 			skyfog.SetType( skyfog.SFT_Dark, 0.5 );
+
+			// Any other skybox actors:
 
 			for ( int i = 0; i < 1024; i++ )
 				sky.CreateActorSpherical( "W2SkyboxSmallStar", (FRandom( 0.0, 360.0 ), FRandom( 10.0, 90.0 ), 512.0) );
