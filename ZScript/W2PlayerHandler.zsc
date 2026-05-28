@@ -288,7 +288,6 @@ class W2PlayerHandler: Thinker {
 		pos = target.pos;
 		//console.printf( "W2PlH <" .. self .. "> pos: Cam " .. ( pl.Camera? pl.Camera .. " (\"" .. pl.Camera.GetClassName() .. "\")" : "NULL" ) .. ", pos " .. pos );
 
-
 		DoCVarsHandling();
 
 		// Sound keepers pre-tick handling:

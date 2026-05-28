@@ -55,7 +55,7 @@ class W2BaseSkyActor: Actor abstract {
 
 } // of class W2BaseSkyActor: Actor abstract {}
 
-class W2StaticSkyActor: W2BaseSkyActor abstract {
+class W2PinnedSkyActor: W2BaseSkyActor abstract {
 	States {
 	Spawn:
 		TROO A -1;
@@ -65,7 +65,7 @@ class W2StaticSkyActor: W2BaseSkyActor abstract {
 	override void Tick() {
 		SetZ( skycam.pos.z + sphericaloffset.z * cos( sphericaloffset.y ) );
 	}
-} // of class W2StaticSkyActor: W2BaseSkyActor abstract {}
+} // of class W2PinnedSkyActor: W2BaseSkyActor abstract {}
 
 class W2DynamicSkyActor: W2BaseSkyActor abstract {
 	Default {
@@ -82,6 +82,11 @@ class W2DynamicSkyActor: W2BaseSkyActor abstract {
 class W2SkyboxViewpoint: SkyViewpoint {
 	Array<W2BaseSkyActor> skyboxActors;
 
+	Default {
+		-NOSECTOR;
+		+NOINTERACTION;
+	}
+
 	double realangle;
 
 	static W2SkyboxViewpoint Create( int playernum ) {
@@ -91,11 +96,12 @@ class W2SkyboxViewpoint: SkyViewpoint {
 		newskies.master = ( playeringame[ playernum ] && players[ playernum ].mo )? players[ playernum ].mo : NULL;
 
 		// Don't sure why exactly that coordinates, but skybox on specified 
-		//constants not vanishes temporarely on some player angles/pitches.
+		//constants disappears rarely. This is a temp "solution" just for 
+		//easier development of other Weathremum subsystems.
 		newskies.SetOrigin( (50000, 0, 0), false );
-		newskies.SetZ( newskies.floorz );
+		//newskies.SetZ( newskies.floorz + 16.0 );
 
-		newskies.bNOINTERACTION = true;
+		//newskies.bNOINTERACTION = true;
 		//newskies.UnlinkFromWorld();
 
 		if ( newskies.master )
@@ -108,51 +114,61 @@ class W2SkyboxViewpoint: SkyViewpoint {
 		if ( !master ) {
 			W2Global.Log( LL_Detailed, GetClassName() .. "::Tick(). No master (player), destroying self." );
 			Destroy();
-
-		} else {
-			// === For Doom 2, this works fine for all levels with skies, 
-			//except MAP23 and MAP29. Only one side is visible:
-			double prevangle = realangle;
-			realangle -= master.player.cmd.yaw * ( 360.0 / 65536.0 );
-
-			vector3 outOfBoundsPos = pos;
-			double oldPosZ = outOfBoundsPos.z;
-
-			SetOrigin( master.pos, false );
-			//UnlinkFromWorld();
-			//SetXYZ( master.pos );
-			//FindFloorCeiling();
-			//LinkToWorld();
-			outOfBoundsPos.z = master.cursector.floorplane.ZatPoint( master.pos.xy );
-
-			SetXYZ( outOfBoundsPos );
-			ClearInterpolation();
-
-			//console.printf( "skyboxActors.Size() at time %i: %i.", level.maptime, skyboxActors.Size() );
-
-			if ( pos.z != oldPosZ ) {
-				//console.printf( "Skybox floorsector: " .. floorsector .. ", cursector: " .. cursector );
-
-				//angle = realangle;
-				//ClearInterpolation();
-
-				for ( int i = 0; i < skyboxActors.Size(); i++ ) {
-					W2BaseSkyActor curactor = skyboxActors[ i ];
-
-					if ( curactor ) {
-
-						//curactor.sphericaloffset.x = ( curactor.sphericaloffset.x + realangle - prevangle ) % 360.0;
-						//curactor.AddOrigin( (0.0, 0.0, oldPosZ - pos.z ) );
-						curactor.SetZ( pos.z + curactor.sphericaloffset.z * sin( curactor.sphericaloffset.y ) );
-						curactor.ClearInterpolation();
-					} else {
-						W2Global.Log( LL_Emergency, GetClassName() .. "::Tick(). Maptime " .. level.maptime .. "; skyboxActors[ " .. i .. " ] == NULL. skyboxActors.Size() " .. skyboxActors.Size() );
-					}
-				} // of for ( int i = 0; i < skyboxActors.Size(); i++ ) {}
-
-			} // of if ( pos.z != oldPosZ ) {}
-
+			return; // No player to show a breathtaking view.
 		}
+
+		//  === For Doom 2, this works fine for all levels with skies,
+		// except MAP23 and MAP07 [previously was also mentioned MAP29 but it has correct rendering].
+		// Of course, this is not the way.
+		//
+		// Only one side of skybox is visible:
+		//double prevangle = realangle;
+		//realangle -= master.player.cmd.yaw * ( 360.0 / 65536.0 ); // 2026.04.28 exploration note: this is exactly a `master.angle`.
+
+		vector3 outOfBoundsPos = pos;
+		double oldOOBPosZ = outOfBoundsPos.z;
+
+		SetOrigin( master.pos, false );
+		//UnlinkFromWorld();
+		//SetXYZ( master.pos );
+		//FindFloorCeiling();
+		//LinkToWorld();
+		outOfBoundsPos.z = master.cursector.floorplane.ZatPoint( master.pos.xy );
+
+		SetXYZ( outOfBoundsPos );
+		//console.printf( "realangle %.3f, master.angle %.3f, delta %.6f", -realangle, master.angle, -realangle - master.angle );
+		ClearInterpolation();
+		//prev.z = prevoobz;
+
+		if ( oldOOBPosZ != outOfBoundsPos.z ) {
+			//console.printf( "Tick() new z == %.3f, prev.z == %.3f, oobpos.z == %.3f; master.pos == " .. master.pos .. ", .angle == %.2f", pos.z, prev.z, outOfBoundsPos.z, master.angle );
+		}
+
+		//console.printf( "skyboxActors.Size() at time %i: %i.", level.maptime, skyboxActors.Size() );
+
+		//angle = realangle; // 2026.04.28 memory: forces the skybox angle to be the same as the master's (player's) angle. This is strange but non-usable effect.
+
+		if ( pos.z != oldOOBPosZ ) {
+			//console.printf( "Skybox floorsector: " .. floorsector .. ", cursector: " .. cursector );
+
+			//ClearInterpolation();
+
+			for ( int i = 0; i < skyboxActors.Size(); i++ ) {
+				W2BaseSkyActor curactor = skyboxActors[ i ];
+
+				if ( curactor ) {
+
+					//curactor.sphericaloffset.x = ( curactor.sphericaloffset.x + realangle - prevangle ) % 360.0;
+					//curactor.AddOrigin( (0.0, 0.0, oldPosZ - pos.z ) );
+					curactor.SetZ( pos.z + curactor.sphericaloffset.z * sin( curactor.sphericaloffset.y ) );
+					curactor.ClearInterpolation();
+				} else {
+					W2Global.Log( LL_Emergency, GetClassName() .. "::Tick(). Maptime " .. level.maptime .. "; skyboxActors[ " .. i .. " ] == NULL. skyboxActors.Size() " .. skyboxActors.Size() );
+				}
+			} // of for ( int i = 0; i < skyboxActors.Size(); i++ ) {}
+
+		} // of if ( pos.z != oldPosZ ) {}
+
 	} // of override void Tick() {}
 
 	W2BaseSkyActor, uint CreateActor( class<W2BaseSkyActor> cls, vector3 thingCartesianOffset ) {
@@ -233,10 +249,10 @@ class W2SkyboxFog: W2DynamicSkyActor {
 } // of class W2SkyboxFog: W2DynamicSkyActor {}
 
 
-class W2NightOceanSkybox: W2StaticSkyActor {
+class W2NightOceanSkybox: W2PinnedSkyActor {
 }
 
-class W2Galaxy1Skybox: W2StaticSkyActor {
+class W2Galaxy1Skybox: W2PinnedSkyActor {
 }
 
 
