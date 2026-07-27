@@ -266,11 +266,24 @@ class W2SkyboxSmallStar: W2DynamicSkyActor {
 
 	override void PostBeginPlay() {
 		Super.PostBeginPlay();
-		scale.x = scale.y = FRandom( 0.2, 1.5 );
+		scale.x = scale.y = FRandom( 0.05, 1.0 );
 
 		delayModulo = Random( 5, 35 );
 		theta = FRandom( 0.0, 360.0 );
 		thetaGradient = FRandom( 1.0, 15.0 );
+
+		Color starcolor;
+		int secondarycolor = Random( 0x77, 0xFF );
+
+		switch ( Random( 0, 3 ) ) {
+			case 0: starcolor = Color( secondarycolor, secondarycolor, 0xFF ); break;
+			case 1: starcolor = Color( 0xFF, secondarycolor, secondarycolor ); break;
+			case 2: starcolor = Color( 0xFF, 0xFF, secondarycolor ); break;
+			case 3: starcolor = Color( secondarycolor, secondarycolor, secondarycolor ); break;
+			default: starcolor = Color( 0xFF, 0xFF, 0xFF ); break;
+		}
+		SetShade( starcolor );
+		A_SetRenderStyle( 1.0, STYLE_Stencil );
 	}
 
 	override void Tick() {
