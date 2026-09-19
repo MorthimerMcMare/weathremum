@@ -118,6 +118,7 @@ class W2LinedefData {
 	double floorsdiffz, ceilsdiffz;
 	vector2 closestXYPointToPlayer;
 
+
 	static W2LinedefData Create( Line initLinedef ) {
 		W2LinedefData newdata = new( 'W2LinedefData' );
 		newdata.l = initLinedef;
@@ -181,6 +182,9 @@ class W2SoundKeeper play {
 	double minlength[ W2SD_Quantity ];
 	vector3 minposxyz[ W2SD_Quantity ];
 	vector3 ppos;
+
+	protected transient CVar settingRainEnabled;
+
 
 	void SuggestPos3( vector3 testpos, EWeathremumSoundDirection direction ) {
 		if ( direction < 0 || direction >= W2SD_Quantity )
@@ -283,6 +287,7 @@ class W2SoundKeeper play {
 		newkeeper.sndname = initsnd;
 		newkeeper.master = initmaster;
 		newkeeper.w2type = inittype;
+		newkeeper.settingRainEnabled = CVar.GetCVar( "mcm_weathremum_rain" );
 
 		if ( inittypename == "" && inittype < W2ST_User )
 			newkeeper.w2typename = W2SoundKeeper.WeathremumSectorTypeNames[ inittype ];
@@ -314,7 +319,7 @@ class W2SoundKeeper play {
 		minposxyz[ W2SD_Left ] = minposxyz[ W2SD_Right ] = (0.0, 0.0, -32760.0);
 
 		// Suggest potential excess sounds to stop:
-		if ( status == W2HS_Active )
+		if ( status == W2HS_Active || !settingRainEnabled.GetInt() )
 			status = W2HS_StopSuggestion;
 	}
 

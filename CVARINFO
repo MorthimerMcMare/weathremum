@@ -4,6 +4,9 @@ user int 	mcm_weathremum_loglevel = 1;
 
 user float 	mcm_weathremum_rainalphamul = 1.0;
 
+server bool mcm_weathremum_rain = true;
+server bool mcm_weathremum_skybox_stars = true;
+
 
 // [Legacy/deprecated] Weather control CVars:
 

@@ -13,18 +13,20 @@ const WeathremumVersion = "0.31a";
 
 
 class WeathremumHandler: EventHandler {
-	bool mustCreateGeneralSectorsData;		// "PlayerEntered()" is called before "WorldLoaded()".
+	private bool mustCreateGeneralSectorsData;		// "PlayerEntered()" is called before "WorldLoaded()".
 
-	WeathremumCacheTextureKeeper texturesCache;
+	private WeathremumCacheTextureKeeper texturesCache;
 
 	W2LevelGeneralData w2level;
-	W2PlayerHandler playerHandlers[ MAXPLAYERS ], initCurW2PlayerHandler;
-	int initCurW2SurfaceType;
+	private W2PlayerHandler playerHandlers[ MAXPLAYERS ], initCurW2PlayerHandler;
+	private int initCurW2SurfaceType;
 
-	uint updateSectorCurIndex, updateSectorsMaxTickAmount, totalLevelSectors;
+	private uint updateSectorCurIndex, updateSectorsMaxTickAmount, totalLevelSectors;
 	//transient ThinkerIterator lastHandledActorIter; // Causes savegame to crush.
 
-	int globalWindVectorChangeCountdown, blowWindVectorChangeCountdown;
+	private int globalWindVectorChangeCountdown, blowWindVectorChangeCountdown;
+
+	private transient CVar settingSkyboxStar;
 
 
 	override void OnRegister() {
@@ -259,6 +261,8 @@ class WeathremumHandler: EventHandler {
 
 			W2Global.Log( LL_Detailed, "Created handler " .. initCurW2PlayerHandler.GetClassName() .. " for player " .. e.PlayerNumber .. "." );
 
+			if ( !settingSkyboxStar )
+				settingSkyboxStar = CVar.GetCVar( "mcm_weathremum_skybox_stars" );
 
 			W2SkyboxViewpoint sky = w2level.sky = W2SkyboxViewpoint.Create( e.PlayerNumber );
 

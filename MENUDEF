@@ -13,7 +13,10 @@ OptionMenu "mcm_WeathremumControl" {
 	StaticText " "
 	StaticText " "
     StaticText "=== Server-side ===", SAPPHIRE
-    StaticText "(Nothing yet)", DARKGRAY
+	Option "Rain enabled", "mcm_weathremum_rain", "YesNo"
+	StaticText " "
+	Option "Skybox stars enabled", "mcm_weathremum_skybox_stars", "YesNo"
+	StaticText "Stars enabled requires level restart.", DARKGRAY
 }
 
 AddOptionMenu "OptionsMenu" {

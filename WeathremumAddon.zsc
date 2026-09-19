@@ -65,10 +65,12 @@ extend class WeathremumHandler {
 	void SkyboxInit( void ) {
 		SetSkyboxTexture( "W2NightOceanSkybox" );
 
-		for ( int i = 0; i < 1024; i++ )
-			AddSkyboxObject( "W2SkyboxStaticStar", FRandom( 0.0, 360.0 ), FRandom( 10.0, 90.0 ), 512.0 );
+		if ( settingSkyboxStar.GetInt() ) {
+			for ( int i = 0; i < 1024; i++ )
+				AddSkyboxObject( "W2SkyboxStaticStar", FRandom( 0.0, 360.0 ), FRandom( 10.0, 90.0 ), 512.0 );
 
-		AddSkyboxFog( W2SkyboxFog.SFT_Dark, 0.5 );
+			AddSkyboxFog( W2SkyboxFog.SFT_Dark, 0.5 );
+		}
 	}
 }
 

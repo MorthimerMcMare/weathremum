@@ -18,11 +18,15 @@ class W2PlayerHandler: Thinker {
 	vector2 closestCorniceXYPoint;
 	double closestCorniceDist;
 
-	transient CVar raindropsAlphaMulCVar;
+	protected transient CVar raindropsAlphaMulCVar;
+	protected transient CVar settingRainEnabled;
 
 	void DoCVarsHandling( void ) {
 		if ( !raindropsAlphaMulCVar )
 			raindropsAlphaMulCVar = CVar.GetCVar( "mcm_weathremum_rainalphamul", players[ targetPlayerNum ] );
+
+		if ( !settingRainEnabled )
+			settingRainEnabled = CVar.GetCVar( "mcm_weathremum_rain" );
 
 		w2level.raindropsAlphaMul = raindropsAlphaMulCVar.GetFloat();
 	}
@@ -290,14 +294,16 @@ class W2PlayerHandler: Thinker {
 
 
 		DoCVarsHandling();
+		bool rainenabled = settingRainEnabled.GetInt();
 
 		// Sound keepers pre-tick handling:
 		for ( int i = 0; i < sndkeepers.Size(); i++ )
 			sndkeepers[ i ].PreTick();
 
-		DoSectorEffects(); 	// Sector sounds (rain, winds);
+		if ( rainenabled )
+			DoSectorEffects(); 	// Sector sounds (rain, winds);
 
-		if ( !( level.frozen || globalfreeze ) )
+		if ( rainenabled && !( level.frozen || globalfreeze ) )
 			DoRainEffects(); 	// Rain itself, raindrops from cornices.
 
 		// Sound keepers post-tick handling:
