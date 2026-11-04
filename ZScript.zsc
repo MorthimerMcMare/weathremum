@@ -335,6 +335,15 @@ class WeathremumHandler: EventHandler {
 	}
 
 	override void NetworkProcess( ConsoleEvent e ) {
+		if ( e.name ~== "moveskybox" ) {
+			W2SkyboxViewpoint sky = W2SkyboxViewpoint.Find();
+
+			if ( sky )
+				sky.SetOrigin( players[ e.player ].mo.pos, false );
+			else
+				W2Global.Log( LL_Avary, "No sky found!" );
+		}
+
 		/*if ( e.Name ~== "test_turn180" ) {
 			players[ e.Player ].mo.angle = ( players[ e.Player ].mo.angle + 180.0 ) % 360.0;
 		} else if ( e.Name ~== "test_turnto" ) {

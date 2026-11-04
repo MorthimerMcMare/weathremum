@@ -95,10 +95,9 @@ class W2SkyboxViewpoint: SkyViewpoint {
 		newskies.FriendPlayer = clamp( playernum, 0, MAXPLAYERS );
 		newskies.master = ( playeringame[ playernum ] && players[ playernum ].mo )? players[ playernum ].mo : NULL;
 
-		// Don't sure why exactly that coordinates, but skybox on specified 
-		//constants disappears rarely. This is a temp "solution" just for 
-		//easier development of other Weathremum subsystems.
-		newskies.SetOrigin( (50000, 0, 0), false );
+        // This is a temp "solution" just for easier development of
+        //other Weathremum subsystems.
+		newskies.SetOrigin( (50000, 0, newskies.z), false );
 		//newskies.SetZ( newskies.floorz + 16.0 );
 
 		//newskies.bNOINTERACTION = true;
@@ -108,6 +107,10 @@ class W2SkyboxViewpoint: SkyViewpoint {
 			newskies.realangle = -newskies.master.angle;
 
 		return newskies;
+	}
+
+	static W2SkyboxViewpoint Find( void ) {
+		return W2SkyboxViewpoint( ThinkerIterator.Create( "W2SkyboxViewpoint" ).Next() );
 	}
 
 	override void Tick() {
@@ -128,7 +131,7 @@ class W2SkyboxViewpoint: SkyViewpoint {
 		vector3 outOfBoundsPos = pos;
 		double oldOOBPosZ = outOfBoundsPos.z;
 
-		SetOrigin( master.pos, false );
+		/*SetOrigin( master.pos, false );
 		//UnlinkFromWorld();
 		//SetXYZ( master.pos );
 		//FindFloorCeiling();
@@ -139,9 +142,10 @@ class W2SkyboxViewpoint: SkyViewpoint {
 		//console.printf( "realangle %.3f, master.angle %.3f, delta %.6f", -realangle, master.angle, -realangle - master.angle );
 		ClearInterpolation();
 		//prev.z = prevoobz;
+		*/
 
 		if ( oldOOBPosZ != outOfBoundsPos.z ) {
-			//console.printf( "Tick() new z == %.3f, prev.z == %.3f, oobpos.z == %.3f; master.pos == " .. master.pos .. ", .angle == %.2f", pos.z, prev.z, outOfBoundsPos.z, master.angle );
+			console.printf( "Tick() new z == %.3f, prev.z == %.3f, oobpos.z == %.3f; master.pos == " .. master.pos .. ", .angle == %.2f", pos.z, prev.z, outOfBoundsPos.z, master.angle );
 		}
 
 		//console.printf( "skyboxActors.Size() at time %i: %i.", level.maptime, skyboxActors.Size() );
@@ -161,7 +165,8 @@ class W2SkyboxViewpoint: SkyViewpoint {
 					//curactor.sphericaloffset.x = ( curactor.sphericaloffset.x + realangle - prevangle ) % 360.0;
 					//curactor.AddOrigin( (0.0, 0.0, oldPosZ - pos.z ) );
 					curactor.SetZ( pos.z + curactor.sphericaloffset.z * sin( curactor.sphericaloffset.y ) );
-					curactor.ClearInterpolation();
+					curactor.prev.z = curactor.pos.z + curactor.height;
+					//curactor.ClearInterpolation();
 				} else {
 					W2Global.Log( LL_Emergency, GetClassName() .. "::Tick(). Maptime " .. level.maptime .. "; skyboxActors[ " .. i .. " ] == NULL. skyboxActors.Size() " .. skyboxActors.Size() );
 				}
